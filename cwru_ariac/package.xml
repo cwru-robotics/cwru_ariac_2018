@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<package>
+  <name>cwru_ariac</name>
+  <version>1.0.0</version>
+  <description>Package for NIST ARIAC competition by TeamCase</description>
+  
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <maintainer email="sxt437@case.edu">Shipei Tian</maintainer>
+  <maintainer email="wsn@case.edu">Wyatt Newman</maintainer>
+  <maintainer email="sxh759@case.edu">Siqi Huang</maintainer>
+  <maintainer email="axn337@case.edu">Ammar Nahari</maintainer>
+  <maintainer email="xxz491@case.edu">Xuanyi Zhang</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>BSD</license>
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <url type="website">https://github.com/cwru-robotics/cwru_ariac</url>
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="sxt437@case.edu">Shipei Tian</author>
+  <author email="wsn@case.edu">Wyatt Newman</author>
+  <author email="sxh759@case.edu">Siqi Huang</author>
+  <author email="axn337@case.edu">Ammar Nahari</author>
+  <author email="xxz491@case.edu">Xuanyi Zhang</author>
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>simple_action_client</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>actionlib</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>osrf_gear</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>ariac_xform_utils</build_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>simple_action_client</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>actionlib</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>std_srvs</run_depend>
+  <run_depend>trajectory_msgs</run_depend>
+  <run_depend>osrf_gear</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>ariac_xform_utils</run_depend>
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- You can specify that this package is a metapackage here: -->
+    <!-- <metapackage/> -->
+
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+</package>

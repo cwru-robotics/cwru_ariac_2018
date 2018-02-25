@@ -1,0 +1,73 @@
+
+startup:   
+
+robot move action server: encapsulates 
+ *fk/ik
+ *collision-free motion planning
+ *grasping retries
+ *part flipping
+ *generically moves part source to part destination
+ *reports back success/failure (mode)
+
+see: http://wiki.ros.org/ariac/2018/Tutorials/HelloWorld
+  for example C++ code that can move robot, config sensors, etc
+
+To change robot, will need to re-write:
+   fk/ik
+   motion planning (e.g. via key points)
+
+demo start with:
+
+(see http://wiki.ros.org/ariac/2018/Tutorials/GEARInterface)
+
+source ~/ros_ws/install/setup.bash
+(I added the above to my .bashrc)
+
+roslaunch osrf_gear sample_environment.launch
+
+camera frame is, e.g.: logical_camera_2_frame
+
+rosrun tf tf_echo world logical_camera_1_frame
+
+bins are labeled 1-5, left to right
+bin3 of default startup contains gear parts; bin2 contains piston rods
+bin3 location:
+    position: 
+      x: -0.85
+      y: 1.13
+      z: 0.96
+    orientation: 
+      x: 0.124674733385
+      y: -1.654178e-07
+      z: 0.992197667228
+      w: 1.31644280138e-06
+
+boxes at:
+(box0, nearly centered):
+    position: 
+      x: 1.16012185522
+      y: 0.900165848419
+      z: 0.444559999995
+    orientation: 
+      x: -3.00233002998e-12
+      y: -8.98805288271e-16
+      z: 0.000290234011533
+      w: 0.999999957882
+(box1, newly entering conveyor)
+    position: 
+      x: 1.16000031697
+      y: 3.99999370856
+      z: 0.444559999995
+    orientation: 
+      x: -3.01006371773e-12
+      y: -4.79979517887e-16
+      z: -8.84849050764e-09
+      w: 1.0
+
+box frames are centered in box, flush with bottom, and aligned w/ world (z up, y to right)
+
+world z is "up" and y is to "right"; robot moves to +x to reach conveyor, -x to reach bins
+
+
+shipping_box_1, shipping_box_2 are gazebo models
+

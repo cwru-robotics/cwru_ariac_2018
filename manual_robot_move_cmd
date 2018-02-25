@@ -1,0 +1,32 @@
+manual robot move:
+
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [1.5, 0, 5.9, 3.1, 4.15, -1.51, 0.00]} ]}" -1
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [1.5, 0, 5.9, 3.1, 4.15, -1.51, 0.00]} ]}" -1
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [2.14, 0.25, -2.0, 3.14, 3.27, -1.51, 0.00]} ]}" -1
+
+
+bin3 hover pose:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [2.14, 0.25, -2.0, 3.14, 3.27, -1.51, 0.00]} ]}" -1
+
+box hover pose:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [2.14, -0.25, -1, 0, 3.27, -1.51, 0.00]} ]}" -1
+
+bin3 cruise pose:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory "{joint_names: \
+['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], points: \
+[{time_from_start: {secs: 1}, positions: [2.14,  0.25, -2.00, 3.14, 3.27, -1.51, 0.00]} ]}" -1
+
+
