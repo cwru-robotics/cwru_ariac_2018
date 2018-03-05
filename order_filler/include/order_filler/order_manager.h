@@ -7,6 +7,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <ariac_xform_utils/ariac_xform_utils.h>
 #include <bin_inventory/bin_inventory.h>
+#include <inventory_msgs/Inventory.h>
 #include <osrf_gear/Order.h>
 
 using namespace std;
@@ -26,8 +27,10 @@ public:
   bool choose_order(osrf_gear::Order &order);
   bool current_order_has_been_filled(); //delete order from its vector
   
-  void print_inventory(std::vector<PartInventory> inventory);
-  void get_inventory(std::vector<PartInventory> &inventory);
+  void print_inventory(inventory_msgs::Inventory inventory_msg); 
+  void print_inventory_succinct(inventory_msgs::Inventory inventory_msg);   
+  void get_inventory(inventory_msgs::Inventory &inventory_msg); 
+  bool fill_order(osrf_gear::Order order);
 
 private:
   ros::NodeHandle nh_; 
@@ -46,7 +49,10 @@ private:
      geometry_msgs::PoseStamped box_pose_wrt_world);
   bool is_priority(osrf_gear::Order order);
   void move_order_to_unfillable(int order_num,std::vector<osrf_gear::Order> order_vec);
-  std::vector<PartInventory> inventory_;
+  bool delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec);
+
+  inventory_msgs::Inventory inventory_msg_;
+  bool successfully_filled_order_;
 //  int num_rcvd_new_orders_;
 
 // {

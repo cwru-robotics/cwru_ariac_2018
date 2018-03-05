@@ -15,6 +15,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <osrf_gear/LogicalCameraImage.h>
 #include <ariac_xform_utils/ariac_xform_utils.h>
+#include <inventory_msgs/Inventory.h>
 
 using namespace std;
 
@@ -37,12 +38,12 @@ std::map<std::string, int> mappings =
 
 //note: ALSO must edit initializePartMappings() add known part names and assign part IDs
 
-
+/*
 struct PartInventory {
   std::vector<geometry_msgs::PoseStamped> part_stamped_poses;
   std::vector<int> bins;
 };
-
+*/
 class BinInventory
 {
 public:
@@ -53,8 +54,11 @@ public:
   //get bin number and pose of named part
   bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
   void update(); //updates entire inventory
-  void print_inventory();
-  void get_inventory(std::vector<PartInventory> &inventory);//does not work?
+
+  void print_inventory_msg();  
+  void get_inventory(inventory_msgs::Inventory &inventory_msgs);
+  void counts_all_part_types(std::vector<int> &parts_counts);
+
 
 private:
     std::map<std::string, int> part_id_mappings;
@@ -93,15 +97,17 @@ private:
 
     //here is the main data storage: a vector of "PartInventory" objects
     //index this object by part_id, and can access each PartInventory object
-    std::vector<PartInventory> inventory_;
-
+    //std::vector<PartInventory> inventory_;
+    inventory_msgs::Inventory inventory_msg_;
     void initializeSubscribers();
     void initializeInventory();
     void initializePartMappings();
     void update_camera_data(int cam_num,const osrf_gear::LogicalCameraImage::ConstPtr image_msg);
     void fillCamToBinMapping();
     bool all_cameras_updated();
-    void clear_inventory();    
+    void clear_inventory();  
+    void clear_inventory_msg();  
+
     geometry_msgs::PoseStamped compute_stPose(geometry_msgs::Pose cam_pose,geometry_msgs::Pose part_pose);
 
 

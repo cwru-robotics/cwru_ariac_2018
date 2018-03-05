@@ -32,7 +32,7 @@ BinInventory::BinInventory(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     
     update();
     ROS_INFO("initial inventory: ");
-    print_inventory();
+    print_inventory_msg();
 
     //initializePartMappings(); //not working
 }
@@ -117,8 +117,10 @@ void BinInventory::copy_logical_camera_data(const osrf_gear::LogicalCameraImage:
 //std::vector<PartInventory> inventory_;
 
 void BinInventory::initializeInventory() {
-    inventory_.resize(num_part_types_+1); //part_id=0 is not valid
-    clear_inventory();
+    //inventory_.resize(num_part_types_+1); //part_id=0 is not valid
+    //clear_inventory();
+    //inventory_msg_.resize(NUM_PART_TYPES+1);
+    clear_inventory_msg();
 }
 
 bool BinInventory::all_cameras_updated() {
@@ -130,14 +132,19 @@ bool BinInventory::all_cameras_updated() {
 
 void BinInventory::update() {
     //reset subscriber triggers: leave out cam0 for test
+    ROS_INFO(" ");
+    ROS_INFO("updating inventory");
     bin_camera_triggers_[0] = true;
     for (int i = 1; i < NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
     while (!all_cameras_updated()) {
         ros::spinOnce();
-        ros::Duration(0.05).sleep();
+        //ros::Duration(0.05).sleep();
     }
     //clear out the inventory and re-fill from scratch:
-    clear_inventory();
+    //clear_inventory();
+    clear_inventory_msg();
+    inventory_msg_.inventory.resize(NUM_PART_TYPES+1);
+    
 
     //should have all camera data now stored in logicalCamDataVec_
     //walk through this data and update inventory
@@ -163,9 +170,11 @@ void BinInventory::update() {
                   //  ROS_INFO("entering inventory for cam %d, model %d",cam_num,imodel);
                   part_pose = image_data.models[imodel].pose;
                   //((inventory_[part_id]).part_stamped_poses).push_back();
-                  inventory_[part_id].bins.push_back(bin_num);
+                  //inventory_[part_id].bins.push_back(bin_num);
+                  inventory_msg_.inventory[part_id].bins.push_back(bin_num);
                   stPose_part_wrt_world= compute_stPose(cam_pose,part_pose);
-                  inventory_[part_id].part_stamped_poses.push_back(stPose_part_wrt_world);
+                  //inventory_[part_id].part_stamped_poses.push_back(stPose_part_wrt_world);
+                  inventory_msg_.inventory[part_id].part_stamped_poses.push_back(stPose_part_wrt_world);                  
                 }
             }
         }
@@ -191,39 +200,33 @@ geometry_msgs::PoseStamped BinInventory::compute_stPose(geometry_msgs::Pose cam_
 
 int BinInventory::num_parts(std::string name) {
     int part_id = mappings[name];
-    int num_parts_in_inventory = inventory_[part_id].part_stamped_poses.size();
+    int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();
     return num_parts_in_inventory;
 } 
 
 int BinInventory::num_parts(int part_id) {
-    int num_parts_in_inventory = inventory_[part_id].part_stamped_poses.size();
+    int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();
     return num_parts_in_inventory;
 }
 
-//clear out the inventory and re-fill from scratch:
-void BinInventory::clear_inventory() {    
-    ROS_INFO("clearing inventory: ");
-    for (int ipart = 0; ipart < NUM_PART_TYPES; ipart++) {
-        inventory_[ipart].part_stamped_poses.clear();
-        inventory_[ipart].bins.clear();
-    }
-    //ROS_INFO("inventory after clearance: ");
-    //print_inventory();
-}
-
-void BinInventory::print_inventory() {
-    ROS_INFO("printing inventory");
+void BinInventory::counts_all_part_types(std::vector<int> &parts_counts) {
+    parts_counts.resize(NUM_PART_TYPES+1,0);
     for (int part_id=1;part_id<NUM_PART_TYPES+1;part_id++) {
-        int num_parts = inventory_[part_id].bins.size(); //same as part_stamped_poses.size()
-        ROS_INFO("part_id = %d; num parts = %d",part_id,num_parts);
-        for (int i=0;i<num_parts;i++) {
-            ROS_INFO_STREAM("ipart: "<<i<<" pose: "<<inventory_[part_id].part_stamped_poses[i]<<endl);
-        } 
+        parts_counts[part_id]= inventory_msg_.inventory[part_id].bins.size(); //same as part_stamped_poses.size()
     }
-    ROS_INFO("  ");
-    
 }
 
-void BinInventory::get_inventory(std::vector<PartInventory> &inventory) {
-    inventory = inventory_; // does this work?
+
+void BinInventory::clear_inventory_msg() {    
+    //ROS_INFO("clearing inventory message: ");
+    inventory_msg_.inventory.clear();
 }
+
+void BinInventory::print_inventory_msg() {
+    ROS_INFO_STREAM("inventory: "<<inventory_msg_<<endl);
+}
+
+void BinInventory::get_inventory(inventory_msgs::Inventory &inventory_msg) {
+    inventory_msg = inventory_msg_;  //does this work?
+}
+
