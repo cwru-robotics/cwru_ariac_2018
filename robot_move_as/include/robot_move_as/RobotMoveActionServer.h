@@ -1,5 +1,6 @@
 //
 // Created by shipei on 2/17/17.
+// modified wsn 3/5/18
 //
 
 #ifndef ROBOT_MOVE_AS_ROBOT_MOVE_AS_H
@@ -23,7 +24,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <cwru_ariac/RobotMoveAction.h>
+//#include <cwru_ariac/RobotMoveAction.h>
+#include <robot_move_as/RobotMoveAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <trajectory_msgs/JointTrajectoryPoint.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>

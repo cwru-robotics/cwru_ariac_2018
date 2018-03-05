@@ -1,5 +1,7 @@
 # robot_move_as
 
+NEED TO UPDATE THIS FOR 2018!!!
+
 This is an action server to manipulate parts with the UR10.  Send goals consisting of source part and target part, where
 "part" includes specification of the part name, its location (e.g. BIN number) and its pose (w/rt world coords).
 
