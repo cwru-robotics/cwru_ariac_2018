@@ -1,0 +1,51 @@
+make a new test node (same as assignment?) that does:
+
+*listens for orders to come in
+*finds parts in bins
+*constructs "source" and "target" destinations
+*sends these as goal to robot action server
+
+repair:
+*part error--> remove/replace part
+
+TODO:
+*make a fake robot action server
+*already made  fake order publisher
+*make a fake camera publisher (see example camera output recording)
+
+*decide on design of Inventory (library):
+  --should poll cameras, but avoid updates during robot operations that occlude camera and
+     change part poses
+  --should organize data by part IDs:
+   input part ID, 
+   get back:  
+     a "source part" message populated w/ bin#, part name, current pose, 
+     num parts avail, flipped/not-flipped
+     sensor name responsible for observing that part
+   option; ask for n'th part info
+   option: ask for inventory update 
+   option: ask for inventory update from n'th camera)
+
+Q: how to get part info indexed by part name?  
+   switch/case on part name string?
+   make a fnc: part_ID(part_type_string)
+   then switch (or index) on this part ID
+
+   inventory struct:
+     inventory.part_id.bin[]
+     inventory.part_id.pose[]
+     inventory.part_id.avail_bin[] //once a part  has been picked, note empty slot available
+     inventory.part_id.avail_pose[]// along with pose coords
+   inventory class/library:
+     fnc: num_parts(part_id)
+     fnc: get_part_info(part_id) //returns a single entry, without optimization
+     fnc: get_part_info(part_id,i_part)
+     fnc: get_sensor_source(part_id,i_part)
+     fnc: update_inventory
+     
+
+
+
+
+
+

@@ -63,7 +63,7 @@ Eigen::Affine3d XformUtils::transformPoseToEigenAffine3d(geometry_msgs::PoseStam
 
     affine.linear() = Re;
     affine.translation() = Oe;
-    printAffine(affine);
+    //printAffine(affine);
     return affine;
 }
 
@@ -72,7 +72,7 @@ Eigen::Affine3d XformUtils::transformPoseToEigenAffine3d(geometry_msgs::Pose pos
 
     Eigen::Vector3d Oe;
     //ROS_WARN("xformUtils: input pose:");
-    printPose(pose);
+    //printPose(pose);
     Oe(0) = pose.position.x;
     Oe(1) = pose.position.y;
     Oe(2) = pose.position.z;
@@ -88,7 +88,7 @@ Eigen::Affine3d XformUtils::transformPoseToEigenAffine3d(geometry_msgs::Pose pos
 
     affine.linear() = Re;
     affine.translation() = Oe;
-    printAffine(affine);
+    // printAffine(affine);
     return affine;
 }
 

@@ -1,0 +1,10 @@
+write bool OrderManager::order_is_fillable(osrf_gear::Order order)
+
+write a fnc to "get_order()"
+  order should be fillable,  w/ preference for priority order
+
+need ordermanager to be free running, so it does not miss incoming order messages
+
+make  it a  service?
+
+

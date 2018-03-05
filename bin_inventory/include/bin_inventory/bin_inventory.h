@@ -1,0 +1,109 @@
+//class BinInventory is constructed to do the following:
+//execute binInventory.update() to force a refresh from all installed bin cameras;
+//data from these cameras refresh the structure "inventory" from scratch
+
+//access the inventory with functions including:
+// num_parts(part_name): returns the number of parts, with part name as arg
+// find_part(part_name,&bin,&pose): fills in the bin# and pose of first part in the list
+// find_part(part_name,part_n,&bin,&pose): fills in bin# and pose of n'th part in the list
+
+#ifndef BIN_INVENTORY_H_
+#define BIN_INVENTORY_H_
+#include <map>
+#include <string>
+#include <ros/ros.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <osrf_gear/LogicalCameraImage.h>
+#include <ariac_xform_utils/ariac_xform_utils.h>
+
+using namespace std;
+
+const int NUM_CAMERAS=3;  //MUST EDIT THIS VALUE TO ADD CAMERAS
+//note:  ALSO must edit constructor to add cameras
+//also must add more  subscribers and callback functions
+
+const int NUM_PART_TYPES=5;
+//edit the following to add more parts;
+//part ID's MUST start at 1 and MUST be sequential
+std::map<std::string, int> mappings =
+{
+   {"gear_part",1},
+   {"piston_rod_part",2},
+   {"gasket_part",3},
+   {"disk_part",4},
+   {"pulley_part",5}
+};
+
+
+//note: ALSO must edit initializePartMappings() add known part names and assign part IDs
+
+
+struct PartInventory {
+  std::vector<geometry_msgs::PoseStamped> part_stamped_poses;
+  std::vector<int> bins;
+};
+
+class BinInventory
+{
+public:
+
+  BinInventory(ros::NodeHandle* nodehandle);
+  int num_parts(std::string); //return number of parts
+  int num_parts(int part_id); //return number of parts, by part_id
+  //get bin number and pose of named part
+  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
+  void update(); //updates entire inventory
+  void print_inventory();
+  void get_inventory(std::vector<PartInventory> &inventory);//does not work?
+
+private:
+    std::map<std::string, int> part_id_mappings;
+    ros::NodeHandle nh_; 
+
+    XformUtils xformUtils;
+   
+    int num_part_types_; //how many part types are there?
+    //std::map<std::string, int> mappings_;
+    //these values used to assure forced refresh of camera data
+    std::vector<bool> bin_camera_triggers_;
+    
+    //NEED TO UPDATE THIS IN CONSTRUCTOR TO ADD CAMERAS
+    std::vector<int> camera_to_bin_mapping_;
+
+    //allocate one subscriber for each logical camera viewing a bin
+    //std::vector <ros::Subscriber> subscribersVec_;
+
+
+    //store results of every camera's data
+    std::vector<osrf_gear::LogicalCameraImage> logicalCamDataVec_;
+
+    //EDIT THE FOLLOWING TO ADD CAMERA CALLBACK FNCS
+    /// Called when a new LogicalCameraImage message is received.
+    void logical_camera_0_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    void logical_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    void logical_camera_2_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+
+    //EDIT THE FOLLOWING TO ADD CAMERA SUBSCRIBERS
+    ros::Subscriber logical_camera_0_subscriber_;
+    ros::Subscriber logical_camera_1_subscriber_;
+    ros::Subscriber logical_camera_2_subscriber_;
+
+    void copy_logical_camera_data(const osrf_gear::LogicalCameraImage::ConstPtr image_msg,
+       osrf_gear::LogicalCameraImage &image_data);
+
+    //here is the main data storage: a vector of "PartInventory" objects
+    //index this object by part_id, and can access each PartInventory object
+    std::vector<PartInventory> inventory_;
+
+    void initializeSubscribers();
+    void initializeInventory();
+    void initializePartMappings();
+    void update_camera_data(int cam_num,const osrf_gear::LogicalCameraImage::ConstPtr image_msg);
+    void fillCamToBinMapping();
+    bool all_cameras_updated();
+    void clear_inventory();    
+    geometry_msgs::PoseStamped compute_stPose(geometry_msgs::Pose cam_pose,geometry_msgs::Pose part_pose);
+
+
+}; // note: a class definition requires a semicolon at the end of the definition
+#endif
