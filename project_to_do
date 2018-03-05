@@ -43,6 +43,23 @@ Q: how to get part info indexed by part name?
      fnc: get_sensor_source(part_id,i_part)
      fnc: update_inventory
      
+----------progress 3/5/18---------
+orderManager is able to: 
+  *receive orders and sort them in vectors (high-priority, pending, unfillable)
+  *update inventory
+  *respond to requests for a copy of the current bin inventory
+  *respond to requests for an order (choice to be optimized)
+  *delete orders from vectors, on demand (current order deletion)
+  *has fake fnc "fill_order(osrf_gear::Order order)"
+    --this should go in a NEW class that fills orders and is responsible for:
+     --filling robot goals and executing via the action server
+     --responding to part quality sensors
+     --responding to part location sensing
+     --responding to sensed part drop
+
+  create fnc: move_part(part_source,part_destination)
+   special case if source and destination "location" codes are the same (fast move)
+   define a "destination" for discarding bad parts
 
 
 

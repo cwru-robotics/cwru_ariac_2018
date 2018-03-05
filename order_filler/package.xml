@@ -45,7 +45,7 @@
 <build_depend>std_srvs</build_depend>
 <build_depend>ariac_xform_utils</build_depend>
 <build_depend>tf2_geometry_msgs</build_depend>
-<build_depend>cwru_ariac</build_depend>
+<!--build_depend>cwru_ariac</build_depend-->
 <build_depend>bin_inventory</build_depend>
 <build_depend>inventory_msgs</build_depend>
   <run_depend>roscpp</run_depend>
@@ -53,7 +53,7 @@
 <run_depend>std_srvs</run_depend>
 <run_depend>ariac_xform_utils</run_depend>
 <run_depend>tf2_geometry_msgs</run_depend>
-<run_depend>cwru_ariac</run_depend>
+<!--run_depend>cwru_ariac</run_depend-->
 <run_depend>bin_inventory</run_depend>
 <run_depend>inventory_msgs</run_depend>
   <!-- The export tag contains other, unspecified, tags -->
