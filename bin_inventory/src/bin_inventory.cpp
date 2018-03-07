@@ -18,9 +18,9 @@ BinInventory::BinInventory(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     ROS_INFO("in class constructor of BinInventory");
     ROS_INFO("resizing vectors");
     num_part_types_ = NUM_PART_TYPES; //synonym
-    logicalCamDataVec_.resize(NUM_CAMERAS);
-    bin_camera_triggers_.resize(NUM_CAMERAS);
-    camera_to_bin_mapping_.resize(NUM_CAMERAS);
+    logicalCamDataVec_.resize(NUM_CAMERAS+1);
+    bin_camera_triggers_.resize(NUM_CAMERAS+1);
+    camera_to_bin_mapping_.resize(NUM_CAMERAS+1);
     fillCamToBinMapping();
     ROS_INFO("initializing triggers");
     for (int i = 0; i < NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
@@ -51,27 +51,21 @@ void BinInventory::initializeSubscribers() {
 
     ROS_INFO("Initializing Subscribers");
 
-    logical_camera_0_subscriber_ = nh_.subscribe("/ariac/logical_camera_0", 1,
-            &BinInventory::logical_camera_0_callback, this);
-
     logical_camera_1_subscriber_ = nh_.subscribe("/ariac/logical_camera_1", 1,
             &BinInventory::logical_camera_1_callback, this);
-
     logical_camera_2_subscriber_ = nh_.subscribe("/ariac/logical_camera_2", 1,
             &BinInventory::logical_camera_2_callback, this);
-
+    logical_camera_3_subscriber_ = nh_.subscribe("/ariac/logical_camera_3", 1,
+            &BinInventory::logical_camera_3_callback, this);
+    logical_camera_4_subscriber_ = nh_.subscribe("/ariac/logical_camera_4", 1,
+            &BinInventory::logical_camera_4_callback, this);
+    logical_camera_5_subscriber_ = nh_.subscribe("/ariac/logical_camera_5", 1,
+            &BinInventory::logical_camera_5_callback, this);    
     //ADD MORE CAMERAS HERE; ALSO ADD CORRESPONDING CALLBACK FNCSs
 }
 
 //when callback wakes up, it copies received data to logicalCamDataVec_
 
-void BinInventory::logical_camera_0_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
-    int cam_num = 0; //change this number for each new callback fnc
-    //if trigger  has been set, update the camera data
-    if (!bin_camera_triggers_[cam_num]) {
-        update_camera_data(cam_num, image_msg);
-    }
-}
 
 void BinInventory::logical_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     int cam_num = 1; //change this number for each new callback fnc
@@ -89,8 +83,33 @@ void BinInventory::logical_camera_2_callback(const osrf_gear::LogicalCameraImage
     }
 }
 
+void BinInventory::logical_camera_3_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
+    int cam_num = 3; //change this number for each new callback fnc
+    //   ROS_INFO("in callback for cam  %d",cam_num);
+    if (!bin_camera_triggers_[cam_num]) {
+        update_camera_data(cam_num, image_msg);
+    }
+}
+
+void BinInventory::logical_camera_4_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
+    int cam_num = 4; //change this number for each new callback fnc
+    //   ROS_INFO("in callback for cam  %d",cam_num);
+    if (!bin_camera_triggers_[cam_num]) {
+        update_camera_data(cam_num, image_msg);
+    }
+}
+
+void BinInventory::logical_camera_5_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
+    int cam_num = 5; //change this number for each new callback fnc
+    //   ROS_INFO("in callback for cam  %d",cam_num);
+    if (!bin_camera_triggers_[cam_num]) {
+        update_camera_data(cam_num, image_msg);
+    }
+}
+
+
 void BinInventory::update_camera_data(int cam_num, const osrf_gear::LogicalCameraImage::ConstPtr image_msg) {
-    if (cam_num < NUM_CAMERAS) {
+    if (cam_num < NUM_CAMERAS+1) {
         osrf_gear::LogicalCameraImage image_data;
         copy_logical_camera_data(image_msg, image_data);
         //ROS_INFO_STREAM("image  data: " << image_data << std::endl);
@@ -124,21 +143,20 @@ void BinInventory::initializeInventory() {
 }
 
 bool BinInventory::all_cameras_updated() {
-    bool ready = bin_camera_triggers_[0];
-    for (int i = 0; i < NUM_CAMERAS; i++)
+    bool ready = bin_camera_triggers_[1];
+    for (int i = 2; i < NUM_CAMERAS+1; i++)
         ready = ready && (bin_camera_triggers_[i]);
     return ready;
 }
 
 void BinInventory::update() {
-    //reset subscriber triggers: leave out cam0 for test
+    //reset subscriber triggers: leave out non-existent cam0 
     ROS_INFO(" ");
     ROS_INFO("updating inventory");
     bin_camera_triggers_[0] = true;
-    for (int i = 1; i < NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
+    for (int i = 1; i <= NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
     while (!all_cameras_updated()) {
         ros::spinOnce();
-        //ros::Duration(0.05).sleep();
     }
     //clear out the inventory and re-fill from scratch:
     //clear_inventory();
@@ -150,7 +168,7 @@ void BinInventory::update() {
     //walk through this data and update inventory
     osrf_gear::LogicalCameraImage image_data;
     geometry_msgs::PoseStamped stPose_part_wrt_world;
-    for (int cam_num = 0; cam_num < NUM_CAMERAS; cam_num++) {
+    for (int cam_num = 1; cam_num < NUM_CAMERAS+1; cam_num++) {
         image_data = logicalCamDataVec_[cam_num];
         int num_models = image_data.models.size();
         ROS_INFO("cam %d saw %d models", cam_num, num_models);

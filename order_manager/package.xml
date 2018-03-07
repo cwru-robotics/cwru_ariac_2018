@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>order_filler</name>
+  <name>order_manager</name>
   <version>0.0.0</version>
-  <description>The order_filler package</description>
+  <description>The order_manager package</description>
   
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -41,19 +41,13 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>roscpp</build_depend>
-<build_depend>osrf_gear</build_depend>
-<build_depend>std_srvs</build_depend>
 <build_depend>ariac_xform_utils</build_depend>
 <build_depend>tf2_geometry_msgs</build_depend>
-<!--build_depend>cwru_ariac</build_depend-->
 <build_depend>bin_inventory</build_depend>
 <build_depend>inventory_msgs</build_depend>
   <run_depend>roscpp</run_depend>
-<run_depend>osrf_gear</run_depend>
-<run_depend>std_srvs</run_depend>
 <run_depend>ariac_xform_utils</run_depend>
 <run_depend>tf2_geometry_msgs</run_depend>
-<!--run_depend>cwru_ariac</run_depend-->
 <run_depend>bin_inventory</run_depend>
 <run_depend>inventory_msgs</run_depend>
   <!-- The export tag contains other, unspecified, tags -->

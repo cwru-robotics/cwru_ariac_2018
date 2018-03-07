@@ -19,7 +19,7 @@
 
 using namespace std;
 
-const int NUM_CAMERAS=3;  //MUST EDIT THIS VALUE TO ADD CAMERAS
+const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS
 //note:  ALSO must edit constructor to add cameras
 //also must add more  subscribers and callback functions
 
@@ -83,15 +83,18 @@ private:
 
     //EDIT THE FOLLOWING TO ADD CAMERA CALLBACK FNCS
     /// Called when a new LogicalCameraImage message is received.
-    void logical_camera_0_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
     void logical_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
     void logical_camera_2_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
-
+    void logical_camera_3_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    void logical_camera_4_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    void logical_camera_5_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);    
     //EDIT THE FOLLOWING TO ADD CAMERA SUBSCRIBERS
-    ros::Subscriber logical_camera_0_subscriber_;
+
     ros::Subscriber logical_camera_1_subscriber_;
     ros::Subscriber logical_camera_2_subscriber_;
-
+    ros::Subscriber logical_camera_3_subscriber_;
+    ros::Subscriber logical_camera_4_subscriber_;
+    ros::Subscriber logical_camera_5_subscriber_;    
     void copy_logical_camera_data(const osrf_gear::LogicalCameraImage::ConstPtr image_msg,
        osrf_gear::LogicalCameraImage &image_data);
 

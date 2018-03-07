@@ -44,12 +44,13 @@
 #include <osrf_gear/VacuumGripperState.h>
 
 #include <inventory_msgs/Part.h>
+using namespace std;
 
 class RobotInterface {
 public:
     RobotInterface(ros::NodeHandle& nodeHandle);
 
-    void sendJointsValue(vector<double> joints);
+    //void sendJointsValue(vector<double> joints);
     vector<double> getJointsState();
     vector<string> getJointsNames();
     void grab();
@@ -61,7 +62,7 @@ public:
 protected:
     ros::NodeHandle nh;
 
-    ros::Publisher joint_trajectory_publisher;
+    //ros::Publisher joint_trajectory_publisher;
     ros::Subscriber joint_state_subscriber;
     ros::ServiceClient gripper;
     ros::Subscriber gripperStateSubscriber;

@@ -6,7 +6,7 @@
 // this fnc returns an error code.  Calling func must provide action-server result
 // note: this fnc is not used by PICK, since want to integrate waiting/testing of attachment with robot motion
 unsigned short int RobotMoveActionServer::grasp_fnc(double timeout) {
-    unsigned short int errorCode = RobotMoveResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_move_as::RobotMoveResult::NO_ERROR; //return this if ultimately successful
     double t_wait = 0.0; //parameters to timeout on waiting for grasp
     double dt_wait = 0.2;
     //double t_wait_timeout = 5.0;
@@ -25,7 +25,7 @@ unsigned short int RobotMoveActionServer::grasp_fnc(double timeout) {
 
     if (!is_attached) {
         ROS_WARN("could not grasp part within time limit; giving up");
-        errorCode = RobotMoveResult::GRIPPER_FAULT;
+        errorCode = robot_move_as::RobotMoveResult::GRIPPER_FAULT;
         return errorCode;
     }
     ROS_INFO("part is attached to gripper");
@@ -33,7 +33,7 @@ unsigned short int RobotMoveActionServer::grasp_fnc(double timeout) {
 }
 
 unsigned short int RobotMoveActionServer::release_fnc(double timeout) {
-    unsigned short int errorCode = RobotMoveResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_move_as::RobotMoveResult::NO_ERROR; //return this if ultimately successful
     double t_wait = 0.0; //parameters to timeout on waiting for grasp
     double dt_wait = 0.2;
     bool is_attached = true;
@@ -51,7 +51,7 @@ unsigned short int RobotMoveActionServer::release_fnc(double timeout) {
 
     if (is_attached) {
         ROS_WARN("release was not successful; giving up");
-        errorCode = RobotMoveResult::GRIPPER_FAULT;
+        errorCode = robot_move_as::RobotMoveResult::GRIPPER_FAULT;
         return errorCode;
     }
     ROS_INFO("part is released from gripper");
@@ -59,10 +59,10 @@ unsigned short int RobotMoveActionServer::release_fnc(double timeout) {
 }
 
 // use "goal", but only need to populate the "sourcePart" component
-unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotMoveGoalConstPtr &goal) {
-    unsigned short int errorCode = RobotMoveResult::NO_ERROR; //return this if ultimately successful
+unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr &goal) {
+    unsigned short int errorCode = robot_move_as::RobotMoveResult::NO_ERROR; //return this if ultimately successful
 
-    cwru_ariac::Part part = goal->sourcePart;
+    Part part = goal->sourcePart;
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
              placeFinder[part.location].c_str());
     ROS_INFO("part info: ");
@@ -70,7 +70,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
     //find the hover pose for this bin
     if (!bin_hover_jspace_pose(goal->sourcePart.location, bin_hover_jspace_pose_)) {
         ROS_WARN("bin_hover_jspace_pose() failed for source bin %d", (int) goal->sourcePart.location);
-        errorCode = RobotMoveResult::WRONG_PARAMETER;
+        errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
         return errorCode;
     }
     ROS_INFO_STREAM("bin_hover: " << bin_hover_jspace_pose_.transpose());
@@ -83,8 +83,8 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
 
     // bin_cruise_jspace_pose function requires specification of destination AGV1 or AGV2;
     // bypass this, and assume that current pose is safe to move along the rail
-    calcRobotState(); //get the current joint angles; put them in j1
-    bin_cruise_jspace_pose_ = j1; // this is the current pose;
+    //calcRobotState(); //get the current joint angles; put them in j1
+    //bin_cruise_jspace_pose_ = j1; // this is the current pose;
     double q_rail_hover;  //modify current pose to change only the rail displacement to go to desired bin
     if (rail_prepose(part.location, q_rail_hover)) {
         bin_cruise_jspace_pose_[1] = q_rail_hover;
@@ -104,7 +104,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,approx_jspace_pose,&q_vec_soln);
     if (!get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, pickup_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup pose!");
-        errorCode = RobotMoveResult::UNREACHABLE;
+        errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
         return errorCode;
     }
     ROS_INFO_STREAM("pickup_jspace_pose_: " << pickup_jspace_pose_.transpose());
@@ -114,7 +114,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, approach_dist_,
                              approach_pickup_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup approach pose!");
-        errorCode = RobotMoveResult::UNREACHABLE;
+        errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
         return errorCode;
     }
     ROS_INFO_STREAM("approach_pickup_jspace_pose_: " << approach_pickup_jspace_pose_.transpose());
@@ -146,7 +146,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
     errorCode = grasp_fnc(3.0); //use the grasp fnc; timeout set for 3 sec
     //ROS_INFO("got grasp error code %d",(int) errorCode);
 
-    if (errorCode != RobotMoveResult::NO_ERROR) { //if not successful, try moving to attach
+    if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) { //if not successful, try moving to attach
         ROS_WARN("did not attach; trying lower for up to 5 sec");
         pickup_jspace_pose_[2] += 0.1; // crude move...lower via shoulder-lift joint
         bool is_attached = false;
@@ -168,7 +168,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
             move_to_jspace_pose(bin_hover_jspace_pose_, 1.0);
             ros::Duration(
                     1.0).sleep(); //make sure sleep is consistent w/ specified move time; min 1 sec
-            errorCode = RobotMoveResult::GRIPPER_FAULT;
+            errorCode = robot_move_as::RobotMoveResult::GRIPPER_FAULT;
             return errorCode;
         }
     }
@@ -186,11 +186,11 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const cwru_ariac::RobotM
     //check if part is still attached
     if (!robotInterface.isGripperAttached()) {
         ROS_WARN("dropped part!");
-        errorCode = RobotMoveResult::PART_DROPPED; //debug--return error
+        errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
         return errorCode;
     }
 
 
-    errorCode = RobotMoveResult::NO_ERROR; //return success
+    errorCode = robot_move_as::RobotMoveResult::NO_ERROR; //return success
     return errorCode;
 }

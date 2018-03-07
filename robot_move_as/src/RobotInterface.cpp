@@ -1,15 +1,16 @@
 //
 // Created by shipei on 10/18/16.
+// modified wsn 3/2018
 //
 
-#include "RobotInterface.h"
+#include <robot_move_as/RobotInterface.h>
 
 RobotInterface::RobotInterface(ros::NodeHandle &nodeHandle): nh( nodeHandle ){
     joint_state_subscriber = nh.subscribe(
             "/ariac/joint_states", 10,
             &RobotInterface::jointStateCallback, this);
-    joint_trajectory_publisher = nh.advertise<trajectory_msgs::JointTrajectory>(
-            "/ariac/arm/command", 10);
+    //joint_trajectory_publisher = nh.advertise<trajectory_msgs::JointTrajectory>(
+    //        "/ariac/arm/command", 10);
     gripper = nh.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/gripper/control");
     gripperStateSubscriber = nh.subscribe("/ariac/gripper/state", 10, &RobotInterface::gripperStateCallback, this);
     called = false;
@@ -36,6 +37,7 @@ void RobotInterface::jointStateCallback(const sensor_msgs::JointState::ConstPtr 
     current_joint_states.velocity.pop_back();
     called = true;
 }
+
 
 void RobotInterface::gripperStateCallback(const osrf_gear::VacuumGripperState::ConstPtr &msg) {
     currentGripperState = *msg;
@@ -68,6 +70,7 @@ bool RobotInterface::waitForGripperAttach(double timeout) {
     return attached;
 }
 
+/*
 void RobotInterface::sendJointsValue(vector<double> joints) {
     trajectory_msgs::JointTrajectory msg;
     msg.header.stamp = ros::Time::now();
@@ -80,7 +83,7 @@ void RobotInterface::sendJointsValue(vector<double> joints) {
     ros::Duration(arrivalTime).sleep();                         // wait for finish
     ros::spinOnce();
 }
-
+*/
 vector<double> RobotInterface::getJointsState() {
     called = false;
     while(!called && ros::ok()) {

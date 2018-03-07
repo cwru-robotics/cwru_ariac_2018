@@ -41,8 +41,8 @@ Eigen::Matrix3d compute_rotx(double theta_x) {
 }
 
 
-unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotMoveGoalConstPtr &goal) {
-    unsigned short int errorCode = RobotMoveResult::CANCELLED; //change to NO_ERROR, if ultimately successful
+unsigned short int RobotMoveActionServer::flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr &goal) {
+    unsigned short int errorCode = robot_move_as::RobotMoveResult::CANCELLED; //change to NO_ERROR, if ultimately successful
 
     ROS_INFO("flip_part function received goal type: %d", goal->type);
     q_bin_pulley_flip_ << 1.77, 1.13, -0.68, 3.2, 4.9, -3, 0; //a ref pose to help with IK
@@ -51,7 +51,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
     q_edge_dropoff_ref << 1.77, 1.20, -0.62, 2.94, 5.14, -0.20, 1.57; //ref pose for IK assistance for edge-dropoff pose
     bool is_attached = false;
 
-    cwru_ariac::Part part = goal->sourcePart;
+    inventory_msgs::Part part = goal->sourcePart;
     ROS_INFO("The part is %s, should be fetched from location code %s ", part.name.c_str(),
              placeFinder[part.location].c_str());
     ROS_INFO("part info: ");
@@ -132,7 +132,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,approx_jspace_pose,&q_vec_soln);
         if (!get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, pickup_jspace_pose_)) {
             ROS_WARN("could not compute IK soln for pickup pose!");
-            errorCode = RobotMoveResult::UNREACHABLE;
+            errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
             return errorCode;
         }
         ROS_INFO_STREAM("pickup_jspace_pose_: " << pickup_jspace_pose_.transpose());
@@ -142,7 +142,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, approach_dist_,
                                  approach_pickup_jspace_pose_)) {
             ROS_WARN("could not compute IK soln for pickup approach pose!");
-            errorCode = RobotMoveResult::UNREACHABLE;
+            errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
             return errorCode;
         }
         ROS_INFO_STREAM("approach_pickup_jspace_pose_: " << approach_pickup_jspace_pose_.transpose());
@@ -189,7 +189,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         //try more targeted reference pose for dropoff
         if (!get_pickup_IK(affine_gripper_dropoff, q_edge_dropoff_ref, gripper_tilted_jspace3)) {
             ROS_WARN("could not compute IK soln for dropoff pose!");
-            errorCode = RobotMoveResult::UNREACHABLE;
+            errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
             return errorCode;
         }
         ROS_INFO_STREAM("jspace dropoff: " << std::endl << gripper_tilted_jspace3.transpose());
@@ -201,7 +201,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         q_bin_pulley_flip_[1] = bin_hover_jspace_pose_[1]; // copy over the track position
         if (!get_pickup_IK(affine_gripper_regrasp, q_bin_pulley_flip_, gripper_regrasp_jspace)) {
             ROS_WARN("could not compute IK soln for regrasp pose!");
-            errorCode = RobotMoveResult::UNREACHABLE;
+            errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
             return errorCode;
         }
 
@@ -218,14 +218,14 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         //ros::Duration(2.0).sleep(); //TUNE ME!!
 
         errorCode = pick_part_fnc(goal);
-        if (errorCode != RobotMoveResult::NO_ERROR) {
+        if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
             return errorCode;
         }
         //if here, then part is grasped and held at bin hover pose
         //check if part is still attached
         if (!robotInterface.isGripperAttached()) {
             ROS_WARN("dropped part!");
-            errorCode = RobotMoveResult::PART_DROPPED; //debug--return error
+            errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
             return errorCode;
         }
 
@@ -307,7 +307,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
 
         //release the gripper
         errorCode = release_fnc(5.0); //wait up to max of 5 sec for release
-        if (errorCode != RobotMoveResult::NO_ERROR) {
+        if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
             return errorCode;
         }
 
@@ -360,7 +360,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
 
         //try to grasp at computed regrasp pose
         errorCode = grasp_fnc(3.0); //use the grasp fnc; timeout set for 3 sec
-        if (errorCode == RobotMoveResult::NO_ERROR) is_attached = true;
+        if (errorCode == robot_move_as::RobotMoveResult::NO_ERROR) is_attached = true;
 
 
         //ros::Duration(2.5).sleep();
@@ -384,14 +384,14 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
             }
 */
 
-        if (errorCode != RobotMoveResult::NO_ERROR) { //here if grasp failed
+        if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) { //here if grasp failed
             ROS_WARN("timed out waiting for attachment; try moving into part");
             //knock the part over;
             //release();  //release gripper
             gripper_regrasp_jspace[3] -= 0.3; //yaw to knock part over
             move_to_jspace_pose(gripper_regrasp_jspace, 3.0);
             errorCode = grasp_fnc(3.0); //use the grasp fnc; timeout set for 3 sec
-            if (errorCode != RobotMoveResult::NO_ERROR) {
+            if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
                 errorCode = release_fnc(5.0); //wait up to max of 5 sec for release
             } else is_attached = true;
         }
@@ -408,7 +408,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
             move_to_jspace_pose(bin_cruise_jspace_pose_, 1.0);
             ros::Duration(1.0).sleep();
             ROS_WARN("returning dropped-part to invoke regrasp");
-            errorCode = RobotMoveResult::PART_DROPPED; //debug--return error
+            errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
             return errorCode;
         }
 
@@ -435,17 +435,17 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const cwru_ariac::RobotM
         //at this point, have already confired bin ID is good
         ros::Duration(2.0).sleep(); //TUNE ME!!
         release_fnc(1.0);
-        if (errorCode != RobotMoveResult::NO_ERROR) {
+        if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
             return errorCode;
         }
 
         //say part is dropped to invoke regrasp
         ROS_WARN("flipped part, but returning dropped-part to invoke regrasp");
-        errorCode = RobotMoveResult::PART_DROPPED; //debug--return error
+        errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
         return errorCode;
     } else {
         ROS_WARN("don't know how to flip this part");
-        errorCode = RobotMoveResult::CANCELLED; //return error
+        errorCode = robot_move_as::RobotMoveResult::CANCELLED; //return error
         return errorCode;
     }
 

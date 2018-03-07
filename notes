@@ -71,3 +71,24 @@ world z is "up" and y is to "right"; robot moves to +x to reach conveyor, -x to 
 
 shipping_box_1, shipping_box_2 are gazebo models
 
+TODO:
+MODIFY order manager s.t. it delivers a SHIPMENT instead of a full ORDER;
+ when receive queue that an shipment has been filled, set value in "shipment_type" (non-zero string)
+ in considering shipments, give priority to high-priority queue, and priority to partially-filled orders
+
+FIX robot action server: decouple from ariac2017;  
+  part_from, part_to (w/ collision avoidance and quick moves for pose perturbation fixes)
+
+CREATE order filler: 
+interaction: contains a service (to be notified when a priority interrupt occurs)
+
+***controls conveyor
+
+when shipment is complete, inform order manager;
+if choose to switch  to priority order, inform order manager shipment not complete, and request new
+shipment.  (Old shipment will remain in queue)
+
+order_filler has to handle position fixes, faulty part fixes; order aborts (response to priority)
+
+
+

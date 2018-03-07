@@ -25,16 +25,16 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
-# cs_add_library(robot_move_as src/robot_move_as.cpp)
-
+cs_add_library(robot_move_ac_lib src/RobotMove.cpp)
+cs_add_library(robot_interface_lib src/RobotInterface.cpp)
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
 cs_add_executable(robot_move_as src/robot_move_as.cpp)
 cs_add_executable(robot_move_as_tester src/robot_move_as_tester.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-# target_link_library(example my_lib)
-
+target_link_libraries(robot_move_as_tester robot_move_ac_lib robot_interface_lib)
+target_link_libraries(robot_move_as robot_interface_lib)
 cs_install()
 cs_export()
     

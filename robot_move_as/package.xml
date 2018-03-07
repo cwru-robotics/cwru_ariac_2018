@@ -45,7 +45,7 @@
     <build_depend>trajectory_msgs</build_depend>
     <!--build_depend>cwru_ariac</build_depend-->
     <build_depend>tf</build_depend>
-    <build_depend>xform_utils</build_depend>
+    <build_depend>ariac_xform_utils</build_depend>
     <build_depend>ariac_ur_fk_ik</build_depend>
     <build_depend>osrf_gear</build_depend>
     <build_depend>cwru_ariac</build_depend>
@@ -59,7 +59,7 @@
     <run_depend>cwru_ariac</run_depend>
     <run_depend>tf</run_depend>
     <run_depend>xform_utils</run_depend>
-    <run_depend>ariac_ur_fk_ik</run_depend>
+    <run_depend>ariac_ariac_ur_fk_ik</run_depend>
     <run_depend>osrf_gear</run_depend>
     <!--run_depend>cwru_ariac</run_depend-->
     <run_depend>inventory_msgs</run_depend>

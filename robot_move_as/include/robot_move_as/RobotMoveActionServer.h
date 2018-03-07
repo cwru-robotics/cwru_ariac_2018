@@ -25,6 +25,7 @@
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
 //#include <cwru_ariac/RobotMoveAction.h>
+#include <robot_move_as/RobotInterface.h>
 #include <robot_move_as/RobotMoveAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <trajectory_msgs/JointTrajectoryPoint.h>
@@ -34,12 +35,17 @@
 #include <ariac_ur_fk_ik/ur_kin.h>
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
+//#include <inventory_msgs/Inventory.h>
+#include <inventory_msgs/Part.h>
 
-#include <RobotInterface.h>
+
+
+#include <robot_move_as/RobotInterface.h>
 
 using namespace std;
 using namespace Eigen;
-using namespace cwru_ariac;
+using namespace inventory_msgs;
+//using namespace cwru_ariac;
 
 //part frame notes:
 // GASKET: frame is centered, but with origin at BOTTOM surface; x-axis points towards pin feature
@@ -84,13 +90,13 @@ class RobotMoveActionServer {
 private:
     ros::NodeHandle nh;
     RobotInterface robotInterface;
-    actionlib::SimpleActionServer<cwru_ariac::RobotMoveAction> as;
-    cwru_ariac::RobotMoveGoal goal_;
-    cwru_ariac::RobotMoveFeedback feedback_;
-    cwru_ariac::RobotMoveResult result_;
+    actionlib::SimpleActionServer<robot_move_as::RobotMoveAction> as;
+    robot_move_as::RobotMoveGoal goal_;
+    robot_move_as::RobotMoveFeedback feedback_;
+    robot_move_as::RobotMoveResult result_;
     bool isPreempt;
     bool goalComplete;
-    RobotState robotState;
+    //RobotState robotState;
     unordered_map<int8_t, string> placeFinder;
     ros::Publisher joint_trajectory_publisher_;
     control_msgs::FollowJointTrajectoryGoal traj_goal_;
@@ -143,11 +149,11 @@ private:
     
     //"Part" should include part pose w/rt world, so can determine if part is right-side up or up-side down
     bool get_grasp_transform(Part part,Eigen::Affine3d &grasp_transform);
-    unsigned short int fetch_from_conveyor(const cwru_ariac::RobotMoveGoalConstPtr& goal); 
-    unsigned short int flip_part_fnc(const cwru_ariac::RobotMoveGoalConstPtr& goal); 
+    //unsigned short int fetch_from_conveyor(const cwru_ariac::RobotMoveGoalConstPtr& goal); 
+    unsigned short int flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); 
     unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
     unsigned short int release_fnc(double timeout=2.0); //default timeout for release
-    unsigned short int pick_part_fnc(const cwru_ariac::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
+    unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
     
 
     bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
@@ -165,7 +171,7 @@ private:
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
     void grab();
     void release();  
-    RobotState calcRobotState();
+    //RobotState calcRobotState();
     osrf_gear::VacuumGripperState getGripperState();
     bool attached_;
     bool isGripperAttached();
@@ -185,7 +191,7 @@ private:
     double approach_dist_;
 public:
     RobotMoveActionServer(ros::NodeHandle nodeHandle, string topic);
-    void executeCB(const cwru_ariac::RobotMoveGoalConstPtr &goal);
+    void executeCB(const robot_move_as::RobotMoveGoalConstPtr &goal);
     void preemptCB();
 };
 
