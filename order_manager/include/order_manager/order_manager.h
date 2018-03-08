@@ -15,6 +15,7 @@ using namespace std;
 const int ORDER_VECTOR_PENDING = 0;
 const int ORDER_VECTOR_PRIORITY= 1;
 const int ORDER_VECTOR_UNFILLABLE=2;
+const string SHIPMENT_FILLED("shipment_filled");
 
 class OrderManager
 {
@@ -25,8 +26,10 @@ public:
   void print_parts_list(std::vector<int> parts_list);
   bool parts_available(std::vector<int> parts_list);
   bool choose_order(osrf_gear::Order &order);
+  bool choose_shipment(osrf_gear::Shipment &shipment);
+
   bool current_order_has_been_filled(); //delete order from its vector
-  
+  bool current_shipment_has_been_filled();
   void print_inventory(inventory_msgs::Inventory inventory_msg); 
   void print_inventory_succinct(inventory_msgs::Inventory inventory_msg);   
   void get_inventory(inventory_msgs::Inventory &inventory_msg); 
@@ -42,6 +45,7 @@ private:
   osrf_gear::Order current_order_in_process_;
   int current_order_vector_code_;
   int current_order_index_;
+  int current_shipment_index_;
   bool order_is_in_process_;
   ros::Subscriber order_subscriber_;
   void order_callback(const osrf_gear::Order::ConstPtr & order_msg);
@@ -50,7 +54,8 @@ private:
   bool is_priority(osrf_gear::Order order);
   void move_order_to_unfillable(int order_num,std::vector<osrf_gear::Order> order_vec);
   bool delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec);
-
+  bool mark_shipment_filled(int order_index, int shipment_index, std::vector<osrf_gear::Order> &order_vec);  
+  void test_order_complete();
   inventory_msgs::Inventory inventory_msg_;
   bool successfully_filled_order_;
 //  int num_rcvd_new_orders_;

@@ -114,6 +114,38 @@ bool OrderManager::choose_order(osrf_gear::Order &order) {
      return false;   
 }
 
+//# Shipment message
+//# This structure contains the information of shipment.
+
+//# The type of shipment
+//string shipment_type
+
+//# Collection of products
+//Product[] products
+
+
+
+bool OrderManager::choose_shipment(osrf_gear::Shipment &shipment) {
+    osrf_gear::Order temp_order;
+    choose_order(temp_order);
+
+    ROS_INFO("trying to select an order to be filled...");
+    if (!choose_order(temp_order))  return false;
+    //choose a shipment within this order:
+    int num_shipments = temp_order.shipments.size();
+    for (int i_shipment=0;i_shipment< num_shipments;i_shipment++) {
+        string filled_code(temp_order.shipments[i_shipment].shipment_type);
+        int string_size = filled_code.size();
+        if (string_size==0) {
+            shipment = temp_order.shipments[i_shipment];
+            current_shipment_index_= i_shipment;
+            return true;
+        }
+    }
+    ROS_WARN("choose_shipment()  error--found no unfilled  shipments in order");
+    return false;
+}
+
 bool OrderManager::current_order_has_been_filled() {
     //WRITE THIS: remove current order from its queue
     ROS_WARN("deleting filled order");
@@ -144,9 +176,54 @@ bool OrderManager::current_order_has_been_filled() {
     ROS_INFO("order queue status: n_unfillable = %d, n_priority= %d, n_pending = %d",n_unfillable,n_priority,n_regular);    
 }
 
+bool OrderManager::current_shipment_has_been_filled() {
+    ROS_WARN("marking current order filled");
+    switch (current_order_vector_code_) {
+
+       case ORDER_VECTOR_PENDING:            
+           mark_shipment_filled(current_order_index_, current_shipment_index_, pending_orders_);
+           test_order_complete();
+           order_is_in_process_ = false;
+           break;
+        case ORDER_VECTOR_PRIORITY:
+           mark_shipment_filled(current_order_index_, current_shipment_index_, priority_orders_);    
+           test_order_complete();
+           order_is_in_process_ = false;            
+            break;
+        case ORDER_VECTOR_UNFILLABLE:
+           mark_shipment_filled(current_order_index_, current_shipment_index_, unfillable_orders_);           
+           test_order_complete();
+           order_is_in_process_ = false;                 
+            break;
+        default:
+            ROS_WARN("cannot delete shipment--something is wrong w/ current_order_vector_code");
+            return false;
+    }    
+}
+
+//examine order, described by current_order_vector_code_, current_order_index_, current_shipment_index_
+//if all  shipments are complete, delete the order
+//examine current_order_in_process_
+void OrderManager::test_order_complete() {
+    //bool order_is_complete = true;
+    int num_shipments = current_order_in_process_.shipments.size();
+    for (int i_shipment=0;i_shipment<num_shipments;i_shipment++) {
+        string filled_code(current_order_in_process_.shipments[i_shipment].shipment_type);
+        if (filled_code.size()==0) {
+            return;//found an unfilled  shipment
+        }
+    }
+    //if survive  to here, all shipments in order are marked filled, so delete  this order
+    current_order_has_been_filled();
+}
+
 bool OrderManager::delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec)  {
     //e.g., myvector.erase (myvector.begin()+5);
     order_vec.erase(order_vec.begin()+order_index); 
+}
+
+bool OrderManager::mark_shipment_filled(int order_index, int shipment_index, std::vector<osrf_gear::Order> &order_vec)  {
+    order_vec[order_index].shipments[current_shipment_index_].shipment_type = SHIPMENT_FILLED.c_str();
 }
 
 bool OrderManager::parts_available(std::vector<int> parts_list) {

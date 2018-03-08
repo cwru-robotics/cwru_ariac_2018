@@ -12,7 +12,7 @@ steps through robot action-server commands for pick/place
 
 ## Example usage
 Start ariac:
-`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual1_config.yaml`
+`rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual1_config.yaml`
 Start order manager:
 `rosrun order_manager order_manager_test_main`
 Send example order(s):

@@ -865,10 +865,10 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
             ROS_INFO("MOVE");
             ROS_INFO("The part is %s, should be moved from %s to %s, with source pose:", goal->sourcePart.name.c_str(),
                      placeFinder[goal->sourcePart.location].c_str(), placeFinder[goal->targetPart.location].c_str());
-            ROS_INFO("goal source: ");
+            ROS_INFO("part source: ");
             ROS_INFO_STREAM(goal->sourcePart);
             //ROS_INFO_STREAM(goal->sourcePart.pose);
-            ROS_INFO("goal target:  ");
+            ROS_INFO("part target:  ");
             ROS_INFO_STREAM(goal->targetPart);
             //ROS_INFO_STREAM(goal->targetPart.pose);
             ROS_INFO("Time limit is %f", timeout);

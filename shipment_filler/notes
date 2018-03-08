@@ -1,0 +1,48 @@
+shipment_filler:
+could get quite large;
+need to:
+
+Init:
+*get a box into position...
+   start conveyor
+   stop when box under camera;
+   get box pose
+*request a shipment from order_manager
+ if no order, take brief sleep
+
+*step through parts within shipment and:
+  get coords/loc_code for i'th part (if available)
+  compute world coords for destination
+  attempt part transfer
+  fix if dropped  part
+ repeat for all parts
+
+*inspect parts
+  turn on conveyor to advance box under inspector
+  replace any bad parts
+
+*advance to second inspection station (place logical camera by inspection cam?)
+  may need to block new boxes from advancing past first camera
+  stop conveyor
+  replace any bad parts
+
+*eval/adjust part locations
+  for each part, compare location in box to desired location
+  make fine/fast adjustments, as necessary
+
+*report shipment done (to order manager)
+
+*advance box to drone dock
+
+*call drone
+
+---fake shipment filler:
+*request shipment
+*report shipment done
+
+
+
+
+
+
+

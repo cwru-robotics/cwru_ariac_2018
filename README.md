@@ -7,6 +7,9 @@ Start up demo simulation:
 better:
 `rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case/qual1_config.yaml`
 
+or:
+`rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual1_config.yaml'
+
 Start up robot move action server:
 `rosrun robot_move_as robot_move_as`
 
