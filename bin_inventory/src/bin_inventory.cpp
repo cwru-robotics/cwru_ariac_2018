@@ -21,7 +21,7 @@ BinInventory::BinInventory(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     logicalCamDataVec_.resize(NUM_CAMERAS+1);
     bin_camera_triggers_.resize(NUM_CAMERAS+1);
     camera_to_bin_mapping_.resize(NUM_CAMERAS+1);
-    fillCamToBinMapping();
+    fillCamToBinMapping();  //not used?
     ROS_INFO("initializing triggers");
     for (int i = 0; i < NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
 
@@ -37,12 +37,14 @@ BinInventory::BinInventory(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     //initializePartMappings(); //not working
 }
 
-//EDIT THIS TO ADD CAMERAS:
-
+//EDIT THIS TO ADD CAMERAS and reconcile with config file
+//hmm...looks like I ended up not using this
 void BinInventory::fillCamToBinMapping() {
-    camera_to_bin_mapping_[0] = 0; // fix this--bin0 for cam0? no cam0 present
-    camera_to_bin_mapping_[1] = 3; //cam1 is over bin3 for exaxmple ARIAC config
-    camera_to_bin_mapping_[2] = 0; //cam2 is actually over conveyor for ARIAC config
+    camera_to_bin_mapping_[1] = 1; // bin0 for cam0? no cam0 present
+    camera_to_bin_mapping_[2] = 2; //cam1 is over bin1 for qual1 config
+    camera_to_bin_mapping_[3] = 3; //
+    camera_to_bin_mapping_[4] = 4;
+    camera_to_bin_mapping_[5] = 5;    
 }
 
 //EDIT THIS TO ADD CAMERAS:

@@ -1,0 +1,41 @@
+robot-move action server notes:
+
+write a fnc to remove a bad part from quality-sensor1 packing area
+
+first try fetch part from:
+  Q-sensor sensed relative pose;
+  Q-sensor frame
+
+then place it back again;
+
+function "pick_part_fnc()"
+
+goes to: 
+bin_cruise_jspace_pose_
+bin_hover_jspace_pose_
+approach_pickup_jspace_pose_
+pickup_jspace_pose_
+moves down trying to grasp part
+
+once part is grasped, moves:
+approach_pickup_jspace_pose_
+bin_hover_jspace_pose_
+
+successfully ran:
+rosrun shipment_filler shipment_filler_test_bad_part
+
+which senses a bad part, approaches it, lifts it, moves to hover pose
+
+WANT: new action-server fnc for:
+  move_part_no_release(from_part,to_part);
+
+  this fnc should:
+   acquire a part from source;
+   move the part to destination;
+   return without releasing part from gripper
+
+  will combine this with:
+   sense if is bad part or not; (distinguish part held by gripper from others)
+   if bad part, discard it and return "failed"
+   if good part, release it and move to Q1 cruise pose  (via hover pose???)
+

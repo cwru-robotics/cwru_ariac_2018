@@ -6,10 +6,8 @@ geometry_msgs/PoseStamped pose
 # location list
 int8 UNASSIGNED=0 # unconfirmed location
 
-int8 CONVEYOR_1=51
-int8 CONVEYOR_2=52
-int8 CONVEYOR_3=53
-int8 CONVEYOR_4=54
+int8 QUALITY_SENSOR_1=51
+int8 QUALITY_SENSOR_2=52
 
 int8 BIN1=1
 int8 BIN2=2
@@ -23,3 +21,5 @@ int8 BIN9=9
 int8 BIN10=10
 int8 BIN11=11
 int8 BIN12=12
+
+int8 DISCARD=21

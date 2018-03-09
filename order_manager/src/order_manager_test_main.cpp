@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
         if (got_order) {
             ROS_INFO_STREAM("selected order: " << order << endl);
             //try to fill order; 
-            successfully_filled_order = orderManager.fill_order(order);
+            //successfully_filled_order = orderManager.fill_order(order);
         }
 
 

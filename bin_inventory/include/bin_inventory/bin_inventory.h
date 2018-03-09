@@ -35,7 +35,14 @@ std::map<std::string, int> mappings =
    {"pulley_part",5}
 };
 
-
+std::map<int, std::string> part_id_to_name_mappings =
+{
+   {1,"gear_part"},
+   {2,"piston_rod_part"},
+   {3,"gasket_part"},
+   {4,"disk_part"},
+   {5,"pulley_part"}
+};
 //note: ALSO must edit initializePartMappings() add known part names and assign part IDs
 
 /*

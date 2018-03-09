@@ -40,8 +40,18 @@ Init:
 *request shipment
 *report shipment done
 
+$ rosservice call /ariac/conveyor/control "power: 100"
 
 
+need to add callback for box_camera1
+ then move conveyor until "shipping_box" y>0 (in cam frame)
+
+----
+rosrun shipment_filler shipment_filler
+timing:  box not yet to box_cam1
+         box under box_cam2
+         box beyond box_cam3
+         box delivered to drone
 
 
 

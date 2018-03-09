@@ -1,6 +1,6 @@
 //order_filler class
-#ifndef ORDER_FILLER_H_
-#define ORDER_FILLER_H_
+#ifndef ORDER_MANAGER_H_
+#define ORDER_MANAGER_H_
 #include <string>
 #include <vector>
 #include <ros/ros.h>
@@ -9,6 +9,7 @@
 #include <bin_inventory/bin_inventory.h>
 #include <inventory_msgs/Inventory.h>
 #include <osrf_gear/Order.h>
+#include <osrf_gear/Shipment.h>
 
 using namespace std;
 
@@ -33,7 +34,6 @@ public:
   void print_inventory(inventory_msgs::Inventory inventory_msg); 
   void print_inventory_succinct(inventory_msgs::Inventory inventory_msg);   
   void get_inventory(inventory_msgs::Inventory &inventory_msg); 
-  bool fill_order(osrf_gear::Order order);
 
 private:
   ros::NodeHandle nh_; 
@@ -47,6 +47,7 @@ private:
   int current_order_index_;
   int current_shipment_index_;
   bool order_is_in_process_;
+  bool shipment_is_in_process_;
   ros::Subscriber order_subscriber_;
   void order_callback(const osrf_gear::Order::ConstPtr & order_msg);
   geometry_msgs::PoseStamped target_pose_to_world_coords(geometry_msgs::Pose part_pose_wrt_box, 
@@ -55,7 +56,8 @@ private:
   void move_order_to_unfillable(int order_num,std::vector<osrf_gear::Order> order_vec);
   bool delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec);
   bool mark_shipment_filled(int order_index, int shipment_index, std::vector<osrf_gear::Order> &order_vec);  
-  void test_order_complete();
+  void test_order_complete(int current_order_index, int current_shipment_index, std::vector<osrf_gear::Order> &order_vec);
+  void mark_shipments_unfilled(osrf_gear::Order &order);
   inventory_msgs::Inventory inventory_msg_;
   bool successfully_filled_order_;
 //  int num_rcvd_new_orders_;

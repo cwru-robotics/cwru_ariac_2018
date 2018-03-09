@@ -1,0 +1,136 @@
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.5, 0.14, -0.81, 3.11, 4.03, -1.51, 0.0]} \
+]}" -1
+
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.0]} \
+]}" -1
+
+
+start pose:
+[2.14, 0, -2.0, 3.14, 3.27, -1.51, 0, 0.0]
+
+the following sends robot to max rail motion to the right (1.8)
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.14, 1.8, -2.0, 3.14, 3.27, -1.51, 0, 0.0]} \
+]}" -1
+
+This rail pose (1.8) is a good position for bin5 and for the box1 camera location
+note: bin5 is at y=2.75 in world coords
+      bin1 is at y=-0.49 in world coords
+
+box_cam1 location is approximately: (1.16, 2.52, 0.444) in world coords
+
+
+GOOD POSE TO BLOCK BOX UNDER BOX_CAM1:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0.95, -0.35, 6, 3.27, -1.51, 0, 0.0]} \
+]}" -1
+
+MOVE AWAY FROM BOX:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0.8, -0.35, 6, 3.27, -1.51, 0, 0.0]} \
+]}" -1
+
+AND LIFT ARM:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0.8, -2.0, 6, 3.27, -1.51, 0, 0.0]} \
+]}" -1
+
+1.8   0.8    -2     6  3.27 -1.51     0
+
+box awaiting drone is at: x,y,z = 1.16,-4.4,0.05
+
+box spacing:
+y = -1.11
+y = 1.28  (delta 2.39)
+y = 3.69  (delta 2.41)
+
+quality sensor:
+start w/:
+roslaunch osrf_gear sample_environment.launch fill_demo_shipment:=true
+rostopic echo /ariac/quality_control_sensor_1
+rosservice call /ariac/start_competition
+
+piston-rod part is declared faulty by quality_control_sensor_1
+sensation only occurs when part is nearly touching box bottom
+
+tried to grab piston-rod here:
+[1.2730729543723864, 0.7310680674285049, -0.19367930357154428, 5.800922935068347, 3.5484107978179846, -1.6732886535386102, -6.235193183725279, 0.0]
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0.8, -2.0, 6, 3.27, -1.51, 0, 0.0]} \
+]}" -1
+
+note: q1 sensor in example is at (1.2, 1.1,  1.2)
+in qual1, q2 sensor at (1.2,-0.7,1.2)
+          q1 sensor at (1.2,1.1,1.2)   (same as demo config)
+ dist between= 1.8m
+ boxes approx 2.4m apart
+
+my box cams: can move as close as:
+   Q1boxcam: (1.15, 0.693, 0.987)
+   Q2boxcam: (1.15, -0.244, 0.987)
+   dist btwn: 0.937  > box separation
+ --> each shipment passes through q1,q2 before next box arrives at q1
+
+
+find good locations for Q1_hover, Q1_cruise, Q2_hover, Q2_cruise
+Q1_hover:  track = 0;
+
+//THIS POSE WILL DO for NEW box-cam1 hover 
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0, -0.5, 6, 3.27, -1.51, 0]} \
+]}" -1
+
+//THIS POSE is suitable for moving to/from box-cam1 hover pose
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.5, 0, -1.2, 6, 3.27, -1.51, 0]} \
+]}" -1
+
+//HERE IS A GOOD BOX_Q1_CRUISE_POSE
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.5, 0, -1.2, 4.5, 3.27, -1.51, 0]} \
+]}" -1
+
+
+Q2_hover: track = -1
+
+//THIS WILL  DO FOR Q2 hover 
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, -1, -0.5, 6, 3.27, -1.51, 0]} \
+]}" -1

@@ -106,7 +106,8 @@ private:
     Eigen::VectorXd q_des_7dof_,q_cruise_pose_,bin_cruise_jspace_pose_,bin_hover_jspace_pose_;
     Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
      Eigen::VectorXd box_hover_pose_,box_cruise_pose_;   
-    Eigen::VectorXd q_box_hover_pose_,q_box_cruise_pose_;   
+    Eigen::VectorXd q_box_Q1_hover_pose_,q_box_Q1_cruise_pose_;   
+    Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;     
     Eigen::VectorXd q_bin_cruise_pose_;
     Eigen::VectorXd pickup_jspace_pose_,dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_,approach_dropoff_jspace_pose_;
@@ -138,6 +139,9 @@ private:
     //cruise pose depends on bin code and whether to point towards agv1 or agv2
     // provide bin code and agv code; get back q_vec to prepare for cruise to agv
     bool bin_cruise_jspace_pose(int8_t bin, int8_t agv, Eigen::VectorXd &q_vec);
+    bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
+    
+
     bool box_cruise_jspace_pose(int8_t box, Eigen::VectorXd &q_vec);
     
     //trivial func to compute affine3 for robot_base w/rt world;  only depends on rail displacement
@@ -154,7 +158,7 @@ private:
     unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
     unsigned short int release_fnc(double timeout=2.0); //default timeout for release
     unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
-    
+    unsigned short int place_part_fnc_no_release(inventory_msgs::Part part);
 
     bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
     //given rail displacement, and given Part description (including name and pose info) compute where the gripper should be, as
@@ -189,6 +193,7 @@ private:
     UR10IkSolver ik_solver_;
     Eigen::Affine3d agv1_tray_frame_wrt_world_,agv2_tray_frame_wrt_world_;
     double approach_dist_;
+    inventory_msgs::Part part_of_interest_;
 public:
     RobotMoveActionServer(ros::NodeHandle nodeHandle, string topic);
     void executeCB(const robot_move_as::RobotMoveGoalConstPtr &goal);

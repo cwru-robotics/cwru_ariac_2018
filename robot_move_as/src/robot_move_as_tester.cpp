@@ -38,7 +38,7 @@ void set_part_vals(Part &pick_part,Part &place_part) {
 
     place_part = pick_part;  //copy over data, replace what needs to  be  replaced
     place_part.pose = place_pose;
-    place_part.location= Part::CONVEYOR_1; 
+    place_part.location= Part::QUALITY_SENSOR_1; 
 }
 
 

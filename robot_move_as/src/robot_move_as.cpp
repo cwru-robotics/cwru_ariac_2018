@@ -10,6 +10,7 @@
 //#include "fetch_part_from_conveyor_fnc.cpp"
 #include "flip_part_fnc.cpp"
 #include "pick_part_fnc.cpp"
+#include "place_part_fnc_no_release.cpp"
 
 
 RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string topic) :
@@ -31,9 +32,9 @@ RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string 
     placeFinder.insert(pair<int8_t, string>(Part::BIN6, "BIN6"));
     placeFinder.insert(pair<int8_t, string>(Part::BIN7, "BIN7"));
     placeFinder.insert(pair<int8_t, string>(Part::BIN8, "BIN8"));
-    placeFinder.insert(pair<int8_t, string>(Part::CONVEYOR_1, "CONVEYOR_1"));    
+    placeFinder.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_1, "QUALITY_SENSOR_1"));    
     //placeFinder.insert(pair<int8_t, string>(Part::CAMERA, "CAMERA"));
-    placeFinder.insert(pair<int8_t, string>(Part::CONVEYOR_2, "CONVEYOR_2"));
+    placeFinder.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_2, "QUALITY_SENSOR_2"));
     //placeFinder.insert(pair<int8_t, string>(Part::GROUND, "GROUND"));
     //placeFinder.insert(pair<int8_t, string>(Part::UNASSIGNED, "UNASSIGNED"));
 /*
@@ -65,8 +66,12 @@ RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string 
     q_conveyor_cruise_pose_.resize(7);
     approach_pickup_jspace_pose_.resize(7);
     
-    q_box_hover_pose_.resize(7);
-    q_box_cruise_pose_.resize(7);
+    //q_box_hover_pose_.resize(7);
+    //q_box_cruise_pose_.resize(7);
+    q_box_Q1_hover_pose_.resize(7);
+    q_box_Q1_cruise_pose_.resize(7);
+    q_box_Q2_hover_pose_.resize(7);
+    q_box_Q2_cruise_pose_.resize(7);
 
     q_bin1_hover_pose_.resize(7);
     q_bin2_hover_pose_.resize(7);
@@ -106,9 +111,11 @@ RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string 
             << 2.364, 1.2, -1.297, 3.051, 3.646, -1.571, 1.480;   //1.85,  0.4, -2.0, 1.57, 3.33, -1.57, 0.50;
     //new, 2018:
     q_bin3_hover_pose_ << 2.14, 0.25, -2.0, 3.14, 3.27, -1.51, 0.00;
-    q_box_hover_pose_ << 2.14, -0.25, -1, 6.22, 3.27, -1.51, 0.00;
-    q_box_cruise_pose_ = q_box_hover_pose_;
-    q_bin_cruise_pose_ << 2.14,  0.25, -2.00, 3.14, 3.27, -1.51, 0.00;
+    //q_box_hover_pose_ << 2.14, -0.25, -1, 6.22, 3.27, -1.51, 0.00;
+    q_box_Q1_hover_pose_ << 1.8, 0, -0.5, 6, 3.27, -1.51, 0; //qual_sensor 1 location, 2018
+    q_box_Q2_hover_pose_ << 1.8, -1, -0.5, 6, 3.27, -1.51, 0; //qual_sensor 1
+    q_box_Q1_cruise_pose_<< 2.5, 0, -1.2, 4.5, 3.27, -1.51, 0; //FIX ME!!
+    q_box_Q2_cruise_pose_ = q_box_Q2_hover_pose_;
     
     q_bin1_hover_pose_ = q_bin5_hover_pose_;  //FIX ME!  needs to reach out further to get to these bins
     q_bin2_hover_pose_ = q_bin6_hover_pose_;
@@ -174,58 +181,7 @@ RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string 
         }
     }
 
-/*    tferr = true;
-    ROS_INFO("waiting for tf between world and agv1_load_point_frame...");
-    Eigen::Vector3d Oe;
-    while (tferr) {
-        tferr = false;
-        try {
-            //try to lookup transform, link2-frame w/rt base_link frame; this will test if
-            // a valid transform chain has been published from base_frame to link2
-            tfListener_->lookupTransform("world", "agv1_load_point_frame", ros::Time(0), tfTray1WrtWorld_);
-        } catch (tf::TransformException &exception) {
-            ROS_WARN("%s; retrying...", exception.what());
-            tferr = true;
-            ros::Duration(0.5).sleep(); // sleep for half a second
-            ros::spinOnce();
-        }
-        tf::Transform tf_tray1_wrt_world = xformUtils_.get_tf_from_stamped_tf(tfTray1WrtWorld_);
-        agv1_tray_frame_wrt_world_ = xformUtils_.transformTFToAffine3d(tf_tray1_wrt_world);
 
-    }
-    Oe = agv1_tray_frame_wrt_world_.translation();
-    ROS_INFO_STREAM("tray1 origin: " << Oe.transpose() << endl);
-    //expect: - Translation: [0.300, 2.100, 1.000]
-*/
-    
-    /*
-    tferr = true;
-    ROS_INFO("waiting for tf between world and agv2_load_point_frame...");
-
-
-    while (tferr) {
-        tferr = false;
-        try {
-            //try to lookup transform, link2-frame w/rt base_link frame; this will test if
-            // a valid transform chain has been published from base_frame to link2
-            tfListener_->lookupTransform("world", "agv2_load_point_frame", ros::Time(0), tfTray2WrtWorld_);
-        } catch (tf::TransformException &exception) {
-            ROS_WARN("%s; retrying...", exception.what());
-            tferr = true;
-            ros::Duration(0.5).sleep(); // sleep for half a second
-            ros::spinOnce();
-        }
-        tf::Transform tf_tray2_wrt_world = xformUtils_.get_tf_from_stamped_tf(tfTray2WrtWorld_);
-        agv2_tray_frame_wrt_world_ = xformUtils_.transformTFToAffine3d(tf_tray2_wrt_world);
-        //should be: - Translation: [0.300, -3.300, 0.750]
-
-    }
-    Oe = agv2_tray_frame_wrt_world_.translation();
-    ROS_INFO_STREAM("tray2 origin: " << Oe.transpose() << endl);
-    //expect: - Translation: [0.300, 2.100, 1.000]
-    ROS_INFO("tf is good");
-*/
-    /**/
     gripper_client = nodeHandle.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/gripper/control");
     ROS_INFO("waiting to connect to gripper service");
     if (!gripper_client.exists()) {
@@ -234,7 +190,7 @@ RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string 
     ROS_INFO("gripper service exists");
     attach_.request.enable = 1;
     detach_.request.enable = 0;
-
+    ROS_INFO_STREAM("robot move action server is ready!"<<endl<<endl);
 }
 
 void RobotMoveActionServer::grab() {
@@ -300,9 +256,12 @@ bool RobotMoveActionServer::rail_prepose(int8_t location, double &q_rail) {
         case Part::BIN8:
             q_rail = q_bin8_hover_pose_[1]; //extract rail position for bin1 key pose
             break;
-        case Part::CONVEYOR_1:
-            q_rail = q_box_hover_pose_[1]; //extract rail position for key pose
-            break;            
+        case Part::QUALITY_SENSOR_1:
+            q_rail = q_box_Q1_hover_pose_[1]; //extract rail position for key pose
+            break;     
+        case Part::QUALITY_SENSOR_2:
+            q_rail = q_box_Q2_hover_pose_[1]; //extract rail position for key pose
+            break;               
         default:
             ROS_WARN("unrecognized location code");
             return false;
@@ -344,10 +303,14 @@ bool RobotMoveActionServer::bin_hover_jspace_pose(int8_t bin, Eigen::VectorXd &q
             qvec = q_bin8_hover_pose_;
             return true; //valid code
             break;
-        case Part::CONVEYOR_1:
-            qvec = q_box_hover_pose_;
+        case Part::QUALITY_SENSOR_1:
+            qvec = q_box_Q1_hover_pose_;
             return true; //valid code
             break;
+        case Part::QUALITY_SENSOR_2:
+            qvec = q_box_Q2_hover_pose_;
+            return true; //valid code
+            break;            
         default:
             ROS_WARN("location code not recognized");
             return false;
@@ -486,8 +449,8 @@ double RobotMoveActionServer::get_pickup_offset(Part part) {
 
 double RobotMoveActionServer::get_surface_height(Part part) {
     switch (part.location) {
-        case Part::CONVEYOR_1:
-        case Part::CONVEYOR_2:
+        case Part::QUALITY_SENSOR_1:
+        case Part::QUALITY_SENSOR_2:
             return CONVEYOR_HEIGHT; 
             break;
         case Part::BIN1:
@@ -532,25 +495,39 @@ double RobotMoveActionServer::get_dropoff_offset(Part part) {
     return 0.0; // don't recognize part, so just return zero
 }
 
+bool RobotMoveActionServer::bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec) {
+    //double q_rail;
+    
+    switch (location) {
+        case Part::QUALITY_SENSOR_1:
+            q_vec = q_box_Q1_cruise_pose_;
+            break;     
+        case Part::QUALITY_SENSOR_2:
+            q_vec = q_box_Q2_cruise_pose_;
+            break;               
+        default:
+            ROS_WARN("unknown location code");
+            return false;
+    }
+    
+    return true;
+}
 
 bool RobotMoveActionServer::bin_cruise_jspace_pose(int8_t bin, int8_t box, Eigen::VectorXd &q_vec) {
     double q_rail;
-    /*
+    
     switch (box) {
-        case Part::AGV1:
-            q_vec = q_agv1_cruise_pose_;
-            break;
-        case Part::AGV2:
-            q_vec = q_agv2_cruise_pose_;
-            break;
-        case Part::BOX:
-            q_vec = q_bin_cruise_pose_;
-            break;            
+        case Part::QUALITY_SENSOR_1:
+            q_vec = q_box_Q1_cruise_pose_;
+            break;     
+        case Part::QUALITY_SENSOR_2:
+            q_vec = q_box_Q2_cruise_pose_;
+            break;               
         default:
-            ROS_WARN("unknown AGV code");
+            ROS_WARN("unknown location code");
             return false;
     }
-     * */
+    
     q_vec = q_bin_cruise_pose_;
     //now, adjust the rail position to correspond to named bin:
     if (!rail_prepose(bin, q_rail)) {
@@ -566,9 +543,12 @@ bool RobotMoveActionServer::bin_cruise_jspace_pose(int8_t bin, int8_t box, Eigen
 
 bool RobotMoveActionServer::box_cruise_jspace_pose(int8_t agv, Eigen::VectorXd &q_vec) {
     switch (agv) {
-        case Part::CONVEYOR_1:
-            q_vec = q_box_cruise_pose_;
-            break;            
+        case Part::QUALITY_SENSOR_1:
+            q_vec = q_box_Q1_cruise_pose_;
+            break;        
+        case Part::QUALITY_SENSOR_2:
+            q_vec = q_box_Q2_cruise_pose_;
+            break;              
         default:
             ROS_WARN("unknown destination code");
             return false;
@@ -872,36 +852,15 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
             ROS_INFO_STREAM(goal->targetPart);
             //ROS_INFO_STREAM(goal->targetPart.pose);
             ROS_INFO("Time limit is %f", timeout);
+            
+            //MOVE THIS TO SHIPMENT_FILLER...and create separate fnc "FLIP_PULLEY"
+            /*
             source_is_up = eval_up_down(goal->sourcePart.pose);
             target_is_up = eval_up_down(goal->targetPart.pose);
             flip_part=false;
             if (source_is_up && !target_is_up) flip_part = true;
             if (!source_is_up && target_is_up) flip_part = true;
             if (flip_part) ROS_WARN("need to flip part");
-
-            //special case if fetch from conveyor:
-            /*
-            if (goal->sourcePart.location == Part::CONVEYOR) {
-                ROS_INFO("acquire part from conveyor: ");
-                errorCode = fetch_from_conveyor(goal);
-                result_.errorCode = errorCode;
-                if (errorCode == RobotMoveResult::NO_ERROR) {
-                    result_.success = true;
-                    result_.errorCode = errorCode;
-                    result_.robotState = robotState;
-                    as.setSucceeded(result_);
-                    ROS_INFO("grabbed part from conveyor");
-                } else {
-                    ROS_INFO("failed to grab part from conveyor");
-                    ROS_INFO("error code: %d", (int) errorCode);
-                    result_.success = false;
-                    result_.errorCode = errorCode;
-                    result_.robotState = robotState;
-                    as.setAborted(result_);
-                }
-                return;
-
-            } */
 
             if (flip_part) {
                ROS_WARN("attempting part flip");
@@ -917,6 +876,7 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
                     return;
                 }
             }
+            */
 
             // if here, do pick and place
             //anticipate failure, unless proven otherwise;
@@ -1226,6 +1186,27 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
                 //result_.robotState = robotState;
                 as.setSucceeded(result_);
             break;
+            
+        case robot_move_as::RobotMoveGoal::PLACE_PART_NO_RELEASE:
+            ROS_INFO("PLACE_PART_NO_RELEASE; targetPart is:");
+            part_of_interest_ = goal->targetPart;
+            ROS_INFO_STREAM(part_of_interest_);      
+               errorCode = place_part_fnc_no_release(part_of_interest_);
+                if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
+                   ROS_WARN("place_part_fnc_no_release returned error code: %d", (int) errorCode);
+                    result_.success = false;
+                    result_.errorCode = errorCode;
+                    //result_.robotState = robotState;
+                    as.setAborted(result_);
+                    return;
+                }
+             //if here, all is well:
+                ROS_INFO("Completed PLACE_PART_NO_RELEASE action");
+                result_.success = true;
+                result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
+                //result_.robotState = robotState;
+                as.setSucceeded(result_);            
+            break;
 
         case robot_move_as::RobotMoveGoal::PLACE:
             ROS_INFO("PLACE");
@@ -1258,12 +1239,13 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
             result_.success = true;
             switch (goal->predfinedPoseCode) {
                 //various cases for pre-defined poses go here:
-                case robot_move_as::RobotMoveGoal::BIN8_CRUISE_POSE:
-                    traj_ = jspace_pose_to_traj(q_bin8_cruise_pose_);
+                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_CRUISE_POSE:
+                    ROS_INFO("moving to QUAL_SENSOR_1_CRUISE_POSE");
+                    traj_ = jspace_pose_to_traj(q_box_Q1_cruise_pose_);
                     break;
-                case robot_move_as::RobotMoveGoal::BIN6_HOVER_POSE:
-                    ROS_INFO("moving to bin6 hover pose ");
-                    move_to_jspace_pose(q_bin6_hover_pose_);
+                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_HOVER_POSE:
+                    ROS_INFO("moving to QUAL_SENSOR_1_HOVER_POSE ");
+                    move_to_jspace_pose(q_box_Q1_hover_pose_);
                     break;
                 default:
                     ROS_WARN("predefined move code not implemented!");

@@ -129,6 +129,27 @@ bool RobotMove::place(Part destination, double timeout) {
     return true;
 }
 
+bool RobotMove::place_part_no_release(Part destination, double timeout) {
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::PLACE_PART_NO_RELEASE;
+    goal.timeout = timeout;
+    goal.targetPart = destination;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;
+}
+
 bool RobotMove::move(Part part, Part destination, double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal_success_ = false;

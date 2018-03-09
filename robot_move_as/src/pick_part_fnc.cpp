@@ -85,12 +85,20 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::Rob
     // bypass this, and assume that current pose is safe to move along the rail
     //calcRobotState(); //get the current joint angles; put them in j1
     //bin_cruise_jspace_pose_ = j1; // this is the current pose;
-    double q_rail_hover;  //modify current pose to change only the rail displacement to go to desired bin
-    if (rail_prepose(part.location, q_rail_hover)) {
-        bin_cruise_jspace_pose_[1] = q_rail_hover;
-    } //move to here along the rail
-    else bin_cruise_jspace_pose_[1] = 0.0; // this should  never happen, but set to a safe rail position=0
+    //double q_rail_hover;  //modify current pose to change only the rail displacement to go to desired bin
+    //if (rail_prepose(part.location, q_rail_hover)) {
+    //    bin_cruise_jspace_pose_[1] = q_rail_hover;
+    //} //move to here along the rail
+    //else bin_cruise_jspace_pose_[1] = 0.0; // this should  never happen, but set to a safe rail position=0
+    
+    //    bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
 
+    
+    if (!bin_cruise_jspace_pose(goal->sourcePart.location, bin_cruise_jspace_pose_)) {
+        ROS_WARN("bin_cruise_jspace_pose() failed for location %d", (int) goal->sourcePart.location);
+        errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
+        return errorCode;
+    }
     //compute the IK for the desired pickup pose: pickup_jspace_pose_
     //first, get the equivalent desired affine of the vacuum gripper w/rt base_link;
     //need to provide the Part info and the rail displacement
@@ -143,7 +151,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::Rob
     ROS_INFO_STREAM("moving to pickup_jspace_pose_ " << std::endl << pickup_jspace_pose_.transpose());
     move_to_jspace_pose(pickup_jspace_pose_, 2.0); // try to pick up part; slow approach
 
-    errorCode = grasp_fnc(3.0); //use the grasp fnc; timeout set for 3 sec
+    errorCode = grasp_fnc(1.0); //use the grasp fnc; timeout set for 3 sec
     //ROS_INFO("got grasp error code %d",(int) errorCode);
 
     if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) { //if not successful, try moving to attach
