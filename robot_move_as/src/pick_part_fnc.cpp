@@ -68,7 +68,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::Rob
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     //find the hover pose for this bin
-    if (!bin_hover_jspace_pose(goal->sourcePart.location, bin_hover_jspace_pose_)) {
+    if (!hover_jspace_pose(goal->sourcePart.location, bin_hover_jspace_pose_)) {
         ROS_WARN("bin_hover_jspace_pose() failed for source bin %d", (int) goal->sourcePart.location);
         errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
         return errorCode;
@@ -94,7 +94,7 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::Rob
     //    bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
 
     
-    if (!bin_cruise_jspace_pose(goal->sourcePart.location, bin_cruise_jspace_pose_)) {
+    if (!cruise_jspace_pose(goal->sourcePart.location, bin_cruise_jspace_pose_)) {
         ROS_WARN("bin_cruise_jspace_pose() failed for location %d", (int) goal->sourcePart.location);
         errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
         return errorCode;

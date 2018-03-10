@@ -14,16 +14,16 @@ unsigned short int RobotMoveActionServer::place_part_fnc_no_release(inventory_ms
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     //find the hover pose for this bin
-    if (!bin_hover_jspace_pose(part.location, bin_hover_jspace_pose_)) {
-        ROS_WARN("bin_hover_jspace_pose() failed for source bin %d", (int) part.location);
+    if (!hover_jspace_pose(part.location, bin_hover_jspace_pose_)) {
+        ROS_WARN("hover_jspace_pose() failed for source bin %d", (int) part.location);
         errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
         return errorCode;
     }
     ROS_INFO_STREAM("destination  hover pose: " << bin_hover_jspace_pose_.transpose());
 
     
-    if (!bin_cruise_jspace_pose(part.location, bin_cruise_jspace_pose_)) {
-        ROS_WARN("bin_cruise_jspace_pose() failed for location %d", (int) part.location);
+    if (!cruise_jspace_pose(part.location, bin_cruise_jspace_pose_)) {
+        ROS_WARN("cruise_jspace_pose() failed for location %d", (int) part.location);
         errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
         return errorCode;
     }

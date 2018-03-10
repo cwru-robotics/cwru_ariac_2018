@@ -105,8 +105,18 @@ rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
 "{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
 'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
 points: [ \
-{time_from_start: {secs: 1}, positions: [1.8, 0, -0.5, 6, 3.27, -1.51, 0]} \
+{time_from_start: {secs: 1}, positions: [1.8, 0, -0.7, 6, 3.6, -1.51, 0]} \
 ]}" -1
+
+Q1 DISCARD PART POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.5, 0, -1.2, 4.9, 3.27, -1.51, 0]} \
+]}" -1
+
+cruise: [2.5, 0, -1.2, 4.5, 3.27, -1.51, 0]
 
 //THIS POSE is suitable for moving to/from box-cam1 hover pose
 rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
@@ -134,3 +144,46 @@ rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
 points: [ \
 {time_from_start: {secs: 1}, positions: [1.8, -1, -0.5, 6, 3.27, -1.51, 0]} \
 ]}" -1
+
+
+bin y values:
+bin1: -0.49
+bin2: 0.32  delta = 0.81 between ALL bins
+bin3: 1.13
+bin4: 1.94
+bin5: 2.75
+
+[2.14, 0, -2.00, 3.14, 3.27, -1.51, 0]
+MAYBE CRUISE_BIN1 pose here:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.14, -1.32, -2.00, 3.14, 3.27, -1.51, 0]} \
+]}" -1
+
+
+BETTER BIN1_CRUISE_POSE pose here:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.14, -1.32, -1.50, 3.14, 3.27, -1.51, 0]} \
+]}" -1
+
+BIN1_HOVER_POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.0, -1.32, -0.8, 3.14, 4.2, -1.51, 0]} \
+]}" -1
+
+BIN2_CRUISE_POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.14, -0.5, -1.50, 3.14, 3.27, -1.51, 0]} \
+]}" -1
+

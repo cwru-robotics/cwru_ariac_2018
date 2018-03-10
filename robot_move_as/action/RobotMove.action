@@ -23,6 +23,8 @@ int8 IS_ATTACHED	= 19	# input: (none); output: success (true means attached)
 int8 TO_PREDEFINED_POSE  = 20    # input: predfinedPoseCode, timeout; output: success, errorCode
 int8 FLIP_PART		= 21     # part-flipper code
 int8 PLACE_PART_NO_RELEASE = 22
+int8 DISCARD_GRASPED_PART_Q1 = 23
+int8 DISCARD_GRASPED_PART_Q2 = 24
 
 # predefined move codes
 int8 BIN8_HOVER_POSE                   =4

@@ -102,17 +102,30 @@ private:
     control_msgs::FollowJointTrajectoryGoal traj_goal_;
     trajectory_msgs::JointTrajectory traj_;
     trajectory_msgs::JointTrajectory jspace_pose_to_traj(Eigen::VectorXd joints, double dtime=2.0);
-    void move_to_jspace_pose(Eigen::VectorXd q_vec, double dtime=2.0);
+    
+    
+    //here are the action functions: robot moves
+    void move_to_jspace_pose(Eigen::VectorXd q_vec, double dtime=2.0); //case robot_move_as::RobotMoveGoal::TO_PREDEFINED_POSE:
+    unsigned short int flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); 
+    unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
+    unsigned short int release_fnc(double timeout=2.0); //default timeout for release
+    unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
+    unsigned short int place_part_fnc_no_release(inventory_msgs::Part part);
+    unsigned short int move_part(const robot_move_as::RobotMoveGoalConstPtr &goal,double timeout=0);    
+    
     Eigen::VectorXd q_des_7dof_,q_cruise_pose_,bin_cruise_jspace_pose_,bin_hover_jspace_pose_;
-    Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
+    //Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
+    Eigen::VectorXd source_hover_pose_,source_cruise_pose_; 
+    Eigen::VectorXd destination_hover_pose_,destination_cruise_pose_;
      Eigen::VectorXd box_hover_pose_,box_cruise_pose_;   
     Eigen::VectorXd q_box_Q1_hover_pose_,q_box_Q1_cruise_pose_;   
-    Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;     
+    Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;   
+    Eigen::VectorXd q_Q1_discard_pose_,q_Q2_discard_pose_;
     Eigen::VectorXd q_bin_cruise_pose_;
     Eigen::VectorXd pickup_jspace_pose_,dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_,approach_dropoff_jspace_pose_;
-    Eigen::VectorXd q_agv1_hover_pose_,q_agv1_cruise_pose_;  
-    Eigen::VectorXd q_agv2_hover_pose_,q_agv2_cruise_pose_;    
+    //Eigen::VectorXd q_agv1_hover_pose_,q_agv1_cruise_pose_;  
+    //Eigen::VectorXd q_agv2_hover_pose_,q_agv2_cruise_pose_;    
     Eigen::VectorXd q_conveyor_hover_pose_,q_conveyor_cruise_pose_;    
     Eigen::VectorXd q_bin8_cruise_pose_,q_bin8_hover_pose_,q_bin8_retract_pose_;    
     Eigen::VectorXd q_bin7_cruise_pose_,q_bin7_hover_pose_,q_bin7_retract_pose_;  
@@ -130,19 +143,21 @@ private:
     Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link_;
     //double rail_stops[];
     //unordered_map<int8_t, int> placeIndex;
-
+    void set_key_poses();
     //fncs to get key joint-space poses:
     //each bin gets a corresponding rail pose; return "true" if valid bin code
     bool rail_prepose(int8_t location, double &q_rail);
     //each bin has a corresponding "hover" pose; set q_vec and return true if valid bin code
-    bool bin_hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
+    //bool bin_hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
     //cruise pose depends on bin code and whether to point towards agv1 or agv2
     // provide bin code and agv code; get back q_vec to prepare for cruise to agv
-    bool bin_cruise_jspace_pose(int8_t bin, int8_t agv, Eigen::VectorXd &q_vec);
-    bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
+    //bool bin_cruise_jspace_pose(int8_t bin, int8_t agv, Eigen::VectorXd &q_vec);
+    //bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
     
 
-    bool box_cruise_jspace_pose(int8_t box, Eigen::VectorXd &q_vec);
+    //bool box_cruise_jspace_pose(int8_t box, Eigen::VectorXd &q_vec);
+    bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
+    bool cruise_jspace_pose(int8_t agv, Eigen::VectorXd &q_vec);
     
     //trivial func to compute affine3 for robot_base w/rt world;  only depends on rail displacement
     Eigen::Affine3d  affine_base_link(double q_rail);
@@ -153,12 +168,8 @@ private:
     
     //"Part" should include part pose w/rt world, so can determine if part is right-side up or up-side down
     bool get_grasp_transform(Part part,Eigen::Affine3d &grasp_transform);
-    //unsigned short int fetch_from_conveyor(const cwru_ariac::RobotMoveGoalConstPtr& goal); 
-    unsigned short int flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); 
-    unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
-    unsigned short int release_fnc(double timeout=2.0); //default timeout for release
-    unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
-    unsigned short int place_part_fnc_no_release(inventory_msgs::Part part);
+
+
 
     bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
     //given rail displacement, and given Part description (including name and pose info) compute where the gripper should be, as

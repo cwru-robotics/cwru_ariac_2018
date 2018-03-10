@@ -26,10 +26,15 @@ rosrun shipment_filler shipment_filler_test_bad_part
 
 which senses a bad part, approaches it, lifts it, moves to hover pose
 
-WANT: new action-server fnc for:
+CREATED: new action-server fnc for:
   move_part_no_release(from_part,to_part);
 
-  this fnc should:
+RobotMove.h functions:
+
+  bool place_part_no_release(Part destination, double timeout = 0);
+  bool discard_grasped_part_Q1(double timeout=0);
+  bool discard_grasped_part_Q2(double timeout=0);
+
    acquire a part from source;
    move the part to destination;
    return without releasing part from gripper
@@ -38,4 +43,10 @@ WANT: new action-server fnc for:
    sense if is bad part or not; (distinguish part held by gripper from others)
    if bad part, discard it and return "failed"
    if good part, release it and move to Q1 cruise pose  (via hover pose???)
+
+shipment filler:
+  select source part
+  select destination part (box coords)
+  test if all poses reachable
+  
 

@@ -59,7 +59,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const robot_move_as::Rob
     if (part.name.compare("pulley_part") == 0) {
         //compute poses to pick up pulley:
         ROS_INFO("attempting to flip pulley");
-        if (!bin_hover_jspace_pose(goal->sourcePart.location, bin_hover_jspace_pose_)) {
+        if (!hover_jspace_pose(goal->sourcePart.location, bin_hover_jspace_pose_)) {
             ROS_WARN("bin_hover_jspace_pose() failed for source bin %d", (int) goal->sourcePart.location);
             return errorCode;
         }
@@ -106,8 +106,7 @@ unsigned short int RobotMoveActionServer::flip_part_fnc(const robot_move_as::Rob
 
 
         //cruise pose, adjacent to bin:
-        if (!bin_cruise_jspace_pose(goal->sourcePart.location, goal->targetPart.location,
-                                    bin_cruise_jspace_pose_)) {
+        if (!cruise_jspace_pose(goal->sourcePart.location,bin_cruise_jspace_pose_)) {
             ROS_WARN("bin_cruise_jspace_pose() failed");
             return errorCode;
         }

@@ -43,6 +43,8 @@ public:
     bool grasp(double timeout = 0);
     bool release(double timeout = 0);
     bool isGripperAttached();
+    bool discard_grasped_part_Q1(double timeout=0);//bool RobotMove::discard_grasped_part(double timeout)
+    bool discard_grasped_part_Q2(double timeout=0);//bool RobotMove::discard_grasped_part(double timeout)    
     //bool getRobotState(RobotState& robotState);
     //vector<double> getJointsState();
     void sendGoal(robot_move_as::RobotMoveGoal goal);

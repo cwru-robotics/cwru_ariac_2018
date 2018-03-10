@@ -13,15 +13,16 @@ int main(int argc, char** argv) {
     //ROS_INFO("main: instantiating an object of type OrderManager");
     //OrderManager orderManager(&nh);
     ShipmentFiller shipmentFiller(&nh);
+    int ans;
 
     inventory_msgs::Part pick_part,place_part;
     RobotMove robotMove(&nh);
     robotMove.enableAsync();
     //bool RobotMove::toPredefinedPose(int8_t predefined_pose_code, double timeout)
-    robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_CRUISE_POSE);
-    ros::Duration(2.0).sleep();
-    robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_HOVER_POSE);
-    ros::Duration(2.0).sleep();
+    //robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_CRUISE_POSE);
+    //ros::Duration(2.0).sleep();
+    //robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_HOVER_POSE);
+    //ros::Duration(2.0).sleep();
 
     bool found_bad_part = false;
     ROS_INFO("waiting to see bad part: ");
@@ -41,7 +42,26 @@ int main(int argc, char** argv) {
     while (!robotMove.actionFinished())
     {  
         ROS_INFO("waiting for result");
-        ros::Duration(1).sleep();
+        ros::Duration(0.5).sleep();
+    }
+    
+    found_bad_part = false;
+    ROS_INFO("waiting to see bad part: ");
+    while (!found_bad_part) {
+        ros::Duration(0.2).sleep();
+        ros::spinOnce();        
+        found_bad_part = shipmentFiller.get_bad_part_Q1(pick_part);
+    }
+    ROS_INFO("found bad part");
+    //cout<<"enter 1: ";
+    //cin>>ans;
+    ROS_INFO("discarding grasped part");
+    robotMove.discard_grasped_part_Q1(2.0);
+    while (!robotMove.actionFinished())
+    {  
+        ROS_INFO("waiting for result");
+        ros::Duration(0.5).sleep();
     }    
+    
 
 }

@@ -150,6 +150,47 @@ bool RobotMove::place_part_no_release(Part destination, double timeout) {
     return true;
 }
 
+
+bool RobotMove::discard_grasped_part_Q1(double timeout) {
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::DISCARD_GRASPED_PART_Q1;
+    goal.timeout = timeout;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;    
+}
+
+bool RobotMove::discard_grasped_part_Q2(double timeout) {
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::DISCARD_GRASPED_PART_Q2;
+    goal.timeout = timeout;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;    
+}
+
 bool RobotMove::move(Part part, Part destination, double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal_success_ = false;

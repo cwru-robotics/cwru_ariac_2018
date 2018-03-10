@@ -25,6 +25,9 @@ start the shipment filler:
 Send a test order:
 `rosrun order_sender order_sender2`
 
+OR, send orders via competition interface:
+`rosservice call /ariac/start_competition`
+
 #sub-tests:
 Run an example move-part command (hard coded):
 `rosrun robot_move_as robot_move_as_tester`
