@@ -24,7 +24,6 @@
 #include <sensor_msgs/LaserScan.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
-//#include <cwru_ariac/RobotMoveAction.h>
 #include <robot_move_as/RobotInterface.h>
 #include <robot_move_as/RobotMoveAction.h>
 #include <trajectory_msgs/JointTrajectory.h>
@@ -74,16 +73,16 @@ const bool DOWN = false;
 
 //surface heights:
 // had to increase tray height by 0.010 to get drop-off height of tray correct.  Don't know why
-const double TRAY1_HEIGHT = 0.755+0.010; //pad tray height as manual fix...gravity droop problem?
+//const double TRAY1_HEIGHT = 0.755+0.010; //pad tray height as manual fix...gravity droop problem?
 const double BIN_HEIGHT = 0.725;
 const double CONVEYOR_HEIGHT = 0.907;
 const double BASE_LINK_HEIGHT = 1.0;
 const double BOX_HEIGHT = 0.4446;
 
-const double QUAL2_CONVEYOR_SPEED = -0.2;
+//const double QUAL2_CONVEYOR_SPEED = -0.2;
 
-const double CONVEYOR_TRACK_FUDGE_TIME = 0.0; //0.5;
-const double CONVEYOR_FETCH_QRAIL_MIN = -1.0; // don't go more negative than this
+//const double CONVEYOR_TRACK_FUDGE_TIME = 0.0; //0.5;
+//const double CONVEYOR_FETCH_QRAIL_MIN = -1.0; // don't go more negative than this
 
 
 class RobotMoveActionServer {
@@ -111,7 +110,10 @@ private:
     unsigned short int release_fnc(double timeout=2.0); //default timeout for release
     unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
     unsigned short int place_part_fnc_no_release(inventory_msgs::Part part);
-    unsigned short int move_part(const robot_move_as::RobotMoveGoalConstPtr &goal,double timeout=0);    
+    unsigned short int move_part(const robot_move_as::RobotMoveGoalConstPtr &goal,double timeout=0);   
+    unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
+    unsigned short int is_placeable(inventory_msgs::Part part);
+
     
     Eigen::VectorXd q_des_7dof_,q_cruise_pose_,bin_cruise_jspace_pose_,bin_hover_jspace_pose_;
     //Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
@@ -122,6 +124,7 @@ private:
     Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;   
     Eigen::VectorXd q_Q1_discard_pose_,q_Q2_discard_pose_;
     Eigen::VectorXd q_bin_cruise_pose_;
+    Eigen::VectorXd q_init_pose_,q_hover_pose_;
     Eigen::VectorXd pickup_jspace_pose_,dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_,approach_dropoff_jspace_pose_;
     //Eigen::VectorXd q_agv1_hover_pose_,q_agv1_cruise_pose_;  
@@ -183,7 +186,12 @@ private:
     //bool get_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     //compute q_vec_soln corresponding to approach to specified grasp pose; specify approach distance; choose IK soln that is closest
     //to grasp IK soln
+    //2nd flavor, includes bool for wrist-near/wrist-far soln choices
+    bool get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
+                                          Eigen::VectorXd approx_jspace_pose, bool use_wrist_far, Eigen::VectorXd &q_vec_soln);  
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
+
+
     void grab();
     void release();  
     //RobotState calcRobotState();

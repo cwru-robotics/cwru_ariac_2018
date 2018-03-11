@@ -65,6 +65,53 @@ bool RobotMove::toPredefinedPose(int8_t predefined_pose_code, double timeout) {
     return true;
 }
 
+//only uses location code of part
+bool RobotMove::move_cruise_pose(Part part, double timeout) {
+    ROS_INFO_STREAM("requesting move to cruise pose for part "<<part);
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::TO_CRUISE_POSE;
+    goal.timeout = 0; //timeout;
+    goal.sourcePart = part;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;
+}    
+
+/*
+bool RobotMove::move_hover_pose(Part part, double timeout) {
+    ROS_INFO_STREAM("requesting move to hover pose for part "<<part);
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::TO_CRUISE_POSE;
+    goal.timeout = 0; //timeout;
+    goal.sourcePart = part;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;    
+}
+*/
+
 bool RobotMove::flipPart(Part part, double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal.type = robot_move_as::RobotMoveGoal::FLIP_PART;
@@ -151,6 +198,52 @@ bool RobotMove::place_part_no_release(Part destination, double timeout) {
 }
 
 
+bool RobotMove::test_is_pickable(Part part) {
+    robot_move_as::RobotMoveGoal goal;
+    double timeout=2.0;
+    goal.type = robot_move_as::RobotMoveGoal::TEST_IS_PICKABLE;
+    goal.timeout = timeout;
+    goal.sourcePart = part;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;
+}
+    
+    
+    bool RobotMove::test_is_placeable(Part destination) {
+     robot_move_as::RobotMoveGoal goal;
+     double timeout=2.0;
+    goal.type = robot_move_as::RobotMoveGoal::TEST_IS_PLACEABLE;
+    goal.timeout = timeout;
+    goal.targetPart = destination;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;
+}
+
+
 bool RobotMove::discard_grasped_part_Q1(double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal.type = robot_move_as::RobotMoveGoal::DISCARD_GRASPED_PART_Q1;
@@ -174,6 +267,26 @@ bool RobotMove::discard_grasped_part_Q1(double timeout) {
 bool RobotMove::discard_grasped_part_Q2(double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal.type = robot_move_as::RobotMoveGoal::DISCARD_GRASPED_PART_Q2;
+    goal.timeout = timeout;
+    sendGoal(goal);
+    if (!async_mode) {
+        bool finished_before_timeout;
+        if (timeout == 0) {
+            finished_before_timeout = ac.waitForResult();
+        } else {
+            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
+        }
+        if (!finished_before_timeout) {
+            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
+        }
+        return finished_before_timeout && goal_success_;
+    }
+    return true;    
+}
+
+bool RobotMove::release_placed_part(double timeout) {
+    robot_move_as::RobotMoveGoal goal;
+    goal.type = robot_move_as::RobotMoveGoal::RELEASE_PLACED_PART;
     goal.timeout = timeout;
     sendGoal(goal);
     if (!async_mode) {

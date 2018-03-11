@@ -2,6 +2,7 @@ string name
 int32 id
 int8 location
 geometry_msgs/PoseStamped pose
+bool use_wrist_far
 
 # location list
 int8 UNASSIGNED=0 # unconfirmed location

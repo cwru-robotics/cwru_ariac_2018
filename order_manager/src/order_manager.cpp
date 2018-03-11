@@ -346,5 +346,10 @@ void OrderManager::print_inventory_succinct(inventory_msgs::Inventory inventory_
     }
 }
 
+bool OrderManager::find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+    //Use the BinInventory object to find part in inventory
+    return p_binInventory_->find_part(part_name,bin_num,part_pose);
+}
+
   
 

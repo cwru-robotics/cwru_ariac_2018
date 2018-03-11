@@ -53,6 +53,104 @@ timing:  box not yet to box_cam1
          box beyond box_cam3
          box delivered to drone
 
+revisit shipment_filler:
+init:
+ *init robot pose (bin_cruise_pose for bin3)
+ *init inventory
+ *start drone-notification process
+    *state drone_notified = true
+    *drone-depot sensor
+    ...intent is that sensor triggers drone notification, with shipment name, and service call is repeated until success,
+        then sensor is ignored until drone picks up box; sets signal??
+        state: waiting for drone confirmation
+        state: waiting for drone pickup
+        state: waiting for new box
+
+ *start competition
+ *start a qualification timer
+ *advance box to Q1_cam
+
+
+ *get a shipment (must wait here for shipment)
+ *save shipment name (for drone depot notification)
+ *fill shipment:  applies only to Q1 station, init box filling
+	-from shipment, identify first part
+ 	-get bin coords of source, destination coords for box
+        -robot_move: get_part_from_bin
+        	-move to source-bin cruise pose
+        	-move to source-bin hover pose
+        	-move to part approach
+       	 	-move to grasp pose
+        	-grasp part
+        	-move to approach pose
+        	-move to hover pose
+        	-move to cruise pose
+         -test if still grasped; if not, retry
+         -robot_move: place_part_no_release
+                -move to Q1_cruise
+                -move to Q1_hover
+                -move to Q1_approach
+                -move to Q1_dropoff
+         -test part Q1
+                -if bad, 
+                  -robot_move_discard_grasped_part
+                  (do not mark this part filled)
+
+                -else, 
+                   robot_move_release_part(location_code)
+                      re-use last approach pose
+                      release part, move to approach, move to QN_hover, move to QN_cruise_pose
+                   mark_this_part_filled
+
+...
+
+CRUDE PART MOVE:
+
+  select part from current shipment to be placed; 
+  assign destination to Q1 inspection station; 
+  compute world coords for destination
+   
+  pick(Part part);
+  behavior:
+   responds to goal->sourcePart
+   computes key jspace and IK poses
+   moves to cruise pose
+   moves to hover pose
+   moves to approach pose
+   moves to pickup pose
+   enables gripper
+   if not attached, moves down slowly seeking attachment
+   moves to approach
+   moves to hover
+
+ move_cruise_pose(Part source_part);
+ move_cruise_pose(Part destination_part)
+
+ place_part_fnc_no_release(part), part = goal->targetPart
+   moves to hover pose of destination
+   moves to approach pose
+   moves to dropoff pose
+   (does not release part)
+   returns PART_DROPPED, UNREACHABLE, WRONG_PARAMETER, NO_ERROR
+
+ release_placed_part()
+   ASSUMES previously computed approach and hover poses
+   cmd gripper release and wait for confirmation
+   move to approach pose (previously computed)
+   move to hover pose (previously computed)
+
+ move_cruise_pose(Part destination_part); //move to cruise pose of dropoff location
+
+repeat w/ next part from shipment
+ (pick; move_cruise_pose(source); move_cruise_pose(destination); place_part_fnc_no_release(part); release_placed_part();
+    move_cruise_pose(destination_part);
+
+confusion: which nodes need to own an orderManager?  a binInventory?  a robotMove?
+  (orderManager needs ros-spins and binInventory needs ros-spins and update calls; 
+
+ 
+
+
 
 
 

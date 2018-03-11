@@ -25,8 +25,13 @@ int8 FLIP_PART		= 21     # part-flipper code
 int8 PLACE_PART_NO_RELEASE = 22
 int8 DISCARD_GRASPED_PART_Q1 = 23
 int8 DISCARD_GRASPED_PART_Q2 = 24
+int8 RELEASE_PLACED_PART = 25
+int8 TO_CRUISE_POSE = 26
+int8 TEST_IS_PICKABLE = 27
+int8 TEST_IS_PLACEABLE = 28
 
 # predefined move codes
+int8 INIT_POSE                        =3
 int8 BIN8_HOVER_POSE                   =4
 int8 BIN8_RETRACT_POSE                   =5
 int8 BIN8_CRUISE_POSE                   =6
@@ -53,8 +58,10 @@ int8 BIN1_RETRACT_POSE                   =26
 int8 BIN1_CRUISE_POSE                   =27
 int8 QUAL_SENSOR_1_CRUISE_POSE          =28
 int8 QUAL_SENSOR_1_HOVER_POSE           =29
-int8 QUAL_SENSOR_2_CRUISE_POSE          =30
-int8 QUAL_SENSOR_2_HOVER_POSE           =31
+int8 QUAL_SENSOR_1_DISCARD_POSE           =30
+int8 QUAL_SENSOR_2_CRUISE_POSE          =31
+int8 QUAL_SENSOR_2_HOVER_POSE           =32
+int8 QUAL_SENSOR_2_DISCARD_POSE           =33
 
 ---
 # result definition

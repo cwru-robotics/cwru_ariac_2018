@@ -191,6 +191,41 @@ int UR10FwdSolver::prune_solns_by_jnt_limits(vector<Eigen::VectorXd> &q_ik_solns
       
       return q_best;
  }
+ 
+ //qw1 near zero is wrist-far (suitable  for avoiding interference w/ near edge of box/bin
+ //qw1 near pi is wrist-near (suitable for reaching solns farther away)
+  Eigen::VectorXd UR10FwdSolver::get_wrist_near_soln(vector<Eigen::VectorXd> q_ik_solns) {
+      int nsolns = q_ik_solns.size();
+      double qw1; 
+      //bool UR10FwdSolver::fit_joints_to_range(Eigen::VectorXd &qvec)
+      Eigen::VectorXd q_best;
+      //grab the first soln that qualifies as wrist near
+      for (int i=0;i<nsolns-1;i++) {
+        q_best = q_ik_solns[i];
+        qw1 = q_best[3];
+        if (qw1>1.57) return q_best;  //this one will do
+      }
+      // 
+      q_best = q_ik_solns[nsolns-1]; //last possibility, so choose it, regardless
+      return q_best;
+  }
+      
+  Eigen::VectorXd UR10FwdSolver::get_wrist_far_soln(vector<Eigen::VectorXd> q_ik_solns) {
+      int nsolns = q_ik_solns.size();
+      double qw1; 
+      //bool UR10FwdSolver::fit_joints_to_range(Eigen::VectorXd &qvec)
+      Eigen::VectorXd q_best;
+      //grab the first soln that qualifies as wrist near
+      for (int i=0;i<nsolns-1;i++) {
+        q_best = q_ik_solns[i];
+        qw1 = q_best[3];
+        if (qw1<1.57) return q_best;  //this one will do
+      }
+      // 
+      q_best = q_ik_solns[nsolns-1]; //last possibility, so choose it, regardless
+      return q_best;
+  }      
+      
 
 //convert 6dof UR10 joints and provided rail displacement to consistent 7dof vector for control
  Eigen::VectorXd UR10FwdSolver::map627dof(double q_linear, Eigen::VectorXd q6dof){

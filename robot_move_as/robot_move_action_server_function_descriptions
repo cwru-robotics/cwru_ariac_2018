@@ -1,0 +1,70 @@
+robot_move_as functions;
+
+
+CODE: TO_PREDEFINED_POSE
+fnc: built-in, switch on pose codes
+behavior:
+   move to one of N pre-defined poses, encoded in .action message
+   includes bin cruise and hover poses, and qual-sensor cruise and hover poses
+    as well as Q1 and Q2 discard poses
+
+CODE: TO_CRUISE_POSE
+fnc: built-in
+behavior:
+   looks at location code of source part
+   looks up corresponding cruise pose for this location code
+   moves robot there (jspace move)
+ 
+
+CODE: PICK
+fnc: pick_part_fnc(goal)
+behavior:  
+   responds to goal->sourcePart
+   computes key jspace and IK poses
+   moves to cruise pose
+   moves to hover pose
+   moves to approach pose
+   moves to pickup pose
+   enables gripper
+   if not attached, moves down slowly seeking attachment
+   moves to approach
+   moves to hover
+   (does  not move to safe cruise pose)
+   returns UNREACHABLE, GRIPPER_FAULT, PART_DROPPED or NO_ERROR
+
+CODE: PLACE_PART_NO_RELEASE
+fnc: place_part_fnc_no_release(part), part = goal->targetPart
+behavior: MUST PRE-POSITION TO DESTINATION CRUISE POSE FIRST
+   moves to hover pose
+   moves to approach pose
+   moves to dropoff pose
+   (does not release part)
+   returns PART_DROPPED, UNREACHABLE, WRONG_PARAMETER, NO_ERROR
+
+CODE: DISCARD_GRASPED_PART_Q1
+fnc: in-line
+behavior:  assumes bad part is grasped
+   move to Q1 hover pose
+   move to Q1 discard pose
+   releases part
+
+CODE: DISCARD_GRASPED_PART_Q2
+   as above, but for Q2
+
+CODE: RELEASE_PLACED_PART:
+fnc: in-line
+behavior:
+   ASSUMES previously computed approach and hover poses
+   cmd gripper release and wait for confirmation
+   move to approach pose (previously computed)
+   move to hover pose (previously computed)
+   alt: COULD provide Part destination info and recompute depart and hover poses
+
+
+
+
+
+
+
+
+  

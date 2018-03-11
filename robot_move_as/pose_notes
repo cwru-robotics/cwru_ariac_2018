@@ -187,3 +187,66 @@ points: [ \
 {time_from_start: {secs: 1}, positions: [2.14, -0.5, -1.50, 3.14, 3.27, -1.51, 0]} \
 ]}" -1
 
+BIN5_CRUISE_POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [2.14, 1.5, -1.50, 2.8, 3.27, -1.51, 0]} \
+]}" -1
+
+BIN5_HOVER_POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.0, 1.5, -0.8, 2.8, 4.2, -1.51, 0]} \
+]}" -1
+
+BIN5 part test:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0.1, 1.5, -0.2, 2.7, 4.5, -1.51, 0]} \
+]}" -1
+
+improved,  but:
+  could  not acquire piston-rod part from front-right corner; wrist hit bin?
+  grabbed pulley-part, but could not place it (related to part being inverted?)
+
+when can't reach part, inventory selection repeats the same problematic part
+show choose part selections better; prefer parts shifted to left?
+
+also, if part is grasped but cannot place, robot does not discard part!
+need placement look-ahead?
+
+also, want to start grabbing parts before box has arrived at Q station
+
+box interference here:
+1.8562873633481942, -0.0007545602620445272, -0.41041887715876424, 5.777178575262802, 3.1282447272545433, -1.590611842358391, -2.0806455280038474, 
+
+wrist  pose (qw1,qw2,qw3)
+wrist (3.128,-1.59, -2.08) has wrist "near" to robot base
+wrist (0.5, 1.57, xxx) has wrist "away" from robot base (suitable for grasp of parts close to near edge of box/bin)
+
+wrist-far at qw1 ~0 (wrist forward, further away from base, suitable for placement at near edge of box)
+wrist-near at qw1 ~pi (wrist closer to base, suitable for placement of parts close to  far edge of box)
+alt wrist pose for box placement (HOVER at Q1)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [1.8, 0, -0.7, 6, 0.5, 1.57, 0]} \
+]}" -1
+
+example of interference for part at near side of box:
+trial soln:   5.78418 -0.413203   1.90622   3.21638  -1.58006  -2.07894  (wrist-far)
+reference pose:  5.78354 -0.32757  1.85371  3.18325 -1.58006 -2.07958
+trial soln:   5.78418 -0.313331   1.42396  0.457175   1.58006   1.06265  (wrist-near)
+
+SHOULD ignore q_flange in reference pose;
+qw1 is indicator of wrist-near, wrist-far
+
+
+

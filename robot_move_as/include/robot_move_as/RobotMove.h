@@ -32,19 +32,24 @@ public:
 
     bool toHome(double timeout = 0);
 
+    bool move_cruise_pose(Part part, double timeout);
+    //bool move_hover_pose(Part part, double timeout);    
     bool toPredefinedPose(int8_t goal_code, double timeout = 0);
     bool pick(Part part, double timeout = 0);
+    bool test_is_pickable(Part part);
+    bool test_is_placeable(Part part);
     bool place(Part destination, double timeout = 0);
     bool place_part_no_release(Part destination, double timeout = 0);
     bool move(Part part, Part destination, double timeout = 0);
     //bool fetchPartFromConveyor(Part part,Part destination, double timeout=0);
     bool flipPart(Part part, double timeout = 0);
-    bool setJointValues(vector<double> joints, double timeout = 0);
+    //bool setJointValues(vector<double> joints, double timeout = 0);
     bool grasp(double timeout = 0);
     bool release(double timeout = 0);
     bool isGripperAttached();
     bool discard_grasped_part_Q1(double timeout=0);//bool RobotMove::discard_grasped_part(double timeout)
     bool discard_grasped_part_Q2(double timeout=0);//bool RobotMove::discard_grasped_part(double timeout)    
+    bool release_placed_part(double timeout=2.0);
     //bool getRobotState(RobotState& robotState);
     //vector<double> getJointsState();
     void sendGoal(robot_move_as::RobotMoveGoal goal);

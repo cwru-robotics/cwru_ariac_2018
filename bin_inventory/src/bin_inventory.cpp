@@ -236,6 +236,19 @@ void BinInventory::counts_all_part_types(std::vector<int> &parts_counts) {
     }
 }
 
+bool BinInventory::find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+  int part_id = mappings[part_name];
+  int num_parts_avail = num_parts(part_id);
+  if (num_parts_avail<1) return false;
+
+  //get the first available part:
+  bin_num =   inventory_msg_.inventory[part_id].bins[0];
+  part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[0];
+  ROS_INFO_STREAM("found part "<<part_name<<" in bin "<<bin_num<<" at pose "<<part_pose<<endl);
+  return true;
+
+}
+
 
 void BinInventory::clear_inventory_msg() {    
     //ROS_INFO("clearing inventory message: ");
