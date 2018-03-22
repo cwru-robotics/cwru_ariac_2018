@@ -1,0 +1,105 @@
+fk notes:
+
+start w/ near-left grab (fwd, wrist-near):
+DH angs:
+q_in (DH):  6.2 -0.3  1.5  0.4 1.57    0
+
+joint_states:
+[1.500231831419235, -0.3500102142125108, -0.2986510266743698, 6.199998032827181, 0.3975929738983357, 1.5699912910203775, -4.80556353199546e-06
+
+1.5002246197888454, -0.35001021457492315, -0.29902690345550287, 6.19999803290826, 0.3975929848605908, 1.5699912917053425, -4.80843637884476e-06, 
+
+q5= 1.57 --> wrist is "near"; expect O4 is further away from base than O6
+
+FK--> A origin:  0.684766  0.107496 -0.322026
+
+rosrun tf tf_echo base_link tool0:
+Translation: [0.684, 0.108, -0.315]
+
+computing O5:
+O_5 =  0.687443  0.107199 -0.229866
+
+---
+DH T61_fwd = 
+ 3.26741e-05     0.999574   -0.0291995     0.673702
+-0.000795987    0.0291995     0.999573      0.44133
+           1 -9.41774e-06  0.000796602     0.164008
+           0            0            0            1
+
+rosrun tf tf_echo shoulder_link tool0
+- Translation: [0.673, 0.164, -0.442]  (OK)
+---
+
+O_5 =  0.687443  0.107199 -0.229866
+q1_fwd,q1_rvrs = -0.083176, 3.534154  (fwd soln is good, +=2pi)
+
+rosrun tf tf_echo base_link wrist_3_link
+- Translation: [0.687, 0.107, -0.223]  (OK: match to O_5)
+
+q5_fwd_wrist_far, q5_fwd_wrist_near = -1.570000, 1.570000  (GOOD)
+q6_fwd_near = 0 (GOOD)
+
+
+T41_fwd_near: (BAD!!)
+ -0.0291995 4.65208e-05    0.999574    0.560743
+   0.999572 -0.00159252   0.0291995    0.345791
+  0.0015932    0.999999 4.70837e-20    0.163935
+          0           0           0           1
+
+above does not make sense, since T61 has O6x = 0.673, but T41 has O4x = 0.561, which is CLOSER
+ O4 should be FARTHER away than O6 for wrist-near case
+
+rosrun tf tf_echo shoulder_link wrist_2_link
+- Translation: [0.792, 0.164, -0.354]  INCONSISTENT w/ T41
+   these values correspond to O4/1 for (erroneous) T41_fwd_far
+   O4x = 0.792 --> O4x is FARTHER away from base than O6x, which is consistent with wrist-far
+
+looks like sign error on q5; is alpha wrong?
+
+FIX T41
+
+error: w/ correct q5 for wrist-near pose, T41 claims O4 is closer to base than O5.  This is wrong
+behaves like q5 rotation is negated;  
+
+at zero angles:
+rosrun tf tf_echo base_link wrist_3_link
+- Translation: [1.184, 0.164, 0.008]
+rosrun tf tf_echo base_link tool0
+- Translation: [1.184, 0.256, 0.009]
+fwd_kin at zero angles:
+p_des =   1.1843 0.264141   0.0116
+note: a2+a3 = 1.1843
+d1 = 0.1273; d6 = 0.0922; d4 = 0.1639, d5 = 0.1157
+d1-d5 = 0.0116 (off by 0.002)
+d4+d6 = 0.2461 (off by 0.01)
+
+move q5 to 1.57;
+rosrun tf tf_echo base_link wrist_3_link
+- Translation: [1.184, 0.164, 0.008]
+
+rosrun tf tf_echo base_link tool0
+- Translation: [1.276, 0.164, 0.008]
+
+q_in (UR):    0    0    0 1.57 1.57    0
+q_in (DH):       0       0       0 4.71159 4.71159 3.14159
+A origin:   1.06868  0.164021 0.0270079
+b6_des = 0.000796326 0.000796327   -0.999999
+
+UGH.  maybe have it now (3/22/18)
+restrictions:
+*returns ONLY elbow-up solns (max 4 solns)
+*returns q1 in range 0->2PI
+*returns q2 option closest to -pi/2
+*returns only elbow up (>0 for fwd reaches, <0 for rvrs reaches)
+*should check angular ranges for wrist DOFs
+*if 4 solns are returned, they are in the order:
+ -fwd, wrist-far
+ -fwd, wrist-near
+ -rvrs, wrist-far
+ -rvrs, wrist-near
+
+
+
+
+
+

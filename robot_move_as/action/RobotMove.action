@@ -30,6 +30,12 @@ int8 TO_CRUISE_POSE = 26
 int8 TEST_IS_PICKABLE = 27
 int8 TEST_IS_PLACEABLE = 28
 
+#the following placement codes correspond to placement in box, as viewed from robot's base
+int8 PLACE_PART_FAR_RIGHT = 30
+int8 PLACE_PART_FAR_LEFT = 31
+int8 PLACE_PART_NEAR_RIGHT = 32
+int8 PLACE_PART_NEAR_LEFT = 33
+
 # predefined move codes
 int8 INIT_POSE                        =3
 int8 BIN8_HOVER_POSE                   =4
@@ -56,12 +62,45 @@ int8 BIN2_CRUISE_POSE                   =24
 int8 BIN1_HOVER_POSE                   =25
 int8 BIN1_RETRACT_POSE                   =26
 int8 BIN1_CRUISE_POSE                   =27
-int8 QUAL_SENSOR_1_CRUISE_POSE          =28
-int8 QUAL_SENSOR_1_HOVER_POSE           =29
-int8 QUAL_SENSOR_1_DISCARD_POSE           =30
-int8 QUAL_SENSOR_2_CRUISE_POSE          =31
-int8 QUAL_SENSOR_2_HOVER_POSE           =32
-int8 QUAL_SENSOR_2_DISCARD_POSE           =33
+
+#a bunch of key pose codes for box at quality-sensor 1:
+int8 Q1_RIGHTY_HOVER              =30
+int8 Q1_RIGHTY_DISCARD            =31
+int8 Q1_RIGHTY_CRUISE             =32
+int8 Q1_RIGHTY_HOVER_FLIP         =33
+
+int8 Q1_LEFTY_CRUISE              =34
+int8 Q1_LEFTY_HOVER               =35
+int8 Q1_LEFTY_HOVER_FLIP          =36
+int8 Q1_LEFTY_DISCARD             =37
+
+#     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
+int8 Q1_ARM_VERTICAL              =38
+
+#//some key poses near candidate box dropoff locations at Qsensor 1
+#    //------RIGHTY POSES------
+#    //covers cases for  left-side of box dropoff (from robot's perspective); 
+#    //the following are safe transitions:
+#    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
+int8 Q1_DROPOFF_NEAR_LEFT         =40
+int8 Q1_DROPOFF_FAR_LEFT          =41
+
+#         //----LEFTY  POSES----
+#     //covers cases for right-side dropoff; the following are safe transitions:
+#     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
+int8 Q1_DROPOFF_NEAR_RIGHT         =42
+int8 Q1_DROPOFF_FAR_RIGHT          =43
+int8 Q1_DROPOFF_UNKNOWN            =44
+
+#repeat for Q2 sensor location:
+int8 QUAL_SENSOR_2_HOVER_POSE      =50
+int8 QUAL_SENSOR_2_DISCARD_POSE    =51
+
+
+
+
+
+
 
 ---
 # result definition

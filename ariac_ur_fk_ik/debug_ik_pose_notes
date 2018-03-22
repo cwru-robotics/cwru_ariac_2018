@@ -1,0 +1,225 @@
+URDF: DH params look good out to ee_link
+shoulder_pan_joint
+xyz=\"0.0 0.0 0.1273
+
+shoulder_lift jnt:
+ xyz=\"0.0 0.220941 0.0   //0.220941 is partial DH d2
+
+elbow_joint:
+xyz=\"0.0 -0.1719 0.612   //-0.1719 is partial DH d3; 0.612 is humerus length
+
+wrist_1_joint:
+xyz=\"0.0 0.0 0.5723   //forearm length
+
+wrist_2_joint:
+xyz=\"0.0 0.1149 0.0  //d4; combine w/ d2 and d3
+
+wrist_3_joint:
+xyz=\"0.0 0.0 0.1157  //0.1157 matches
+
+ee_fixed_joint
+0.0 0.0922 0.0  //d6
+
+
+d2+d3+d4 = 0.220941 -0.1719 + 0.1149  = 0.163941
+
+
+zero angles:
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 0, 0, 0]} \
+]}" -1
+
+rosrun tf tf_echo base_link ee_link
+- Translation: [1.184, 0.256, 0.008]
+fk_ik FK result; A origin:   1.1843 0.264141   0.0116  
+8mm y-err and 4mm z err; ( why?  )
+
+maybe pan angle is a bit off from zero; joint_states reports q1 = 6.282976;
+should be 6.283185
+err = 0.0002; 
+
+set q5 to 1.57 (UR coords)
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 0, 1.57, 0]} \
+]}" -1
+
+
+reach left, wrist near:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 1.57, 1.57, 0]} \
+]}" -1
+
+tool-z points along world x-axis;
+rosrun tf tf_echo base_link ee_link
+- Translation: [1.276, 0.164, 0.009]  (delta-x from all zeros = d6; OK)
+
+fk_ik: A origin:   1.2845 0.164021   0.0116
+also, fk_ik says z_tool points in -x direction; this is reversed!
+weird, since should be along +x world axis
+
+BUT, b6_des = 1,0,0, so seems OK (needed tool xform to rotate?)
+
+move to grab left, wrist near:
+rosrun tf tf_echo base_link ee_link
+- Translation: [1.069, 0.164, 0.033]
+
+test_main fk_ik:
+q_in (DH):    0    0    0 1.57 1.57    0
+A rot: 
+-6.34136e-07           -1 -0.000796326
+           1 -6.12323e-17 -0.000796327
+ 0.000796326 -0.000796327     0.999999
+A origin:   1.06868  0.164021 0.0270079  (looks OK)
+
+hmm...perhaps error is in IK, converting between UR and DH coords;
+q4, q5 and q6 have offsets of M_PI w/rt DH/UR
+
+convert UR to DH--> A origin:   1.30008  0.163861 0.0271922
+change offsets for q5 and q4 to 0;
+q_in (DH):       0       0       0    1.57    1.57 3.14159
+A origin:   1.30008  0.163861 0.0271922
+b6_des =  0.000796326 -0.000796327    -0.999999
+
+
+q_in (DH):       0       0       0       0       0 3.14159
+A origin:   1.1843 0.063741    0.243
+vs tf: - Translation: [1.184, 0.256, 0.008]
+
+
+Q1_FWD_HOVER: (???)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [-1.2, 0, -2.4, 4.5, 2.35, -1.57, 0]} \
+]}" -1
+
+ZERO pose:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 0, 0, 0]} \
+]}" -1
+
+rosrun tf tf_echo base_link ee_link
+- Translation: [1.184, 0.256, 0.008]
+
+fk_ik:
+q_in (UR): 0 0 0 0 0 0
+q_in (DH):       0       0       0 3.14159 3.14159 3.14159
+A origin:   1.1843 0.264141   0.0116
+b6_des = -1.22465e-16            1  6.12323e-17
+CONSISTENT
+
+-------------------------
+rotate q5 by pi:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 0, 3.14, 0]} \
+]}" -1
+rosrun tf tf_echo base_link ee_link
+- Translation: [1.184, 0.072, 0.008]
+
+q_in (UR):    0    0    0    0 3.14    0
+q_in (DH):       0       0       0 3.14159 6.28159 3.14159
+A origin:   1.18446 0.0637411    0.0116
+ b6_des =   0.00159265    -0.999999 -1.83502e-16
+CONSISTENT
+
+----------------
+rotate q5 by +1.57:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 0, 1.57, 0]} \
+]}" -1
+- Translation: [1.276, 0.164, 0.008]
+
+q_in (UR):    0    0    0    0 1.57    0
+q_in (DH):       0       0       0 3.14159 4.71159 3.14159
+A origin:   1.2845 0.164021   0.0116
+b6_des =           1 0.000796327 6.13298e-17
+CONSISTENT
+
+----------
+rotate q4 by pi/2:  (wrist is near-left)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 1.57, 1.57, 0]} \
+]}" -1
+
+- Translation: [1.069, 0.164, 0.032]
+
+q_in (UR):    0    0    0 1.57 1.57    0
+q_in (DH):       0       0       0 4.71159 4.71159 3.14159
+A origin:   1.06868  0.164021 0.0270079
+b6_des = 0.000796326 0.000796327   -0.999999
+CONSISTENT
+
+----------
+1-frame: n_vec_1 is parallel to x_world
+  b_vec_1 is parallel to y_world
+  t_vec_1 is parallel to -z_world (so b_des/1 = (0,1,0)
+  
+tilt q5 slightly to 1.5
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0, 0, 0, 0, 1.57, 1.50, 0]} \
+]}" -1
+- Translation: [1.069, 0.170, 0.033]
+(y value is slightly higher after wrist perturbation);
+
+q_in (UR):    0    0    0 1.57  1.5    0
+A origin:   1.06868  0.171029 0.0272589
+CONSISTENT
+
+b6_wrt_1_fwd = 0.00083179   0.997495  0.0707368
+z-value of b6/1 is slightly positive--> q5 = 1.5
+should be q5_UR_fwd_wrist_near = 1.5
+
+T61_fwd (from  desired  pose), O_hand = (1.069, 0.092, 0.170)
+
+q6 IK solns are consistent w/ UR  coords (e.g., q6_fwd_near = 0)
+
+BUT T41_fwd_near has O_4/1 = (0.953, 0, 0.163)
+INCONSISTENT: O4 should be FURTHER from jnt1 (i.e., larger x-val)
+
+rosrun tf tf_echo base_link wrist_1_link
+- Translation: [1.184, 0.049, 0.125]
+
+O4 SHOULD  have x-coord = 1.184 (>1.068) not 0.953  (+/- 0.116 = d5)
+
+after DH/UR  fix:
+O4/1 = 1.184, 0,  0.163  (looks better)
+
+-------------
+
+bend elbow slightly:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['elbow_joint', 'linear_arm_actuator_joint', 'shoulder_lift_joint', \
+'shoulder_pan_joint', 'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, positions: [0.2, 0, -0.1, 0, 1.57, 1.50, 0]} \
+]}" -1
+
+fk_ik might be working for case fwd_near;
+extend to other 3 cases (fix errors)

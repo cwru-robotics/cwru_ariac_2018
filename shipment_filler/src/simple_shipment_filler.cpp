@@ -69,6 +69,7 @@ int main(int argc, char** argv) {
         
     //send robot to waiting pose
     //int ans;
+    //MAKE BOX CONTROL AN ACTION SERVER for multi-tasking
     ROS_INFO("get a box into position: ");
     advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION1_LOCATION_CODE);

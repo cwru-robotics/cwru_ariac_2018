@@ -46,7 +46,7 @@ unsigned short int RobotMoveActionServer::move_part_no_release(const robot_move_
             //cruise pose, adjacent to bin:
             //ROS_INFO_STREAM("destination_cruise_pose_: " << destination_cruise_pose_.transpose());
 
-            if (!cruise_jspace_pose(goal->targetPart.location, box_cruise_pose_)) {
+            if (!cruise_jspace_pose(goal->targetPart.location, q_destination_cruise_pose_)) {
                 ROS_WARN("box_cruise_jspace_pose() failed");
                 return errorCode;
             }

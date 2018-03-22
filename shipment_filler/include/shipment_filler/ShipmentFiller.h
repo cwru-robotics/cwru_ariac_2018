@@ -41,7 +41,11 @@ public:
 
   bool current_order_has_been_filled(); //delete order from its vector
   bool current_shipment_has_been_filled();
-  bool test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box);
+  //bool test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box);
+  unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);
+
+  //bool select_part_from_inventory(part_name, bin_num, bin_part_pose_stamped);
+  bool select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
 
 private:
   ros::NodeHandle nh_;
@@ -74,6 +78,9 @@ private:
 
   //geometry_msgs::PoseStamped box_cam_1_stamped_pose_;
   //geometry_msgs::PoseStamped box_cam_2_stamped_pose_;  
+  
+  inventory_msgs::Inventory inventory_msg_;
+
   geometry_msgs::PoseStamped box_1_stamped_pose_;
   geometry_msgs::PoseStamped box_2_stamped_pose_;  
   double box_cam_1_dist_to_go_;

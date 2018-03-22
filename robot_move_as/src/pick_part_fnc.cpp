@@ -1,6 +1,6 @@
 //use this fnc to pick up a specified part; it can be used by part-flipper and generic move(from,to)
 // ASSUMES robot pose is already in a safe "cruise" pose, i.e. able to translate on rail without collision
-// upon completion of "pick" robot will move to the pick-location's hover pose, and it will return either:
+// upon completion of "pick" robot will move to the pick-location's safe cruise pose, and it will return either:
 //  NO_ERROR, or:  UNREACHABLE, PART_DROPPED, WRONG_PARAMETER, or GRIPPER_FAULT
 //
 
@@ -126,7 +126,17 @@ unsigned short int RobotMoveActionServer::pick_part_fnc(const robot_move_as::Rob
         errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
         return errorCode;
     }
-
+    
+    ROS_INFO("moving to bin_cruise_jspace_pose_ ");
+    move_to_jspace_pose(bin_cruise_jspace_pose_, 1.0); //so far, so good, so move to cruise pose in front of bin
+    //at this point, have already confired bin ID is good
+    ros::Duration(1.0).sleep();    
+    //check if part is still attached
+    if (!robotInterface.isGripperAttached()) {
+        ROS_WARN("dropped part!");
+        errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
+        return errorCode;
+    }
 
     errorCode = robot_move_as::RobotMoveResult::NO_ERROR; //return success
     return errorCode;
@@ -161,13 +171,17 @@ unsigned short int RobotMoveActionServer::is_pickable(const robot_move_as::Robot
     //Eigen::Affine3d RobotMoveActionServer::affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail)
     affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,
                                                                                        bin_hover_jspace_pose_[1]);
-    //Eigen::Vector3d O_pickup;
-    //O_pickup = affine_vacuum_pickup_pose_wrt_base_link_.translation();
-    //ROS_INFO_STREAM("O_pickup: "<<O_pickup);
+    Eigen::Vector3d O_pickup;
+    O_pickup = affine_vacuum_pickup_pose_wrt_base_link_.translation();
+    ROS_INFO_STREAM("O_pickup: "<<O_pickup.transpose());
+    int ans;
+
     //provide desired gripper pose w/rt base_link, and choose soln closest to some reference jspace pose, e.g. hover pose
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,approx_jspace_pose,&q_vec_soln);
     if (!get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, pickup_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup pose!");
+            cout<<"is_pickable: enter 1: ";
+         cin>>ans;
         errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
         return errorCode;
     }

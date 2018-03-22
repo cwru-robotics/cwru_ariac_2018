@@ -1,0 +1,43 @@
+progress notes:  3/11/18
+box advances OK, but need action server
+
+grabs first flange OK
+places it OK (though too much compression--tune this)
+ box hover pose is not great; adjust this
+ after releasing part, retraction is very SLOW
+
+grabs second flange OK
+problem with placement: did wrist flip, inappropriately
+  wrist is "far", and it hits box
+
+NEED: classify box part locations, (from camera view?)
+ from robot view is:
+flange in box is at height 0.448 w/rt world
+
+per camera image:
+"near" to robot is z = 0.1 (z>0)
+"far" from robot is z = -0.2 (z<0)
+
+"left" w/rt robot is y= -0.2 (y<0)
+"right" w/rt robot is y = 0.2 (y>0)
+
+wrist flip if destination has z>0 and y<0 per box camera
+
+again:
+grabs and places first gasket part OK (check on height)
+2nd gasket part--did NOT do a wrist flip, and wrist interferes w/ box
+  (maybe should do wrist flip AND move sled closer to box center)
+
+failed to grab piston-rod part from near-right location;
+  wrist interferes w/ bin edge
+BUT retry on SAME  part (near-right) was successful!
+  (was this a case of "dropped part"?)
+
+placement in near-left corner w/ wrist flip is good...but lowers too far
+  (deflects wrist during placement)
+
+pick of piston-rod from front-left of bin was successful;
+placement OK (but pressed too far down)
+
+
+

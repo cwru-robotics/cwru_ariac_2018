@@ -1,8 +1,10 @@
 string name
 int32 id
 int8 location
+int8 box_placement_location_code
 geometry_msgs/PoseStamped pose
-bool use_wrist_far
+#bool use_wrist_far
+
 
 # location list
 int8 UNASSIGNED=0 # unconfirmed location

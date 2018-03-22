@@ -142,6 +142,36 @@ void RobotMoveActionServer::move_to_jspace_pose(Eigen::VectorXd q_vec, double dt
     //ros::Duration(dtime).sleep(); //must do timing externally
 }
 
+/*
+#a bunch of key pose codes for box at quality-sensor 1:
+int8 Q1_RIGHTY_HOVER              =30
+int8 Q1_RIGHTY_DISCARD            =31
+int8 Q1_RIGHTY_CRUISE             =32
+int8 Q1_RIGHTY_HOVER_FLIP         =33
+
+int8 Q1_LEFTY_CRUISE              =34
+int8 Q1_LEFTY_HOVER               =35
+int8 Q1_LEFTY_HOVER_FLIP          =36
+int8 Q1_LEFTY_DISCARD             =37
+
+#     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
+int8 Q1_ARM_VERTICAL              =38
+
+//some key poses near candidate box dropoff locations at Qsensor 1
+#    //------RIGHTY POSES------
+#    //covers cases for  left-side of box dropoff (from robot's perspective); 
+#    //the following are safe transitions:
+#    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
+int8 Q1_DROPOFF_NEAR_LEFT         =40
+int8 Q1_DROPOFF_FAR_LEFT          =41
+
+#         //----LEFTY  POSES----
+#     //covers cases for right-side dropoff; the following are safe transitions:
+#     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
+int8 Q1_DROPOFF_NEAR_RIGHT         =42
+int8 Q1_DROPOFF_FAR_RIGHT          =43
+ * */
+
 
 //EXECUTE_CB: does function  switching
 void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr &goal) {
@@ -198,7 +228,25 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
                 //result_.robotState = robotState;
                 as.setSucceeded(result_);
               break;
-
+        case robot_move_as::RobotMoveGoal::TEST_IS_PICKABLE:
+            ROS_INFO("TEST_IS_PICKABLE");
+            // use "goal", but only need to populate the "sourcePart" component
+               errorCode = is_pickable(goal);
+                if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
+                   ROS_WARN("is_pickable returned error code: %d", (int) errorCode);
+                    result_.success = false;
+                    result_.errorCode = errorCode;
+                    //result_.robotState = robotState;
+                    as.setAborted(result_);
+                    return;
+                }
+             //if here, all is well:
+                ROS_INFO("Completed TEST_IS_PICKABLE action");
+                result_.success = true;
+                result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
+                //result_.robotState = robotState;
+                as.setSucceeded(result_);
+            break;
         case robot_move_as::RobotMoveGoal::PICK:
             ROS_INFO("PICK");
             // use "goal", but only need to populate the "sourcePart" component
@@ -217,6 +265,27 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
                 result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
                 //result_.robotState = robotState;
                 as.setSucceeded(result_);
+            break;
+            
+        case robot_move_as::RobotMoveGoal::TEST_IS_PLACEABLE:
+            ROS_INFO("PLACE_PART_NO_RELEASE; targetPart is:");
+            part_of_interest_ = goal->targetPart;
+            ROS_INFO_STREAM(part_of_interest_);      
+               errorCode = is_placeable(part_of_interest_);
+                if (errorCode != robot_move_as::RobotMoveResult::NO_ERROR) {
+                   ROS_WARN("place_part_fnc_no_release returned error code: %d", (int) errorCode);
+                    result_.success = false;
+                    result_.errorCode = errorCode;
+                    //result_.robotState = robotState;
+                    as.setAborted(result_);
+                    return;
+                }
+             //if here, all is well:
+                ROS_INFO("Completed TEST_IS_PLACEABLE action");
+                result_.success = true;
+                result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
+                //result_.robotState = robotState;
+                as.setSucceeded(result_);            
             break;
             
         case robot_move_as::RobotMoveGoal::PLACE_PART_NO_RELEASE:
@@ -240,6 +309,8 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
                 as.setSucceeded(result_);            
             break;
             
+        //NOW  OBSOLETE; have lefty and righty discard  poses
+            /*
         case robot_move_as::RobotMoveGoal::DISCARD_GRASPED_PART_Q1:
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
             ROS_INFO("moving to discard pose");
@@ -265,7 +336,7 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
             result_.errorCode = errorCode;
             as.setSucceeded(result_);            
             break;            
-
+*/
         case robot_move_as::RobotMoveGoal::RELEASE_PLACED_PART:
             ROS_INFO("RELEASE_PLACED_PART");
             errorCode = release_fnc(2.0); //fix error handling here
@@ -328,92 +399,25 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
 
             
         case robot_move_as::RobotMoveGoal::TO_PREDEFINED_POSE:
-            //ROS_INFO("moving to AGV1 hover pose");
-            result_.success = true;
-            switch (goal->predfinedPoseCode) {
-                //various cases for pre-defined poses go here:
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_CRUISE_POSE:
-                    ROS_INFO("moving to QUAL_SENSOR_1_CRUISE_POSE");
-                    move_to_jspace_pose(q_box_Q1_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_HOVER_POSE:
-                    ROS_INFO("moving to QUAL_SENSOR_1_HOVER_POSE ");
-                    move_to_jspace_pose(q_box_Q1_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_1_DISCARD_POSE:
-                    ROS_INFO("moving to DISCARD_GRASPED_PART_Q1 ");
-                    move_to_jspace_pose(q_Q1_discard_pose_);
-                    break;      
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_2_CRUISE_POSE:
-                    ROS_INFO("moving to QUAL_SENSOR_2_CRUISE_POSE");
-                    move_to_jspace_pose(q_box_Q2_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_2_HOVER_POSE:
-                    ROS_INFO("moving to QUAL_SENSOR_2_HOVER_POSE ");
-                    move_to_jspace_pose(q_box_Q2_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::QUAL_SENSOR_2_DISCARD_POSE:
-                    ROS_INFO("moving to DISCARD_GRASPED_PART_Q2 ");
-                    move_to_jspace_pose(q_Q2_discard_pose_);
-                    break;                       
-                case robot_move_as::RobotMoveGoal::BIN1_CRUISE_POSE:
-                    ROS_INFO("moving to BIN1_CRUISE_POSE");
-                    move_to_jspace_pose(q_bin1_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN2_CRUISE_POSE:
-                    ROS_INFO("moving to BIN2_CRUISE_POSE");
-                    move_to_jspace_pose(q_bin2_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE:
-                    ROS_INFO("moving to BIN3_CRUISE_POSE");
-                    move_to_jspace_pose(q_bin3_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN4_CRUISE_POSE:
-                    ROS_INFO("moving to BIN4_CRUISE_POSE");
-                    move_to_jspace_pose(q_bin4_cruise_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN5_CRUISE_POSE:
-                    ROS_INFO("moving to BIN5_CRUISE_POSE");
-                    move_to_jspace_pose(q_bin5_cruise_pose_);
-                    break;                    
-                case robot_move_as::RobotMoveGoal::BIN1_HOVER_POSE:
-                    ROS_INFO("moving to BIN1_HOVER_POSE");
-                    move_to_jspace_pose(q_bin1_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN2_HOVER_POSE:
-                    ROS_INFO("moving to BIN2_HOVER_POSE");
-                    move_to_jspace_pose(q_bin2_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN3_HOVER_POSE:
-                    ROS_INFO("moving to BIN3_HOVER_POSE");
-                    move_to_jspace_pose(q_bin3_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN4_HOVER_POSE:
-                    ROS_INFO("moving to BIN4_HOVER_POSE");
-                    move_to_jspace_pose(q_bin4_hover_pose_);
-                    break;
-                case robot_move_as::RobotMoveGoal::BIN5_HOVER_POSE:
-                    ROS_INFO("moving to BIN5_HOVER_POSE");
-                    move_to_jspace_pose(q_bin5_hover_pose_);
-                    break;    
-                case robot_move_as::RobotMoveGoal::INIT_POSE:
-                    ROS_INFO("moving to init pose");
-                    move_to_jspace_pose(q_init_pose_);
-                    break;
-                default:
+            //bool RobotMoveActionServer::get_pose_from_code(unsigned short int POSE_CODE, Eigen::VectorXd &q_vec) ;q_des_7dof_
+            if (get_pose_from_code(goal->predfinedPoseCode,q_des_7dof_)) {
+                current_pose_code_=goal->predfinedPoseCode;
+                move_to_jspace_pose(q_des_7dof_);               
+                joint_trajectory_publisher_.publish(traj_);
+                result_.success = true;
+                result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
+                //result_.robotState = robotState;
+                ros::Duration(2.0).sleep();
+                as.setSucceeded(result_);                
+            }
+            else {
                     ROS_WARN("predefined move code not implemented!");
                     result_.success = false;
                     result_.errorCode = robot_move_as::RobotMoveResult::WRONG_PARAMETER;
                     as.setAborted(result_);
             }
-            if (result_.success == true) {
-                joint_trajectory_publisher_.publish(traj_);
-                result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
-                //result_.robotState = robotState;
-                ros::Duration(2.0).sleep();
-                as.setSucceeded(result_);
-            }
             break;
+            
 
         case robot_move_as::RobotMoveGoal::GRASP:
             ROS_INFO("GRASP");

@@ -78,6 +78,8 @@ void ShipmentFiller::box_camera_1_callback(const osrf_gear::LogicalCameraImage::
         box_cam_1_dist_to_go_ = -box_y_val;
         //compute the box pose w/rt world
         box_1_stamped_pose_ = compute_stPose(cam_pose, box_pose);
+        //correct this for known height:
+        box_1_stamped_pose_.pose.position.z = BOX_HEIGHT;
         //ROS_INFO("box_cam_1_dist_to_go_ = %f",box_cam_1_dist_to_go_);
     }
 }
@@ -236,18 +238,26 @@ bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
     osrf_gear::Product product;
     geometry_msgs::PoseStamped bin_part_pose_stamped, box_part_pose_stamped;
     geometry_msgs::Pose pose_wrt_box;
-    ROS_INFO("moving to bin3 cruise pose");
-    robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE);
+    //ROS_INFO("moving to bin3 cruise pose");
+    //robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE);
 
     ROS_INFO("updating inventory");
     orderManager.update_inventory();
+    //void OrderManager::get_inventory(inventory_msgs::Inventory &inventory_msg)
+    //orderManager.get_inventory(inventory_msg_);
+    
     bool move_status;
-    bool destination_close_to_near_box_edge=false; //if too close, may need wrist flip
+    //bool destination_close_to_near_box_edge=false; //if too close, may need wrist flip
+    //  unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);
+    unsigned short int box_placement_location_code;
     for (int ipart = 0; ipart < num_parts; ipart++) {
         product = shipment.products[ipart];
         string part_name(product.type);
+        
         ROS_INFO_STREAM("part " << ipart << " name is: " << part_name << endl);
-        if (!orderManager.find_part(part_name, bin_num, bin_part_pose_stamped)) {
+        //bool ShipmentFiller::select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+
+        if (!select_part_from_inventory(part_name, bin_num, bin_part_pose_stamped)) {
             ROS_WARN_STREAM("part " << part_name << " not in inventory!");
         } else { //if here, have found part in inventory; grab it
             //populate a "Part" message
@@ -256,24 +266,34 @@ bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
             pick_part.pose = bin_part_pose_stamped;
             ROS_INFO_STREAM("found part in bin " << bin_num << " at location " << bin_part_pose_stamped << endl);
             if (!pick_part_fnc(pick_part)) {
-                ROS_WARN("pick_part failed");
+                ROS_WARN("-----------pick_part failed--------------");
             } else {
                 ros::spinOnce(); //update view of box1
                 //populate a destination Part object
                 //compute the destination location:
                 //  geometry_msgs::PoseStamped ShipmentFiller::compute_stPose_part_in_box_wrt_world(geometry_msgs::Pose pose_wrt_box,geometry_msgs::PoseStamped box_pose_wrt_world) {
                 pose_wrt_box = product.pose;
-                destination_close_to_near_box_edge = test_pose_close_to_near_box_edge(pose_wrt_box);
+                box_placement_location_code = get_box_placement_location_code(pose_wrt_box);
+                ROS_INFO("part destination placement code: %d ",(int) box_placement_location_code);
+                //destination_close_to_near_box_edge = test_pose_close_to_near_box_edge(pose_wrt_box);
                 box_part_pose_stamped = compute_stPose_part_in_box_wrt_world(pose_wrt_box, box_1_stamped_pose_);
+                //correct the height of the box, which is known:
+                
 
                 place_part = pick_part;
-                place_part.location = inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
+                //FIX ME: should use RobotMove codes for destination
+                //???jspace cruise pose expects location code from PART message!!
+                //reconcile this!!
+                //Part::QUALITY_SENSOR_1
+                place_part.location = inventory_msgs::Part::QUALITY_SENSOR_1;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
+                        
+                //place_part.location = robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
                 place_part.pose = box_part_pose_stamped;
-                place_part.use_wrist_far = destination_close_to_near_box_edge; //choose wrist near vs wrist far soln
+                place_part.box_placement_location_code = box_placement_location_code; //choose wrist near vs wrist far soln
                 ROS_INFO_STREAM("part destination: " << place_part << endl);
                 //bool release_placed_part(double timeout=2.0);
                 //move_status = place_part_no_release(place_part);
-                
+                ROS_INFO("attempting call to place_part_no_release");
                 if (!place_part_no_release(place_part)) {
                     ROS_WARN("place_part failed");
                 } else { //release the part
@@ -322,8 +342,79 @@ bool ShipmentFiller::pick_part_fnc(inventory_msgs::Part part) {
 }
 
 //    geometry_msgs::Pose pose_wrt_box;
+/*
 bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
-    return true;
+//FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
+  //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
+    double x = pose_wrt_box.position.x;
+    double y = pose_wrt_box.position.y;
+    if ((x<0)&&(y>0)) return true;
+  //maybe good enough??
+    return false;
+}
+*/
+//box placement codes:
+//int8 PLACE_PART_FAR_RIGHT = 30
+//int8 PLACE_PART_FAR_LEFT = 31
+//int8 PLACE_PART_NEAR_RIGHT = 32
+//int8 PLACE_PART_NEAR_LEFT = 33
+//pose_of_part_wrt_box:
+//x<0 is "near"  x>0 is "far"
+//y<0 is "right", y>0 is "left"
+unsigned short int ShipmentFiller::get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box) {
+    double x = pose_wrt_box.position.x;
+    double y = pose_wrt_box.position.y;
+    if ((x<=0)&&(y<=0)) { 
+        return robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_RIGHT;
+    }
+    if ((x<0)&&(y>0)) { 
+        return robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_LEFT;
+    }    
+     if ((x>0)&&(y<=0)) { 
+        return robot_move_as::RobotMoveGoal::PLACE_PART_FAR_RIGHT;
+    }
+
+    return robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT;
+}
+
+/*
+bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
+//FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
+  //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
+    double x = pose_wrt_box.position.x;
+    double y = pose_wrt_box.position.y;
+    if ((x<0)&&(y>0)) return true;
+  //maybe good enough??
+    return false;
+}
+*/
+
+//given a part name, see if it is in inventory AND is IK reachable (pickable)
+bool ShipmentFiller::select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+    orderManager.get_inventory(inventory_msg_);
+    int part_id = mappings[part_name];
+    int num_parts_avail = inventory_msg_.inventory[part_id].part_stamped_poses.size();
+    if (num_parts_avail<1) return false;
+    inventory_msgs::Part part;  //object to populate for use w/ robotMove 
+
+  //get the first available part:
+  for (int ipart=0;ipart<num_parts_avail;ipart++) {
+     bin_num =   inventory_msg_.inventory[part_id].bins[ipart];
+     part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[ipart];
+     //convert to a "Part" object
+     part.location = bin_num;
+     part.pose = part_pose;
+     part.name = part_name.c_str();
+     //check if this part is pickable:
+     //    unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
+     //bool RobotMove::test_is_pickable(Part part) {
+     if (robotMove.test_is_pickable(part)) {
+         return true; //found a viable candidate; stop here, returning arg values
+     }
+  }
+  //ROS_WARN_STREAMER("no "<<part_name<<" parts are both in stock and pickable");
+  return false;
+
 }
 
 
@@ -331,13 +422,13 @@ bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_w
 
 bool ShipmentFiller::place_part_no_release(inventory_msgs::Part destination_part) {
     bool robot_move_ok;
-    ROS_INFO("moving to box-fill cruise pose ");
-    robot_move_ok = robotMove.move_cruise_pose(destination_part,4.0);
-    ros::Duration(2.0).sleep();
-    if (!robot_move_ok) {
-        ROS_WARN("problem moving to box-fill cruise pose");
-        return false;
-    }
+    //ROS_INFO("moving to box-fill cruise pose ");
+    //robot_move_ok = robotMove.move_cruise_pose(destination_part,4.0);
+    //ros::Duration(2.0).sleep();
+    //if (!robot_move_ok) {
+    //    ROS_WARN("problem moving to box-fill cruise pose");
+    //    return false;
+    //}
     ROS_INFO("attempting part placement");
     robot_move_ok = robotMove.place_part_no_release(destination_part, 5.0);
     ros::Duration(2.0).sleep();

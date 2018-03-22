@@ -98,28 +98,68 @@ int main(int argc, char **argv) {
     //set_ur_jnt_names_7dof();
     
     Eigen::VectorXd q_in,q_7dof_bin8_approach,q_6dof_bin8_approach;
+    Eigen::VectorXd q_7dof_bin5_approach,q_6dof_bin5_approach;    
+    Eigen::VectorXd q_7dof_Q1_dropoff,q_6dof_Q1_dropoff,q_DH_6dof_test,q_UR_6dof_test;     
+    Eigen::VectorXd q_Q1_dropoff_far_left,q_Q1_dropoff_near_left;
+    Eigen::VectorXd q_Q1_dropoff_far_right,q_Q1_dropoff_near_right;
+    q_Q1_dropoff_far_left.resize(7);
+    q_Q1_dropoff_near_left.resize(7);
+    q_Q1_dropoff_far_left<<1.4, 0, -0.28, 6.0, 3.6, -1.51, 0;
+    q_Q1_dropoff_near_left<<1.5, 0, -0.3, 5.8, 0.4, 1.57, 0;
+    q_Q1_dropoff_far_right.resize(7);
+    q_Q1_dropoff_near_right.resize(7);
+    q_Q1_dropoff_far_right<<-1.0, 0, -2.99, 2.8, 5.6, 1.57, 0;
+    q_Q1_dropoff_near_right<<-1.1, 0, -2.95, 2.7, 2.45, -1.57, 0;  
     Eigen::Matrix4d A61;
     q_in.resize(NJNTS);
     g_q_vec.resize(NJNTS);
-    
+    q_DH_6dof_test.resize(6);
+    q_UR_6dof_test.resize(6);
 
     //q_in << 0,0,0,0,0,0;
     //q_in << 0.1, -0.2, 0.3, 0.4, 0.5, 0.6;
     //g_q_vec = q_in;
     
     q_7dof_bin8_approach.resize(7);
+    q_7dof_bin5_approach.resize(7);
+    q_7dof_Q1_dropoff.resize(7);
     //q_7dof_bin8_approach<<1.6060321701927283, 1.1997527238484404, -0.5616775356330734, 3.09204146853297, 5.25543748534748, -0.05053081571104778, 1.558133295200455;
      q_7dof_bin8_approach<<1.642581263511942, 1.1997568080035619, -0.5746198853014306, 2.8616105091711717, 5.228917531483109, -0.2806802483645652, 1.5680916185519953;
     //q_7dof_bin8_approach<<1.85, -0.535, -0.47, 3.14, 3.33, -1.57, 0.50;
-    q_6dof_bin8_approach = fwd_solver.map726dof(q_7dof_bin8_approach);
+     
+     
 
+
+    q_7dof_bin5_approach<< 2.14, 1.7, -1.50, 3.14, 3.27, -1.51, 0; //in UR coords
+    q_6dof_bin5_approach = fwd_solver.map726dof(q_7dof_bin5_approach);
+    
+   
+    
+    //q_7dof_Q1_dropoff<< -1.0, 0, -2.99, 2.8, 5.6, 1.57, 0;//-1.0, 0, -2.99, 2.8, 5.6, 1.57, 0
+    //q_7dof_Q1_dropoff<< -1.1, 0, -2.95, 2.7, 2.45, -1.57, 0; //forward, wrist-near
+    //q_7dof_Q1_dropoff<< 1.5, 0, -0.3, 5.8, 0.4, 1.57, 0; //drop-off near left --> fwd and wrist-near; 1.5, 0, -0.3, 5.8, 0.4, 1.57, 0
+    q_7dof_Q1_dropoff<<1.5, -0.35, -0.3, 6.2, 0.4, 1.57, 0;
+    q_6dof_Q1_dropoff = fwd_solver.map726dof(q_7dof_Q1_dropoff);
+    
+    
+    Eigen::VectorXd q_7dof_test;
+    q_7dof_test.resize(7);
+    q_7dof_test<<0.2, 0, -0.1, 0, 1.57, 1.50, 0; //0,0,0,0,1.57,1.50,0; //0,0,0,0,1.57,1.57,0; //set test pose here, in UR coords
+
+    //try different test values here:
+    q_7dof_test=q_Q1_dropoff_near_right; //q_7dof_Q1_dropoff; //q_7dof_bin5_approach;
+    
+    q_UR_6dof_test = fwd_solver.map726dof(q_7dof_test);  
+    //void UR10FwdSolver::q_UR_to_q_DH(Eigen::VectorXd q_soln_UR, Eigen::VectorXd &q_soln_DH){
+    fwd_solver.q_UR_to_q_DH(q_UR_6dof_test,q_DH_6dof_test); 
     //hard code a pose of interest:
     //q_6dof_bin8_approach << 1.6060321701927283, -0.5616775356330734, 3.09204146853297, 5.25543748534748, -0.05053081571104778, 1.558133295200455;
    // Eigen::Affine3d affine_vacuum;
-        Eigen::Affine3d A_fwd_DH = fwd_solver.fwd_kin_solve(q_6dof_bin8_approach); //fwd_kin_solve
+        Eigen::Affine3d A_fwd_DH = fwd_solver.fwd_kin_solve(q_UR_6dof_test); //fwd_kin_solve
         // rotate DH frame6 to reconcile with URDF frame7:
         //Eigen::Affine3d A_fwd_URDF = A_fwd_DH*a_tool;
-        std::cout << "q_in: " << q_6dof_bin8_approach.transpose() << std::endl;
+        std::cout << "q_in (UR): " << q_UR_6dof_test.transpose() << std::endl;        
+        std::cout << "q_in (DH): " << q_DH_6dof_test.transpose() << std::endl;
         std::cout << "A rot: " << std::endl;
         std::cout << A_fwd_DH.linear() << std::endl;
         std::cout << "A origin: " << A_fwd_DH.translation().transpose() << std::endl;
@@ -134,13 +174,29 @@ int main(int argc, char **argv) {
         nsolns = q6dof_solns.size();
         std::cout << "number of IK solutions: " << nsolns << std::endl;    
         //select the solution that is closest to some reference--try q_6dof_bin8_approach
-        Eigen::VectorXd q_fit;
-        q_fit = fwd_solver.closest_soln(q_6dof_bin8_approach,q6dof_solns);
-        cout<<"best fit soln: "<<q_fit.transpose()<<endl;
+        //Eigen::VectorXd q_fit;
+        //q_fit = fwd_solver.closest_soln(q_6dof_bin8_approach,q6dof_solns);
+        //cout<<"best fit soln: "<<q_fit.transpose()<<endl;
         
+        //test fwd kin:
+        std::cout << "q_in (UR): " << q_UR_6dof_test.transpose() << std::endl;        
+        
+        Eigen::Vector3d O_6,O_6_des;
+        O_6_des = A_fwd_DH.translation();
+        ROS_INFO("testing solns; if 4, order = fwd-far, fwd-near, rvrs-far, rvrs-near");
+        ROS_INFO_STREAM("desired hand position: " <<A_fwd_DH.translation().transpose() <<endl);
+        ROS_INFO("test solns: ");
+        for (int i=0;i<nsolns;i++) {
+            ROS_INFO_STREAM("q_soln: "<<q6dof_solns[i].transpose()<<endl);
+            A_fwd_DH = fwd_solver.fwd_kin_solve(q6dof_solns[i]);
+            O_6 = A_fwd_DH.translation();
+            double hand_err = (O_6_des-O_6).norm();
+            ROS_INFO_STREAM("fwd kin hand position err: " <<hand_err <<endl);
+        }
         
 
         return 0;  //DEBUG
+
         Eigen::Matrix4d A_wrist;
     //***********************************************************
     ros::Subscriber joint_state_sub = nh.subscribe("/joint_states", 1, jointStatesCb);
@@ -220,7 +276,7 @@ int main(int argc, char **argv) {
             Eigen::Quaterniond quat(R_flange);
             std::cout<<"   quat: "<<quat.x()<<", "<<quat.y()<<", "<<quat.z()<<", "<<quat.w()<<endl;
             
-            cout<<"   fwd kin flange origin: "<<A_fwd_DH.translation().transpose()<<endl;
+            cout<<"   fwd kin flange origin: "<<A_fwd_DH.translation().transpose()<<endl; 
             //A_wrist = fwd_solver.get_wrist_frame();
             //qstd::cout << "fwd kin wrist point: " << A_wrist(0, 3) << ", " << A_wrist(1, 3) << ", " << A_wrist(2, 3) << std::endl;
 

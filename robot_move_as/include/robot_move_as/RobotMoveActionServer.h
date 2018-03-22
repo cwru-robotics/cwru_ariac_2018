@@ -75,9 +75,12 @@ const bool DOWN = false;
 // had to increase tray height by 0.010 to get drop-off height of tray correct.  Don't know why
 //const double TRAY1_HEIGHT = 0.755+0.010; //pad tray height as manual fix...gravity droop problem?
 const double BIN_HEIGHT = 0.725;
-const double CONVEYOR_HEIGHT = 0.907;
-const double BASE_LINK_HEIGHT = 1.0;
-const double BOX_HEIGHT = 0.4446;
+//const double CONVEYOR_HEIGHT = 0.907;
+
+const double BASE_LINK_HEIGHT = 0.8;
+const double BASE_LINK_X_COORD = 0.3; //    Oe[0] = BASE_LINK_X_COORD; //0.3;
+
+const double BOX_HEIGHT = 0.460; //0.4446;  //try elevating box height to provide dropoff clearance
 
 //const double QUAL2_CONVEYOR_SPEED = -0.2;
 
@@ -113,17 +116,36 @@ private:
     unsigned short int move_part(const robot_move_as::RobotMoveGoalConstPtr &goal,double timeout=0);   
     unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
     unsigned short int is_placeable(inventory_msgs::Part part);
+    
+    unsigned short int current_pose_code_;
 
     
     Eigen::VectorXd q_des_7dof_,q_cruise_pose_,bin_cruise_jspace_pose_,bin_hover_jspace_pose_;
     //Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
     Eigen::VectorXd source_hover_pose_,source_cruise_pose_; 
     Eigen::VectorXd destination_hover_pose_,destination_cruise_pose_;
+    
+    Eigen::VectorXd q_Q1_righty_discard_,q_Q1_righty_hover_,q_Q1_righty_hover_flip_,q_Q1_righty_cruise_;
+    Eigen::VectorXd q_Q1_lefty_discard_,q_Q1_lefty_hover_,q_Q1_lefty_hover_flip_,q_Q1_lefty_cruise_;
+    Eigen::VectorXd q_Q1_arm_vertical_;
+    Eigen::VectorXd q_Q1_dropoff_near_left_,q_Q1_dropoff_far_left_,q_Q1_dropoff_near_right_,q_Q1_dropoff_far_right_;
+    
+    //get rid of some of  these!
+    
+    
      Eigen::VectorXd box_hover_pose_,box_cruise_pose_;   
-    Eigen::VectorXd q_box_Q1_hover_pose_,q_box_Q1_cruise_pose_;   
+    //Eigen::VectorXd q_box_Q1_hover_pose_,q_box_Q1_cruise_pose_,q1_box_Q1_hover_righty_flip_;   
+    //Eigen::VectorXd q_box_Q1_hover_lefty_,q_box_Q1_reverse_cruise_,q_box_Q1_arm_vertical_,q_box_Q1_dropoff_near_right;
+    //Eigen::VectorXd q_box_Q1_hover_lefty_flip_;
+    //Eigen::VectorXd q_box_Q1_nom_dropoff_near_left_,q_box_Q1_nom_dropoff_near_right_;
+    //Eigen::VectorXd q_box_Q1_nom_dropoff_far_left_,q_box_Q1_nom_dropoff_far_right_;
+    
     Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;   
     Eigen::VectorXd q_Q1_discard_pose_,q_Q2_discard_pose_;
-    Eigen::VectorXd q_bin_cruise_pose_;
+    Eigen::VectorXd q_Q1_cruise_pose_,q_Q1_hover_pose_;
+    Eigen::VectorXd q_bin_cruise_pose_,q_destination_cruise_pose_;
+    Eigen::VectorXd q_manip_nom_;
+    
     Eigen::VectorXd q_init_pose_,q_hover_pose_;
     Eigen::VectorXd pickup_jspace_pose_,dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_,approach_dropoff_jspace_pose_;
@@ -158,10 +180,13 @@ private:
     //bool bin_cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec);
     
 
-    //bool box_cruise_jspace_pose(int8_t box, Eigen::VectorXd &q_vec);
-    bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
-    bool cruise_jspace_pose(int8_t agv, Eigen::VectorXd &q_vec);
-    
+    //bool box_cruise_jspace_pose(int8_t box, Eigen::VectorXd &q_vec); 
+    bool hover_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec);
+    bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec); //{ hover_jspace_pose(bin,(unsigned short int) 0,&q_vec)};  //default, no box location  code    
+    //bool RobotMoveActionServer::hover_jspace_pose(int8_t bin, int8_t box_placement_location_code, Eigen::VectorXd &qvec)
+    bool cruise_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec);
+    bool cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec); // { return cruise_jspace_pose(bin,robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN,&q_vec);}; //default, no box location code
+    bool set_q_manip_nom_from_destination_part(Part part);
     //trivial func to compute affine3 for robot_base w/rt world;  only depends on rail displacement
     Eigen::Affine3d  affine_base_link(double q_rail);
 
@@ -186,9 +211,10 @@ private:
     //bool get_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     //compute q_vec_soln corresponding to approach to specified grasp pose; specify approach distance; choose IK soln that is closest
     //to grasp IK soln
-    //2nd flavor, includes bool for wrist-near/wrist-far soln choices
+    //2nd flavor, includes bool for wrist-near/wrist-far soln choices 
     bool get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
-                                          Eigen::VectorXd approx_jspace_pose, bool use_wrist_far, Eigen::VectorXd &q_vec_soln);  
+                                          unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec_soln);
+
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
 
 
@@ -217,6 +243,8 @@ public:
     RobotMoveActionServer(ros::NodeHandle nodeHandle, string topic);
     void executeCB(const robot_move_as::RobotMoveGoalConstPtr &goal);
     void preemptCB();
+    bool get_pose_from_code(unsigned short int POSE_CODE, Eigen::VectorXd &q_vec);
+
 };
 
 

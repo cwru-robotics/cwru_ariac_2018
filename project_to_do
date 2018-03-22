@@ -62,7 +62,9 @@ orderManager is able to:
    define a "destination" for discarding bad parts
 
 
-
+----place_part_fnc_no_release.cpp:
+  computed poses (per compute_key_poses.cpp) look bad; FIX ME
+  need 4 key poses for each of 4 cases (reach near left to far  right)
 
 
 

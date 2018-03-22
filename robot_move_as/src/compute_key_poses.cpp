@@ -28,7 +28,7 @@ bool RobotMoveActionServer::rail_prepose(int8_t location, double &q_rail) {
             q_rail = q_bin8_hover_pose_[1]; //extract rail position for bin1 key pose
             break;
         case Part::QUALITY_SENSOR_1:
-            q_rail = q_box_Q1_hover_pose_[1]; //extract rail position for key pose
+            q_rail = q_Q1_righty_hover_[1]; //extract rail position for key pose
             break;     
         case Part::QUALITY_SENSOR_2:
             q_rail = q_box_Q2_hover_pose_[1]; //extract rail position for key pose
@@ -40,7 +40,92 @@ bool RobotMoveActionServer::rail_prepose(int8_t location, double &q_rail) {
     return true; // if here, got valid bin code and filled in q_rail
 }
 
-bool RobotMoveActionServer::hover_jspace_pose(int8_t bin, Eigen::VectorXd &qvec) {
+bool RobotMoveActionServer::get_pose_from_code(unsigned short int POSE_CODE, Eigen::VectorXd &q_vec) {
+    ROS_INFO("get_pose_from_code: POSE_CODE = %d",(int) POSE_CODE);
+               switch (POSE_CODE) {
+                   case robot_move_as::RobotMoveGoal::INIT_POSE:
+                       ROS_INFO("get_pose_from_code: requested q_vec of INIT_POSE");
+                       //choose bin3 cruise pose:
+                       q_vec = q_bin1_cruise_pose_; //shape is good, but change sled position
+                       q_vec[1] = q_bin3_hover_pose_[1]; //set rail position same as hover pose
+                       return true;
+                    break;  
+                //various cases for pre-defined poses go here:
+                    //these are all reachable from each other:
+                    //Q1_RIGHTY_DISCARD                   
+                    //Q1_RIGHTY_HOVER
+                    //Q1_RIGHTY_HOVER_FLIP
+                    //Q1_RIGHTY_CRUISE                
+                case robot_move_as::RobotMoveGoal::Q1_RIGHTY_DISCARD:
+                    q_vec = q_Q1_righty_discard_;
+                    return true;
+                    break;                 
+                case robot_move_as::RobotMoveGoal::Q1_RIGHTY_HOVER:
+                    q_vec = q_Q1_righty_hover_;
+                    return true;                  
+                    break;
+                 case robot_move_as::RobotMoveGoal::Q1_RIGHTY_HOVER_FLIP:  
+                    q_vec = q_Q1_righty_hover_flip_;
+                    return true;                      
+                    break;                                     
+                case robot_move_as::RobotMoveGoal::Q1_RIGHTY_CRUISE:
+                    q_vec = q_Q1_righty_cruise_;
+                    return true;                       
+                    break;
+                    
+                case robot_move_as::RobotMoveGoal::Q1_LEFTY_DISCARD:
+                    q_vec = q_Q1_lefty_discard_;
+                    return true;
+                    break;                 
+                case robot_move_as::RobotMoveGoal::Q1_LEFTY_HOVER:
+                    q_vec = q_Q1_lefty_hover_;
+                    return true;                  
+                    break;
+                 case robot_move_as::RobotMoveGoal::Q1_LEFTY_HOVER_FLIP:  
+                    q_vec = q_Q1_lefty_hover_flip_;
+                    return true;                      
+                    break;                                     
+                case robot_move_as::RobotMoveGoal::Q1_LEFTY_CRUISE:
+                    q_vec = q_Q1_lefty_cruise_;
+                    return true;                       
+                    break;
+                    //these are sequentially reachable:
+                    //Q1_RIGHTY_CRUISE                    
+                    //Q1_ARM_VERTICAL                     
+                    //Q1_LEFTY_CRUISE    
+                    
+                    
+                case robot_move_as::RobotMoveGoal::Q1_ARM_VERTICAL:
+                    q_vec = q_Q1_arm_vertical_;
+                    return true;                       
+                    break;                    
+  
+        
+                //repeat for Q2:                   
+                   
+                // want bin codes too?  example:
+                case robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE:
+                       //q_vec
+                    //bool RobotMoveActionServer::cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec) {
+                    return (cruise_jspace_pose(Part::BIN3,q_vec)); //this fnc uses cruise codes
+                       
+                       return true;
+                       break;
+
+                default:
+                    ROS_WARN("predefined move code not implemented!");
+                    return false;
+            }
+}
+
+//xxx FIX ME
+bool RobotMoveActionServer::hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec) {
+        unsigned short int dropoff_code = robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN;
+   return hover_jspace_pose_w_code(bin,dropoff_code,q_vec);  
+}
+
+
+bool RobotMoveActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &qvec) {
     switch (bin) {
         case Part::BIN1:
             qvec = q_bin1_hover_pose_;
@@ -74,9 +159,33 @@ bool RobotMoveActionServer::hover_jspace_pose(int8_t bin, Eigen::VectorXd &qvec)
             qvec = q_bin8_hover_pose_;
             return true; //valid code
             break;
-        case Part::QUALITY_SENSOR_1:
-            qvec = q_box_Q1_hover_pose_;
-            return true; //valid code
+        case Part::QUALITY_SENSOR_1: //4 different drop-off hover poses, depending on placement location in box
+            ROS_INFO("destination location QUALITY_SENSOR_1");
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT) {
+                unsigned short int hover_code = robot_move_as::RobotMoveGoal::Q1_LEFTY_HOVER;
+                get_pose_from_code(hover_code, qvec);                 
+                //qvec = q_Q1_righty_hover_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_RIGHT) {
+                ROS_INFO("place part far right");
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_LEFTY_HOVER_FLIP, qvec);               
+                //qvec = q_Q1_righty_hover_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_LEFT) {
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_RIGHTY_HOVER_FLIP, qvec);
+                //qvec = q_Q1_righty_hover_; //Q1_RIGHTY_HOVER_FLIP
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT ) {
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_RIGHTY_HOVER, qvec);
+                //qvec = q_Q1_righty_hover_;//Q1_RIGHTY_HOVER
+                return true;
+            }
+            //if here, failed            
+            ROS_WARN("dropoff location code not recognized!");
+            return false;
             break;
         case Part::QUALITY_SENSOR_2:
             qvec = q_box_Q2_hover_pose_;
@@ -88,7 +197,41 @@ bool RobotMoveActionServer::hover_jspace_pose(int8_t bin, Eigen::VectorXd &qvec)
     }
 }
 
-bool RobotMoveActionServer::cruise_jspace_pose(int8_t location, Eigen::VectorXd &q_vec) {
+
+    bool RobotMoveActionServer::set_q_manip_nom_from_destination_part(Part part) {
+        unsigned short int box_placement_location_code = part.box_placement_location_code;
+     switch (part.location) {       
+        case Part::QUALITY_SENSOR_1: //4 different drop-off hover poses, depending on placement location in box
+            ROS_INFO("destination location QUALITY_SENSOR_1");
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_RIGHT) {
+                q_manip_nom_ = q_Q1_dropoff_near_right_;                
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_RIGHT) {
+                q_manip_nom_ = q_Q1_dropoff_far_right_;                //qvec = q_Q1_righty_hover_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_LEFT) {
+                q_manip_nom_ = q_Q1_dropoff_near_left_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT ) {
+                q_manip_nom_ = q_Q1_dropoff_far_left_;
+                return true;
+            }        
+
+        default:
+            ROS_WARN("Q1 nom dropoff code not recognized");
+            return false;
+    }
+}
+
+bool RobotMoveActionServer::cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec) {
+    unsigned short int dropoff_code = robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN;
+    return cruise_jspace_pose_w_code(bin,dropoff_code,q_vec);
+}; // { }; //default, no box location code
+
+bool RobotMoveActionServer::cruise_jspace_pose_w_code(int8_t location,unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec) {
     switch (location) {
         case Part::BIN1:
             q_vec = q_bin1_cruise_pose_; //shape is good, but change sled position
@@ -122,8 +265,33 @@ bool RobotMoveActionServer::cruise_jspace_pose(int8_t location, Eigen::VectorXd 
             q_vec[1] = q_bin8_hover_pose_[1]; //set rail position same as hover pose
             break;              
         case Part::QUALITY_SENSOR_1:
-            q_vec = q_box_Q1_cruise_pose_;
-            break;        
+            //FIX ME!
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_RIGHT) {
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_RIGHTY_CRUISE, q_vec);                 
+                //qvec = q_Q1_righty_hover_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_RIGHT) {
+                //Q1_LEFTY_HOVER_FLIP
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_LEFTY_CRUISE, q_vec);               
+                //qvec = q_Q1_righty_hover_;
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_LEFT) {
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_LEFTY_CRUISE, q_vec);
+                //qvec = q_Q1_righty_hover_; //Q1_RIGHTY_HOVER_FLIP
+                return true;
+            }
+            if (box_placement_location_code==robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT ) {
+                get_pose_from_code(robot_move_as::RobotMoveGoal::Q1_LEFTY_CRUISE, q_vec);
+                //qvec = q_Q1_righty_hover_;//Q1_RIGHTY_HOVER
+                return true;
+            }
+            //if here, failed            
+            ROS_WARN("dropoff location code not recognized!");
+            return false;
+            break;            
+      
         case Part::QUALITY_SENSOR_2:
             q_vec = q_box_Q2_cruise_pose_;
             break; 
@@ -270,7 +438,7 @@ double RobotMoveActionServer::get_surface_height(Part part) {
     switch (part.location) {
         case Part::QUALITY_SENSOR_1:
         case Part::QUALITY_SENSOR_2:
-            return CONVEYOR_HEIGHT; 
+            return BOX_HEIGHT; 
             break;
         case Part::BIN1:
         case Part::BIN2:
@@ -333,9 +501,9 @@ Eigen::Affine3d RobotMoveActionServer::affine_base_link(double q_rail) {
     Eigen::Affine3d affine_base_link_wrt_world;
     Eigen::Quaterniond q;
     Eigen::Vector3d Oe;
-    Oe[0] = 0.3;
+    Oe[0] = BASE_LINK_X_COORD; //0.3;
     Oe[1] = q_rail+1.0;
-    Oe[2] = 0.8;
+    Oe[2] = BASE_LINK_HEIGHT; //0.8;
 
     q.x() = 0;
     q.y() = 0;
@@ -448,30 +616,63 @@ bool RobotMoveActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_
                                           Eigen::VectorXd approx_jspace_pose, Eigen::VectorXd &q_vec_soln) {
     bool success = true;
     std::vector<Eigen::VectorXd> q6dof_solns;
-    Eigen::VectorXd q6dof_ref;
+    Eigen::VectorXd q6dof_ref,q6dof_soln;
     q6dof_ref = fwd_solver_.map726dof(approx_jspace_pose); //convert to 6dof
     int nsolns = ik_solver_.ik_solve(affine_vacuum_gripper_pose_wrt_base_link, q6dof_solns);
-    //std::cout << "number of IK solutions: " << nsolns << std::endl;
-    nsolns = fwd_solver_.prune_solns_by_jnt_limits(q6dof_solns);
+    std::cout << "number of IK solutions: " << nsolns << std::endl;
+    //nsolns = fwd_solver_.prune_solns_by_jnt_limits(q6dof_solns);
     if (nsolns == 0) {
         ROS_WARN("NO viable IK solutions found");
         return false; // NO SOLUTIONS
     }
+    ROS_INFO_STREAM("q6dof_ref: "<<q6dof_ref.transpose()<<endl);
+    q6dof_soln = fwd_solver_.select_soln_near_qnom(q6dof_solns, q6dof_ref);
+
     double q_rail = approx_jspace_pose[1];
-    //select the solution that is closest to some reference--try q_6dof_bin6_pickup_pose
-    Eigen::VectorXd q_fit;
-    q_fit = fwd_solver_.closest_soln(q6dof_ref, q6dof_solns);
-    cout << "best fit soln: " << q_fit.transpose() << endl;
 
+    q_vec_soln = fwd_solver_.map627dof(q_rail, q6dof_soln);
+    ROS_INFO("q7 in UR coords: [%4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f]", q_vec_soln[0],
+             q_vec_soln[1], q_vec_soln[2], q_vec_soln[3], q_vec_soln[4], q_vec_soln[5], q_vec_soln[6]);             
+            
+    return success;
+}
 
-    q_vec_soln = fwd_solver_.map627dof(q_rail, q_fit);
+//get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, box_placement_location_code, dropoff_jspace_pose_))
+//BROKEN!!s
+bool RobotMoveActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
+                                          unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec_soln) {
+    bool success = true;
+    std::vector<Eigen::VectorXd> q6dof_solns;
+    Eigen::VectorXd q6dof_ref, q6dof_soln;
+    Eigen::VectorXd q_nom;
+
+    int nsolns = ik_solver_.ik_solve(affine_vacuum_gripper_pose_wrt_base_link, q6dof_solns);
+    if (nsolns == 0) {
+        ROS_WARN("NO viable IK solutions found");
+        return false; // NO SOLUTIONS
+    }    
+    //std::cout << "number of IK solutions: " << nsolns << std::endl;
+    //nsolns = fwd_solver_.prune_solns_by_jnt_limits(q6dof_solns);
+    if(!get_pose_from_code(box_placement_location_code, q_nom)) { //look up jspace pose from pose code
+        ROS_WARN("box placement code for q_nom not recognized!");
+        return false;
+    }
+    ROS_INFO_STREAM("q_nom: "<<q_nom.transpose()<<endl);
+        
+    q6dof_ref = fwd_solver_.map726dof(q_nom); //convert to 6dof  
+    
+    q6dof_soln = fwd_solver_.select_soln_near_qnom(q6dof_solns, q6dof_ref);
+
+    double q_rail = q_nom[1];
+ 
+    q_vec_soln = fwd_solver_.map627dof(q_rail, q6dof_soln);
     ROS_INFO("q7: [%4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f]", q_vec_soln[0],
              q_vec_soln[1], q_vec_soln[2], q_vec_soln[3], q_vec_soln[4], q_vec_soln[5], q_vec_soln[6]);
 
     return success;
 }
 
-
+/*
 bool RobotMoveActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
                                           Eigen::VectorXd approx_jspace_pose, bool use_wrist_far, Eigen::VectorXd &q_vec_soln) {
     bool success = true;
@@ -505,7 +706,7 @@ bool RobotMoveActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_
 
     return success;
 }
-
+*/
 //function to compute an approach pose:
 //specify the Eigen::Affine3d of grasp pose (pickup or dropoff); specify the IK solution to be used for this grasp pose;
 //specify the approach vertical standoff distance (e.g. 5cm);
@@ -516,7 +717,7 @@ bool RobotMoveActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum_gr
                                                 Eigen::VectorXd &q_vec_soln) {
     bool success = true;
     std::vector<Eigen::VectorXd> q6dof_solns;
-    Eigen::VectorXd q6dof_ref;
+    Eigen::VectorXd q6dof_ref,q6dof_soln;
     q6dof_ref = fwd_solver_.map726dof(approx_jspace_pose); //convert to 6dof
     //compute the affine of the approach pose:
     Eigen::Matrix3d R_grasp;  //approach pose should have identical orientation
@@ -531,19 +732,18 @@ bool RobotMoveActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum_gr
     //compute IK solutions for approach:
 
     int nsolns = ik_solver_.ik_solve(approach_affine, q6dof_solns);
-    //std::cout << "number of IK solutions: " << nsolns << std::endl;
-    nsolns = fwd_solver_.prune_solns_by_jnt_limits(q6dof_solns);
+
     if (nsolns == 0) {
         ROS_WARN("NO viable IK solutions found for approach IK");
         return false; // NO SOLUTIONS
     }
+    //select the solution that is closest to the chosen grasp IK soln    
+    q6dof_soln = fwd_solver_.select_soln_near_qnom(q6dof_solns, q6dof_ref);
+
     double q_rail = approx_jspace_pose[1];
-    //select the solution that is closest to the chosen grasp IK soln
-    Eigen::VectorXd q_fit;
-    q_fit = fwd_solver_.closest_soln(q6dof_ref, q6dof_solns);
-    cout << "best fit soln for approach: " << q_fit.transpose() << endl;
+ 
     //convert this back to a 7DOF vector, including rail pose
-    q_vec_soln = fwd_solver_.map627dof(q_rail, q_fit);
+    q_vec_soln = fwd_solver_.map627dof(q_rail, q6dof_soln);
     ROS_INFO("q7: [%4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f]", q_vec_soln[0],
              q_vec_soln[1], q_vec_soln[2], q_vec_soln[3], q_vec_soln[4], q_vec_soln[5], q_vec_soln[6]);
 

@@ -39,12 +39,12 @@ const int NJNTS = 6;
 using namespace std;
 
 //UR10 values:
-const double ur10_d1 = 0.1273; //alpha = pi/2
+const double ur10_d1 = 0.1273; //confirmed 2018  //alpha = pi/2
 const double ur10_a2 = 0.612; //-0.612; //alpha=0
-const double ur10_a3 = 0.5723; //-0.5723; //alpha=0
-const double ur10_d4 = 0.163941; //alpha = pi/2;
-const double ur10_d5 = 0.1157; //alpha = pi/2
-const double ur10_d6 = 0.0922; //alpha = pi/2
+const double ur10_a3 = 0.5723; //confirmed 2018; //-0.5723; //alpha=0
+const double ur10_d4 = 0.163941;//confirmed 2018; //alpha = pi/2;
+const double ur10_d5 = 0.1157; //confirmed 2018; alpha = pi/2  //0.1149?
+const double ur10_d6 = 0.0922; //confirmed 2018, to ee_link; alpha = pi/2
 
 const double DH_a1 = 0.0;
 const double DH_a2 = ur10_a2; //-0.612;
@@ -125,6 +125,8 @@ public:
     void q_DH_to_q_UR(Eigen::VectorXd q_soln_DH, Eigen::VectorXd &q_soln_UR);
     bool fit_joints_to_range(Eigen::VectorXd &qvec);
     bool fit_q_to_range(double q_min, double q_max, double &q);
+    double jspace_dist_from_nom(Eigen::VectorXd q_nom, Eigen::VectorXd q_soln);
+    Eigen::VectorXd select_soln_near_qnom(vector<Eigen::VectorXd> q_ik_solns, Eigen::VectorXd q_nom);
 
     Eigen::Affine3d get_affine_tool_wrt_flange() {
         return A_tool_wrt_flange_;
@@ -146,6 +148,7 @@ public:
     int prune_solns_by_jnt_limits(vector<Eigen::VectorXd> &q_ik_solns);
     Eigen::VectorXd get_wrist_near_soln(vector<Eigen::VectorXd> q_ik_solns);
     Eigen::VectorXd get_wrist_far_soln(vector<Eigen::VectorXd> q_ik_solns);
+    bool solve_K_eq_Acos_plus_Bsin(double K, double A, double B, std::vector<double> &q_solns);
 
 private:
     Eigen::Affine3d A_tool_wrt_flange_, affine_vacuum_wrt_tool0_;
@@ -156,6 +159,7 @@ private:
 
 };
 
+//class MH5020_IK_solver : public MH5020_fwd_solver
 class UR10IkSolver : UR10FwdSolver {
 public:
     UR10IkSolver(); //constructor;
@@ -164,6 +168,8 @@ public:
     //int ik_solve(Eigen::Affine3d const& desired_hand_pose); // given vector of q angles, compute fwd kin
     int ik_solve(Eigen::Affine3d const& desired_hand_pose, vector<Eigen::VectorXd> &q_ik_solns);
     //void get_solns(std::vector<Eigen::VectorXd> &q_solns);
+    Eigen::Vector3d get_O4_fwd(Eigen::Affine3d const& desired_hand_pose);
+    Eigen::Vector3d get_O4_rvrs(Eigen::Affine3d const& desired_hand_pose);
 
     //Eigen::MatrixXd get_Jacobian(const Vectorq6x1& q_vec);
 private:
