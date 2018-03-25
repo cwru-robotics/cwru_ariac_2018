@@ -19,6 +19,7 @@
 #include "grasp_and_release_fncs.cpp"
 #include "compute_key_poses.cpp"
 
+int ans; //for cout breakpoint debugging
 
 //CONSTRUCTOR:
 RobotMoveActionServer::RobotMoveActionServer(ros::NodeHandle nodeHandle, string topic) :
@@ -338,17 +339,27 @@ void RobotMoveActionServer::executeCB(const robot_move_as::RobotMoveGoalConstPtr
             break;            
 */
         case robot_move_as::RobotMoveGoal::RELEASE_PLACED_PART:
+            //will release grasp, depart, and move  to hover pose (not cruise pose)
             ROS_INFO("RELEASE_PLACED_PART");
-            errorCode = release_fnc(2.0); //fix error handling here
+            //release_fnc is a blocking fnc; will wait for confirmation of release up to max time set in arg
+            errorCode = release_fnc(5.0); //fix error handling here
+            ROS_INFO("grasp should be released now; moving to depart pose");
+            //cout<<"enter 1 to move  to depart pose: ";
+            //cin>>ans;
             //move to  approach/depart pose
             move_to_jspace_pose(approach_dropoff_jspace_pose_,2.0);
             ros::Duration(2.0).sleep();    
+
+            //cout<<"enter 1 to move to hover pose: ";
+            //cin>>ans;
             //move to  hover pose:
+            ROS_INFO("moving to hover pose");
             move_to_jspace_pose(bin_hover_jspace_pose_,2.0);
             ros::Duration(2.0).sleep();
 
             result_.success = true;
             result_.errorCode = robot_move_as::RobotMoveResult::NO_ERROR;
+            ROS_INFO("completed RELEASE_PLACED_PART");
             as.setSucceeded(result_);            
             break; 
 

@@ -124,21 +124,17 @@ private:
     //Eigen::VectorXd agv_hover_pose_,agv_cruise_pose_;
     Eigen::VectorXd source_hover_pose_,source_cruise_pose_; 
     Eigen::VectorXd destination_hover_pose_,destination_cruise_pose_;
+    double source_track_displacement_,destination_track_displacement_;
     
-    Eigen::VectorXd q_Q1_righty_discard_,q_Q1_righty_hover_,q_Q1_righty_hover_flip_,q_Q1_righty_cruise_;
-    Eigen::VectorXd q_Q1_lefty_discard_,q_Q1_lefty_hover_,q_Q1_lefty_hover_flip_,q_Q1_lefty_cruise_;
+    Eigen::VectorXd q_Q1_rvrs_discard_,q_Q1_rvrs_hover_,q_Q1_rvrs_hover_flip_,q_Q1_rvrs_cruise_;
+    Eigen::VectorXd q_Q1_fwd_discard_,q_Q1_fwd_hover_,q_Q1_fwd_hover_flip_,q_Q1_fwd_cruise_;
     Eigen::VectorXd q_Q1_arm_vertical_;
     Eigen::VectorXd q_Q1_dropoff_near_left_,q_Q1_dropoff_far_left_,q_Q1_dropoff_near_right_,q_Q1_dropoff_far_right_;
     
     //get rid of some of  these!
     
     
-     Eigen::VectorXd box_hover_pose_,box_cruise_pose_;   
-    //Eigen::VectorXd q_box_Q1_hover_pose_,q_box_Q1_cruise_pose_,q1_box_Q1_hover_righty_flip_;   
-    //Eigen::VectorXd q_box_Q1_hover_lefty_,q_box_Q1_reverse_cruise_,q_box_Q1_arm_vertical_,q_box_Q1_dropoff_near_right;
-    //Eigen::VectorXd q_box_Q1_hover_lefty_flip_;
-    //Eigen::VectorXd q_box_Q1_nom_dropoff_near_left_,q_box_Q1_nom_dropoff_near_right_;
-    //Eigen::VectorXd q_box_Q1_nom_dropoff_far_left_,q_box_Q1_nom_dropoff_far_right_;
+    Eigen::VectorXd box_hover_pose_,box_cruise_pose_;   
     
     Eigen::VectorXd q_box_Q2_hover_pose_,q_box_Q2_cruise_pose_;   
     Eigen::VectorXd q_Q1_discard_pose_,q_Q2_discard_pose_;

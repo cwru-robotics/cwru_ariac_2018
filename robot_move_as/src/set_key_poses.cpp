@@ -67,15 +67,15 @@ void RobotMoveActionServer::set_key_poses() {
 
     //Eigen::VectorXd q_Q1_righty_discard_,q_Q1_righty_hover_,q1_Q1_righty_hover_flip_,q_Q1_righty_cruise_;
     //Eigen::VectorXd q_Q1_lefty_discard_,q_Q1_lefty_hover_,q1_Q1_lefty_hover_flip_,q_Q1_lefty_cruise_;
-    q_Q1_righty_hover_.resize(7);
-    q_Q1_righty_hover_flip_.resize(7);
-    q_Q1_righty_cruise_.resize(7);
-    q_Q1_righty_discard_.resize(7);
+    q_Q1_rvrs_hover_.resize(7);
+    q_Q1_rvrs_hover_flip_.resize(7);
+    q_Q1_rvrs_cruise_.resize(7);
+    q_Q1_rvrs_discard_.resize(7);
     
-    q_Q1_lefty_discard_.resize(7);
-    q_Q1_lefty_hover_.resize(7);
-    q_Q1_lefty_hover_flip_.resize(7);    
-    q_Q1_lefty_cruise_.resize(7);
+    q_Q1_fwd_discard_.resize(7);
+    q_Q1_fwd_hover_.resize(7);
+    q_Q1_fwd_hover_flip_.resize(7);    
+    q_Q1_fwd_cruise_.resize(7);
     
     //   Eigen::VectorXd q_Q1_arm_vertical_;
     //Eigen::VectorXd q_Q1_dropoff_near_left_,q_Q1_dropoff_far_left_,q_Q1_dropoff_near_right_,q_Q1_dropoff_far_right_;
@@ -85,15 +85,15 @@ void RobotMoveActionServer::set_key_poses() {
     q_Q1_dropoff_near_left_.resize(7);
     q_Q1_dropoff_far_left_.resize(7);
 
-    q_Q1_righty_hover_ << 1.8, 0, -0.7, 5.8, 3.6, -1.51, 0; //qual_sensor 1 location, 2018
-    q_Q1_righty_hover_flip_ << 1.8, 0, -0.7, 5.8, 0.5, 1.51, 0;    
-    q_Q1_righty_cruise_<< 2.5, 0, -1.2, 4.5, 3.27, -1.51, 0; //
-    q_Q1_righty_discard_ << 2.5, 0, -1.2, 4.9, 3.27, -1.51, 0;
+    q_Q1_fwd_hover_ <<      1.8, 0, -0.7, 5.8, 3.6, -1.51, 0; //qual_sensor 1 location, 2018
+    q_Q1_fwd_hover_flip_ << 1.8, 0, -0.7, 5.8, 0.5, 1.51, 0;    
+    q_Q1_fwd_cruise_<<      2.5, 0, -1.2, 4.5, 3.27, -1.51, 0; //
+    q_Q1_fwd_discard_ <<    2.5, 0, -1.2, 4.9, 3.27, -1.51, 0; //OK--prep for left-side manip
     
-    q_Q1_lefty_discard_ << -1.2, 0, -2.4, 4.65, 2.35, -1.57, 0;      
-    q_Q1_lefty_hover_flip_ << -1.2, 0, -2.7, 3, 5.5, 1.57, 0;
-    q_Q1_lefty_hover_<< -1.2, 0, -2.7, 3, 2.35, -1.57, 0;      
-    q_Q1_lefty_cruise_ << -1.2, 0, -2.4, 4.5, 2.35, -1.57, 0;
+    q_Q1_rvrs_discard_ <<  -1.2, 0, -2.4, 4.65, 2.35, -1.57, 0;      
+    q_Q1_rvrs_hover_flip_<<-1.2, 0, -2.7, 3, 5.5, 1.57, 0;
+    q_Q1_rvrs_hover_<<     -1.2, 0, -2.7, 3, 2.35, -1.57, 0;      
+    q_Q1_rvrs_cruise_ <<   -1.2, 0, -2.4, 4.5, 2.35, -1.57, 0; //-1.2, 0, -2.4, 4.5, 2.35, -1.57, 0
 
     //RIGHTY DROPOFF POSES       
     //covers cases for  left-side of box dropoff (from robot's perspective); 

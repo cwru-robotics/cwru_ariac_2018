@@ -1,5 +1,6 @@
 //ShipmentFiller class implementation
 #include<shipment_filler/ShipmentFiller.h>
+int ans;
 
 ShipmentFiller::ShipmentFiller(ros::NodeHandle* nodehandle) : nh_(*nodehandle), robotMove(nodehandle), orderManager(nodehandle) {
     conveyor_client_ = nh_.serviceClient<osrf_gear::ConveyorBeltControl>("/ariac/conveyor/control");
@@ -278,6 +279,7 @@ bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
                 //destination_close_to_near_box_edge = test_pose_close_to_near_box_edge(pose_wrt_box);
                 box_part_pose_stamped = compute_stPose_part_in_box_wrt_world(pose_wrt_box, box_1_stamped_pose_);
                 //correct the height of the box, which is known:
+                ROS_INFO_STREAM("want to place part in box at world coords:"<<box_part_pose_stamped<<endl);
                 
 
                 place_part = pick_part;
@@ -293,10 +295,14 @@ bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
                 ROS_INFO_STREAM("part destination: " << place_part << endl);
                 //bool release_placed_part(double timeout=2.0);
                 //move_status = place_part_no_release(place_part);
-                ROS_INFO("attempting call to place_part_no_release");
+                ROS_INFO("calling place_part_no_release");
                 if (!place_part_no_release(place_part)) {
                     ROS_WARN("place_part failed");
                 } else { //release the part
+                    ROS_WARN("SHOULD CHECK GOOD/BAD INSPECTION NOW");
+                    ROS_WARN("IF INSPECTION GOOD, CHECK PART LOCATION AND FIX, IF NECESSARY");
+                    
+                    ROS_INFO("shipment-filler requesting release placed  part...");
                     if (!robotMove.release_placed_part()) {
                         ROS_WARN("trouble releasing part");
 
@@ -309,7 +315,8 @@ bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
         }
         orderManager.update_inventory();
     }
-
+    cout<<"enter 1: ";
+    cin>>ans;
     return true;
 }
 
@@ -354,10 +361,10 @@ bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_w
 }
 */
 //box placement codes:
-//int8 PLACE_PART_FAR_RIGHT = 30
-//int8 PLACE_PART_FAR_LEFT = 31
-//int8 PLACE_PART_NEAR_RIGHT = 32
-//int8 PLACE_PART_NEAR_LEFT = 33
+//int8 PART_FAR_RIGHT = 30
+//int8 PART_FAR_LEFT = 31
+//int8 PART_NEAR_RIGHT = 32
+//int8 PART_NEAR_LEFT = 33
 //pose_of_part_wrt_box:
 //x<0 is "near"  x>0 is "far"
 //y<0 is "right", y>0 is "left"
@@ -365,16 +372,16 @@ unsigned short int ShipmentFiller::get_box_placement_location_code(geometry_msgs
     double x = pose_wrt_box.position.x;
     double y = pose_wrt_box.position.y;
     if ((x<=0)&&(y<=0)) { 
-        return robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_RIGHT;
+        return robot_move_as::RobotMoveGoal::PART_NEAR_RIGHT;
     }
     if ((x<0)&&(y>0)) { 
-        return robot_move_as::RobotMoveGoal::PLACE_PART_NEAR_LEFT;
+        return robot_move_as::RobotMoveGoal::PART_NEAR_LEFT;
     }    
      if ((x>0)&&(y<=0)) { 
-        return robot_move_as::RobotMoveGoal::PLACE_PART_FAR_RIGHT;
+        return robot_move_as::RobotMoveGoal::PART_FAR_RIGHT;
     }
 
-    return robot_move_as::RobotMoveGoal::PLACE_PART_FAR_LEFT;
+    return robot_move_as::RobotMoveGoal::PART_FAR_LEFT;
 }
 
 /*
@@ -429,9 +436,10 @@ bool ShipmentFiller::place_part_no_release(inventory_msgs::Part destination_part
     //    ROS_WARN("problem moving to box-fill cruise pose");
     //    return false;
     //}
-    ROS_INFO("attempting part placement");
-    robot_move_ok = robotMove.place_part_no_release(destination_part, 5.0);
-    ros::Duration(2.0).sleep();
+    ROS_INFO("attempting part placement; timeout at %f sec",MAX_ACTION_SERVER_WAIT_TIME);
+    robot_move_ok = robotMove.place_part_no_release(destination_part, MAX_ACTION_SERVER_WAIT_TIME);
+    ROS_INFO("robotMove.place_part_no_release() returned with robot_move_ok = %d",robot_move_ok);
+    //ros::Duration(5.0).sleep();
     return robot_move_ok;
 }
 

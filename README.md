@@ -20,7 +20,7 @@ Start up robot move action server:
 `rosrun robot_move_as robot_move_as`
 
 start the shipment filler:
-`rosrun shipment_filler shipment_filler`
+`rosrun shipment_filler simple_shipment_filler`
 
 Send a test order:
 `rosrun order_sender order_sender2`

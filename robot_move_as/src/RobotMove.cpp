@@ -182,6 +182,9 @@ bool RobotMove::place_part_no_release(Part destination, double timeout) {
     goal.timeout = timeout;
     goal.targetPart = destination;
     sendGoal(goal);
+    ROS_INFO("waiting for goal to complete...");
+    return wait_for_goal(timeout);
+    /*
     if (!async_mode) {
         bool finished_before_timeout;
         if (timeout == 0) {
@@ -190,11 +193,14 @@ bool RobotMove::place_part_no_release(Part destination, double timeout) {
             finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
         }
         if (!finished_before_timeout) {
+            ROS_WARN("RobotMove: place part did not finish before timeout");
             errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
         }
-        return finished_before_timeout && goal_success_;
-    }
-    return true;
+        bool robot_move_status = finished_before_timeout && goal_success_;
+        ROS_INFO(";RobotMove status = %d",robot_move_status);        
+        return robot_move_status;
+    }*/
+    //return true;
 }
 
 
@@ -238,7 +244,9 @@ bool RobotMove::test_is_pickable(Part part) {
         if (!finished_before_timeout) {
             errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
         }
-        return finished_before_timeout && goal_success_;
+        bool robot_move_status = finished_before_timeout && goal_success_;
+        ROS_INFO(";RobotMove status = %d",robot_move_status);
+        return robot_move_status;
     }
     return true;
 }
@@ -284,24 +292,15 @@ bool RobotMove::discard_grasped_part_Q2(double timeout) {
     return true;    
 }
 
+//objective: return as soon as task is complete, or when hit wait expiration 
+//success is returns true,  failure returns false
+//make this a blocking fnc
 bool RobotMove::release_placed_part(double timeout) {
     robot_move_as::RobotMoveGoal goal;
     goal.type = robot_move_as::RobotMoveGoal::RELEASE_PLACED_PART;
     goal.timeout = timeout;
     sendGoal(goal);
-    if (!async_mode) {
-        bool finished_before_timeout;
-        if (timeout == 0) {
-            finished_before_timeout = ac.waitForResult();
-        } else {
-            finished_before_timeout = ac.waitForResult(ros::Duration(timeout + time_tolerance));
-        }
-        if (!finished_before_timeout) {
-            errorCode = robot_move_as::RobotMoveResult::TIMEOUT;
-        }
-        return finished_before_timeout && goal_success_;
-    }
-    return true;    
+    return wait_for_goal(timeout);
 }
 
 bool RobotMove::move(Part part, Part destination, double timeout) {
@@ -403,6 +402,7 @@ vector<double> RobotMove::getJointsState() {
 */
 void RobotMove::sendGoal(robot_move_as::RobotMoveGoal goal) {
     action_server_returned_ = false;
+    goal_start_time_ = ros::Time::now();
     ac.sendGoal(goal, boost::bind(&RobotMove::doneCb, this, _1, _2), boost::bind(&RobotMove::activeCb, this), boost::bind(&RobotMove::feedbackCb, this, _1));
 }
 
@@ -413,6 +413,43 @@ void RobotMove::cancel() {
 void RobotMove::activeCb() {
     // ROS_INFO("Goal sent");
 }
+
+//maybe something wrong with ac.wait fnc; make my own
+bool RobotMove::ac_timed_out(double wait_time) {
+    ros::Time time_now = ros::Time::now();
+    double wait_time_sec = (time_now-goal_start_time_).toSec();
+    if (wait_time_sec>wait_time) return true;
+    else return false;
+}
+
+bool  RobotMove::wait_for_goal(double expiration_time) {
+    double dt = 0.1;
+    ros::Duration sleep_timer(dt);
+    ros::Time start_time = ros::Time::now();
+    ros::Time current_time = ros::Time::now();
+    double current_waiting_time = 0.0;
+    //bool keep_polling = true;
+    while (current_waiting_time< expiration_time+2.0) //tolerance on expiration time
+    {
+        if (action_server_returned_) {
+            if(goal_success_) { ROS_INFO("action server returned success==true"); }
+            else { ROS_WARN("action server returned success==false");  }
+            return goal_success_; //if goal done, return "success" true/false
+             
+        }
+        if (ac_timed_out(expiration_time) ) {
+            ROS_WARN("action server did not complete task within expiration-time = %f",expiration_time);
+            return false;   
+        }
+        current_time = ros::Time::now();
+        current_waiting_time = (current_time-start_time).toSec();        
+        sleep_timer.sleep();
+    }
+    ROS_WARN("something is very wrong--waiting time> expiration time for action; should not happen");
+    return false;
+}
+
+
 
 /*
 void RobotMove::showJointState(vector<string> joint_names, vector<double> joint_values) {
@@ -428,8 +465,7 @@ void RobotMove::doneCb(const actionlib::SimpleClientGoalState &state, const robo
     goal_success_ = result->success;
     errorCode = result->errorCode;
     //currentRobotState = result->robotState;
-//    ROS_INFO("Action finished in state [%s]: %s with error code: %d",
-//             state.toString().c_str(), goal_success_?"success":"failed", errorCode);
+    ROS_INFO("Action finished  with result error code: %d", (int) errorCode);
 //    ROS_INFO("Gripper position is: %f, %f, %f\n",
 //             currentRobotState.gripperPose.pose.position.x, currentRobotState.gripperPose.pose.position.y,
 //             currentRobotState.gripperPose.pose.position.z);

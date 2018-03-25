@@ -1,0 +1,66 @@
+Qual 2 notes:
+*need to move cameras;
+  bin1 camera pose:  x,y,z = -0.775, -0.49, 0.75
+                     rpy = 0, -0.19, pi
+
+  replicate to bin2 and bin3  (same x,z, rpy, but new y-values)
+
+new joints:
+
+name: [iiwa_joint_1, iiwa_joint_2, iiwa_joint_3, iiwa_joint_4, iiwa_joint_5, iiwa_joint_6,
+  iiwa_joint_7, linear_arm_actuator_joint, vacuum_gripper_joint]
+
+
+is wrist spherical?  (treat last 3 jnts this way)
+perhaps freeze joint3?
+
+all jnts 0--> upright vertical (at singularity)
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [-1.272, -1.102, 0.050, 1.112, -1.329, 1.360, 0.902, -0.663]}, \
+{time_from_start: {secs: 3}, \
+positions: [0.444, -1.885, -1.726, 1.945, -0.941, 1.754, -2.380, -0.018]}, \
+{time_from_start: {secs: 4}, \
+positions: [0.025, -1.484, -2.085, 0.046, -1.041, 1.317, -2.134, 0.259]}, \
+{time_from_start: {secs: 5}, \
+positions: [0.100, -1.751, -2.046, 0.010, -1.11, 1.312, -2.088, 0.190]} \
+]}" -1
+
+control_msgs/FollowJointTrajectoryActionGoal
+
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+actionlib_msgs/GoalID goal_id
+  time stamp
+  string id
+control_msgs/FollowJointTrajectoryGoal goal
+  trajectory_msgs/JointTrajectory trajectory
+    std_msgs/Header header
+      uint32 seq
+      time stamp
+      string frame_id
+    string[] joint_names
+    trajectory_msgs/JointTrajectoryPoint[] points
+      float64[] positions
+      float64[] velocities
+      float64[] accelerations
+      float64[] effort
+      duration time_from_start
+  control_msgs/JointTolerance[] path_tolerance
+    string name
+    float64 position
+    float64 velocity
+    float64 acceleration
+  control_msgs/JointTolerance[] goal_tolerance
+    string name
+    float64 position
+    float64 velocity
+    float64 acceleration
+  duration goal_time_tolerance
+

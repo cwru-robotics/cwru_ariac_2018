@@ -44,8 +44,7 @@ unsigned short int RobotMoveActionServer::place_part_fnc_no_release(inventory_ms
     ROS_INFO("moving to hover_jspace_pose_ ");
     move_to_jspace_pose(q_Q1_hover_pose_, 1.0);
     ros::Duration(1.0).sleep(); //make sure sleep is consistent w/ specified move time; min 1 sec
-    cout<<"enter 1: ";
-    cin>>ans;
+
             
     //    errorCode = robot_move_as::RobotMoveResult::PART_DROPPED; //debug--return error
     //    return errorCode;
@@ -66,6 +65,8 @@ unsigned short int RobotMoveActionServer::place_part_fnc_no_release(inventory_ms
     
     //now move to approach pose:
     ROS_INFO("moving to approach ");
+        cout<<"enter 1 to move to approach: ";
+    cin>>ans;
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0);
     ros::Duration(1.0).sleep(); //make sure sleep is consistent w/ specified move time; min 1 sec
     cout<<"enter 1: ";
@@ -75,9 +76,10 @@ unsigned short int RobotMoveActionServer::place_part_fnc_no_release(inventory_ms
 
     //now move to dropoff pose:
     ROS_INFO_STREAM("moving to dropoff_jspace_pose_ " << std::endl << dropoff_jspace_pose_.transpose());
+    cout<<"enter 1 to move to dropoff pose: ";
+    cin>>ans;        
     move_to_jspace_pose(dropoff_jspace_pose_, 2.0); // dropoff pose
-    cout<<"enter 1: ";
-    cin>>ans;    
+    ROS_INFO("concluded call to place_part_fnc_no_release()");
     return errorCode;
 }
 
@@ -115,10 +117,15 @@ unsigned short int RobotMoveActionServer::is_placeable(inventory_msgs::Part part
         return errorCode;        
     }
     ROS_INFO_STREAM("nom manipulation pose: "<<q_manip_nom_.transpose()<<endl);
-    
+
+    //need track displacement to get placement pose w/rt base link
+    affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,
+                                                                                       q_Q1_hover_pose_[1]);    
    // xxx THIS IS SCREWED UP!!
 //bool RobotMoveActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
-//                                          Eigen::VectorXd approx_jspace_pose, Eigen::VectorXd &q_vec_soln)            
+//                                          Eigen::VectorXd approx_jspace_pose, Eigen::VectorXd &q_vec_soln)    
+    ROS_INFO("computing IK for desired manipulation pose: ");
+    ROS_INFO_STREAM(affine_vacuum_pickup_pose_wrt_base_link_.translation().transpose());
    if (!get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_,  q_manip_nom_, dropoff_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for dropoff pose!");
         errorCode = robot_move_as::RobotMoveResult::UNREACHABLE;
@@ -126,6 +133,7 @@ unsigned short int RobotMoveActionServer::is_placeable(inventory_msgs::Part part
     }
     ROS_INFO_STREAM("dropoff_jspace_pose_: " << dropoff_jspace_pose_.transpose());
 
+    ROS_INFO("computing IK for desired manipulation approach pose: ");
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, dropoff_jspace_pose_, approach_dist_,
                              approach_dropoff_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for dropoff approach pose!");

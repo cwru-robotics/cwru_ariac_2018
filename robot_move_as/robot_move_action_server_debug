@@ -1,0 +1,39 @@
+attempting dropoff at Q1, far right;
+
+[ INFO] [1521776771.285307378, 1724.330000000]: placing a part,  no release
+[ INFO] [1521776771.285321700, 1724.330000000]: part info: 
+[ INFO] [1521776771.285350740, 1724.330000000]: name: gasket_part
+id: 0
+location: 51
+box_placement_location_code: 30
+pose: 
+  header: 
+    seq: 0
+    stamp: 1724.329000000
+    frame_id: world
+  pose: 
+    position: 
+      x: 1.2607
+      y: 0.447829
+      z: 0.458298
+    orientation: 
+      x: 0.00348096
+      y: -0.00159948
+      z: 0.709448
+      w: 0.704747
+
+destination  cruise pose:  -1.2     0  -2.4   4.5  2.35 -1.57     0
+place part far right
+get_pose_from_code: POSE_CODE = 36
+destination  hover pose: -1.2    0 -2.7    3  5.5 1.57    0
+destination location QUALITY_SENSOR_1
+nom manipulation pose:    -1     0 -2.99   2.8   5.6  1.57     0
+
+number of IK solutions: 2
+q6dof_ref:   2.8 -2.99    -1   5.6  1.57     0
+soln 0:  2.93624  -0.4111 0.546525  4.33905 -1.53173 -0.20498
+soln 1:   6.34022  -2.73071 -0.546494   5.08793   1.54743 0.0499284
+
+IK soln is not good...
+
+

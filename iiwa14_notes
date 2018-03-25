@@ -1,0 +1,190 @@
+iiwa_14_DH:
+
+base_link is called "iiwa_link_0"
+last link is called "iiwa_link_ee"
+
+in KUKA "home" pose, 
+z0 is "up", 
+z1 is along world y-axis
+z2 is "up:
+z3 is along - world y-axis
+z4 is "up"
+z5 is along + world y-axis
+z6 is "up"
+z7 is "down" (so d7 is negative)
+will define an additional vacuum-gripper frame
+
+
+NOMINAL: if keep j1 ~0, expect J2_ang>0 for boxes (fwd),
+      J2_ang<0 for bins (rvrs)
+
+J2 is "shoulder"
+
+freeze j3 at J3_ang=0
+
+J4 is "elbow"
+for "fwd" (boxes), expect J4_ang>0, "rvrs" (bins)--> J4_ang<0
+
+joints 5,6,7 make a spherical wrist
+nominally, J6_ang>0 for fwd (boxes), <0 for rvrs (bins)
+
+will need a "tuck" pose to get to bins between shelves;
+  bin-cruise can be in tuck
+  bin-hover reaches in between shelves
+
+  box-cruise flips elbow positive
+  box-hover: 
+
+  need new discard poses
+
+
+
+
+
+
+joint1: (link_0 parent, link_1 child)
+<origin xyz="0 0 0.1575" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+
+z0 axis is "up" by definition
+DH would place z1 through j1, same as z-axis of iiwa_link_2 frame
+
+JOINT 1-2:
+a1 = 0 (j0 and j1 intersect)
+d1 = 0.360
+alpha1 = 3*pi/2 = -pi/2
+this places DH home consistent w/ KUKA home
+
+Joint 2-3:
+a2 = 0 (axes intersect)
+d2 = 0 (places O2 coincident with O1)
+alpha2 = pi/2
+this places x3 "up" in KUKA home, consistent w/ DH home
+
+JOINT 3-4:
+a3 = 0 (axes intersect)
+d3 = 0.420 (add together partial link lengths consistent w/  DH)
+alpha3 = +pi/2 (x-axis aligned consistent w/ KUKA  home)
+
+JOINT 4-5:
+a4 = 0 (axes intersect)
+d4 = 0 (make O4 coincident with O3)
+alpha4 = -pi/2 (to make KUKA home consistent w/ DH home)
+note: combined partial link lengths consistent w/ DH
+
+JOINT 5-6:
+a5 = 0 (axes intersect)
+d5 = 0.400
+alpha5 =  -pi/2 (for KUKA home same as DH home)
+
+JOINT 6-7:
+a6 = 0 (jnts intersect) 
+d6 = 0 (place O6 coincident with O5, by choice, at WRIST point)
+alpha6 = +pi/2 (KUKA home same as DH home)
+
+JOINT 7-EE frame:
+CHOOSE EE frame to have z pointing ANTI-PARALLEL to z6 (consistent w/ URDF)
+a7 = 0 (z axes are coincident)
+d7 = -0.126 (wrist point to ee-link origin)
+alpha7 = pi
+NOTE: might need to alter this 
+
+
+joint1:
+<limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+
+joint2: 
+      <origin xyz="0 0 0.2025" rpy="${PI / 2}   0 ${PI}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+
+joint3:
+      <origin xyz="0 0.2045 0" rpy="${PI / 2} 0 ${PI}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+
+joint4:
+      <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+
+joint5:
+      <origin xyz="0 0.1845 0" rpy="${-PI / 2} ${PI} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}"
+
+joint6:
+      <origin xyz="0 0 0.2155" rpy="${PI / 2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}"
+
+joint7:
+      <origin xyz="0 0.081 0" rpy="${- PI / 2} ${PI} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-175 * PI / 180}" upper="${175 * PI / 180}"
+
+   <joint name="${robot_name}_joint_ee" type="fixed">
+      <parent link="${robot_name}_link_7"/>
+      <child link="${robot_name}_link_ee"/>
+      <origin xyz="0 0 0.045" rpy="0 0 0"/>
+
+
+-------------test kuka_fk_ik--------------
+
+rosrun kuka_fk_ik kuka_fk_ik_test_main
+
+q_in: 0 0 0 0 0 0 0
+A rot: 
+           1            0            0
+           0            1  1.22465e-16
+           0 -1.22465e-16            1
+A origin:            0 -9.79717e-19        1.046
+quat: -6.12323e-17, 0, 0, 1
+[ INFO] [1521952799.267444978]: w_wrt_1: 1.54305e-17      -0.568   3.478e-17
+
+iiwa_link_ee
+
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_ee
+
+- Translation: [0.000, 0.000, 1.306]
+- Rotation: in Quaternion [-0.000, 0.000, -0.001, 1.000]
+
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_7
+- Translation: [0.000, 0.000, 1.261]
+- Rotation: in Quaternion [-0.000, 0.000, -0.001, 1.000]
+
+1.261 vs 1.046 from fk ???
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_2
+- Translation: [0.000, 0.000, 0.360]
+
+rosrun  tf tf_echo iiwa_link_6 iiwa_link_ee
+- Translation: [0.000, 0.126, -0.000]
+
+err: 1.046 vs 1.306
+
+rosrun  tf tf_echo iiwa_link_4 iiwa_link_6
+- Translation: [0.000, 0.400, -0.000]
+
+rosrun  tf tf_echo iiwa_link_2 iiwa_link_4
+- Translation: [-0.000, 0.420, 0.000]
+
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_2
+- Translation: [0.000, 0.000, 0.360]
+
+elevation: 0.360 + 0.420 + 0.400 + 0.126 = 1.306
+
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_6
+- Translation: [-0.000, 0.000, 1.180] (OK)
+
+rosrun  tf tf_echo iiwa_link_0 iiwa_link_ee
+- Translation: [0.000, 0.000, 1.306]
+
+ INFO] [1521954973.081961435]: Aprod[6] = 
+    1     0     0     0
+    0     1     0     0
+    0     0     1 1.306
+    0     0     0     1
+
+
+
+

@@ -30,11 +30,11 @@ int8 TO_CRUISE_POSE = 26
 int8 TEST_IS_PICKABLE = 27
 int8 TEST_IS_PLACEABLE = 28
 
-#the following placement codes correspond to placement in box, as viewed from robot's base
-int8 PLACE_PART_FAR_RIGHT = 30
-int8 PLACE_PART_FAR_LEFT = 31
-int8 PLACE_PART_NEAR_RIGHT = 32
-int8 PLACE_PART_NEAR_LEFT = 33
+#the following location codes correspond to relative locations in box, as viewed from robot's base
+int8 PART_FAR_RIGHT = 30
+int8 PART_FAR_LEFT = 31
+int8 PART_NEAR_RIGHT = 32
+int8 PART_NEAR_LEFT = 33
 
 # predefined move codes
 int8 INIT_POSE                        =3
@@ -64,42 +64,81 @@ int8 BIN1_RETRACT_POSE                   =26
 int8 BIN1_CRUISE_POSE                   =27
 
 #a bunch of key pose codes for box at quality-sensor 1:
-int8 Q1_RIGHTY_HOVER              =30
-int8 Q1_RIGHTY_DISCARD            =31
-int8 Q1_RIGHTY_CRUISE             =32
-int8 Q1_RIGHTY_HOVER_FLIP         =33
+#for UR10, these are "forward" poses:
+#right/left refers to location in box, viewed from robot base
+int8 Q1_HOVER_POSE_LEFT_FAR             =30
+int8 Q1_HOVER_POSE_LEFT_NEAR         =31
+int8 Q1_LEFT_DISCARD_POSE            =32
+int8 Q1_LEFT_CRUISE_POSE             =33
 
-int8 Q1_LEFTY_CRUISE              =34
-int8 Q1_LEFTY_HOVER               =35
-int8 Q1_LEFTY_HOVER_FLIP          =36
-int8 Q1_LEFTY_DISCARD             =37
+
+int8 Q1_HOVER_POSE_RIGHT_FAR              =34
+int8 Q1_HOVER_POSE_RIGHT_NEAR               =35
+int8 Q1_RIGHT_DISCARD_POSE          =36
+int8 Q1_RIGHT_CRUISE_POSE            =37
 
 #     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
-int8 Q1_ARM_VERTICAL              =38
+int8 Q1_ARM_VERTICAL_POSE              =38
 
 #//some key poses near candidate box dropoff locations at Qsensor 1
-#    //------RIGHTY POSES------
+#    //------FORWARD POSES------
 #    //covers cases for  left-side of box dropoff (from robot's perspective); 
 #    //the following are safe transitions:
 #    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
-int8 Q1_DROPOFF_NEAR_LEFT         =40
-int8 Q1_DROPOFF_FAR_LEFT          =41
+int8 Q1_NOM_DROPOFF_POSE_NEAR_LEFT         =40
+int8 Q1_NOM_DROPOFF_POSE_FAR_LEFT          =41
 
 #         //----LEFTY  POSES----
 #     //covers cases for right-side dropoff; the following are safe transitions:
 #     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
-int8 Q1_DROPOFF_NEAR_RIGHT         =42
-int8 Q1_DROPOFF_FAR_RIGHT          =43
-int8 Q1_DROPOFF_UNKNOWN            =44
-
+int8 Q1_NOM_DROPOFF_POSE_NEAR_RIGHT         =42
+int8 Q1_NOM_DROPOFF_POSE_FAR_RIGHT          =43
+int8 Q1_NOM_DROPOFF_POSE_UNKNOWN            =44
+ 
 #repeat for Q2 sensor location:
-int8 QUAL_SENSOR_2_HOVER_POSE      =50
-int8 QUAL_SENSOR_2_DISCARD_POSE    =51
+#a bunch of key pose codes for box at quality-sensor 1:
+int8 Q2_HOVER_POSE_LEFT_FAR             =50
+int8 Q2_HOVER_POSE_LEFT_NEAR         =51
+int8 Q2_LEFT_DISCARD_POSE            =52
+int8 Q2_LEFT_CRUISE_POSE             =53
 
 
+int8 Q2_HOVER_POSE_RIGHT_FAR              =54
+int8 Q2_HOVER_POSE_RIGHT_NEAR               =55
+int8 Q2_RIGHT_DISCARD_POSE          =56
+int8 Q2_RIGHT_CRUISE_POSE            =57
+
+#     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
+int8 Q2_ARM_VERTICAL_POSE              =58
+
+#//some key poses near candidate box dropoff locations at Qsensor 1
+#    //------FOR  UR10, these placements require FORWARD POSES------
+#    //covers cases for  left-side of box dropoff (from robot's perspective); 
+#    //the following are safe transitions:
+#    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
+int8 Q2_NOM_DROPOFF_POSE_NEAR_LEFT         =60
+int8 Q2_NOM_DROPOFF_POSE_FAR_LEFT          =61
+
+#         //----REVERSE  POSES----
+#     //covers cases for right-side dropoff; the following are safe transitions:
+#     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
+int8 Q2_NOM_DROPOFF_POSE_NEAR_RIGHT         =62
+int8 Q2_NOM_DROPOFF_POSE_FAR_RIGHT          =63
+int8 Q2_DROPOFF_UNKNOWN            =64
+
+#a bunch of key pose codes for bins on middle row (need to associate w/ sled coord)
+#for UR10, these are "forward" poses:
+#right/left refers to location in bin, viewed from robot base
+int8 BIN_MID_HOVER_POSE_LEFT_FAR             =30
+int8 BIN_MID_HOVER_POSE_LEFT_NEAR         =31
+int8 BIN_MID_LEFT_DISCARD_POSE            =32
+int8 BIN_MID_LEFT_CRUISE_POSE             =33
 
 
-
+int8 BIN_MID_HOVER_POSE_RIGHT_FAR              =34
+int8 BIN_MID_HOVER_POSE_RIGHT_NEAR               =35
+int8 BIN_MID_RIGHT_DISCARD_POSE          =36
+int8 BIN_MID_RIGHT_CRUISE_POSE            =37
 
 
 ---
