@@ -35,7 +35,7 @@ cs_add_executable(kuka_fk_ik_test_main src/kuka_fk_ik_test_main.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-target_link_libraries(kuka_fk_ik_test_main kuka_fk_ik)
+target_link_libraries(kuka_fk_ik_test_main kuka_fk_ik) 
 
 cs_install()
 cs_export()
