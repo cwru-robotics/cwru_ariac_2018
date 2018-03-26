@@ -66,7 +66,7 @@ const double DH_alpha7 = 0;
 
 //robot.DH.theta= '[q(1) q(2)-pi/2 q(3) q(4) q(5) q(6)+pi]';
 const double DH_q_offset1 = 0.0;
-const double DH_q_offset2 = 0.0; //M_PI; //-M_PI/2.0;
+const double DH_q_offset2 = 0.0; //-M_PI/2.0; //M_PI; //-M_PI/2.0;
 const double DH_q_offset3 = 0.0;
 const double DH_q_offset4 = 0; //M_PI/2.0; //0.0;
 const double DH_q_offset5 = 0; //0.0;
@@ -112,8 +112,10 @@ public:
     Eigen::Matrix4d get_wrist_frame();
     //Eigen::MatrixXd get_Jacobian(const Vectorq6x1& q_vec);
     //Eigen::Matrix3d test_R61(Eigen::VectorXd q_in);
-    void q_Kuka_to_q_DH(Eigen::VectorXd q_soln_Kuka, Eigen::VectorXd &q_soln_DH) {q_soln_DH=q_soln_Kuka;};
-    void q_DH_to_q_Kuka(Eigen::VectorXd q_soln_DH, Eigen::VectorXd &q_soln_Kuka) {q_soln_Kuka=q_soln_DH;};
+    void q_Kuka_to_q_DH(Eigen::VectorXd q_soln_Kuka, Eigen::VectorXd &q_soln_DH) {q_soln_DH=q_soln_Kuka;
+            for (int i=0;i<NJNTS;i++) q_soln_DH[i]-=DH_q_offsets[i];};
+    void q_DH_to_q_Kuka(Eigen::VectorXd q_soln_DH, Eigen::VectorXd &q_soln_Kuka) {q_soln_Kuka=q_soln_DH;
+            for (int i=0;i<NJNTS;i++) q_soln_Kuka[i]+=DH_q_offsets[i];};
     bool fit_joints_to_range(Eigen::VectorXd &qvec);
     bool fit_q_to_range(double q_min, double q_max, double &q);
     double jspace_dist_from_nom(Eigen::VectorXd q_nom, Eigen::VectorXd q_soln);
@@ -175,6 +177,7 @@ private:
     //given desired flange pose, compute q1 options; expect 2 or 0; return false if out of reach
     bool compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &q1_solns);
     bool solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_des, std::vector<Eigen::VectorXd> &q_solns);
+    bool compute_shoulder_ang(double x_des,double y_des,  double L1,  double L2, double q_elbow, double &q_shoulder);
 
 
     bool solve_2R_planar_arm_elbow_angs(double x_des, double y_des, double L1, double L2,

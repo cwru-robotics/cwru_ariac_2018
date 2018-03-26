@@ -1,0 +1,237 @@
+kuka test notes:
+
+OK box hover pose:
+Q1_HOVER_POSE: 
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, -0.35]}]}" -1
+
+
+rosrun kuka_fk_ik kuka_fk_ik_test_main
+(with: q_in<<0.0, 1.1, 0.0, -1.4, 0, 0.6, 1; )
+q_soln: 2.81267e-17         1.1           0        -1.4           0         0.6           1
+
+good!
+fk: 
+[ INFO] [1522018998.566085050]: ee frame w/rt link0: 
+   -0.539835     0.840743    0.0415807     0.618935
+    0.841471     0.540302 -2.84565e-17  3.11833e-17
+  -0.0224661    0.0349889    -0.999135     0.104162
+           0            0            0            1
+
+rosrun tf tf_echo iiwa_link_0 iiwa_link_ee
+- Translation: [0.619, -0.000, 0.104]
+
+good fit!
+
+-----------------bin hover----------------
+move here first: (negate elbow)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.0, 1.1, 0.0, 2.09, 0, 0.6, 1, 0.0]}]}" -1
+
+here is a bin-cruise pose (BIN2): 
+suitable for cruise towards parts left-side of bin;
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [1.2, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]}]}" -1
+
+the following pose is OK  for  hover left-near; goto here before going to left-far
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.5, -1.4, 0.0, 0.5, 0, -1.2, 0, -0.4]}]}" -1
+
+HOVER_LEFT_FAR_BIN2
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.1, -1.4, 0.0, 0.3, 0, -1.2, 0, -0.7]}]}" -1 
+
+WITHDRAW TRAJ:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.1, -1.4, 0.0, 0.3, 0, -1.2, 0, -0.7]}, \
+{time_from_start: {secs: 3}, \
+positions: [0.5, -1.4, 0.0, 0.5, 0, -1.2, 0, -0.4]}, \
+{time_from_start: {secs: 4}, \
+positions: [1.57, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]}, \
+{time_from_start: {secs: 5}, \
+positions: [0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, 0.0]} \
+]}" -1
+
+
+-----------------
+Q1_HOVER_POSE: 
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, -0.35]}]}" -1
+
+SWING OUT OF THE WAY WITHOUT HITTING CAMERA:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [1.57, 1.1, 0.0, -1.4, 0, 0.6, 1, -0.35]}]}" -1
+
+FLIP BACKWARDS:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [1.57, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]}]}" -1
+
+CRUISE NEAR BIN2:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [1.2, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]}]}" -1
+
+TRAJ_Q1_HOVER_TO_BIN2_CRUISE_LEFT: (prepare to approach parts in bins w/ parts on left side of bin)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, -0.35]}, \
+{time_from_start: {secs: 3}, \
+positions: [1.57, 1.1, 0.0, -1.4, 0, 0.6, 1, -0.35]}, \
+{time_from_start: {secs: 4}, \
+positions: [1.57, -1.4, 0.0, -1.4, 0, -1.2, 0, 0.0]}, \
+{time_from_start: {secs: 5}, \
+positions: [1.57, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]} \
+]}" -1
+
+CRUISE_BIN_LEFT to HOVER_BIN2_LEFT_FAR:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.4]}, \
+{time_from_start: {secs: 3}, \
+positions: [0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -0.7]} \
+]}" -1
+
+
+INIT_VERTICAL_TO_BIN2_LEFT_CRUISE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [1.57, 0, 0, 0, 0, 0, 0, 0]}, \
+{time_from_start: {secs: 3}, \
+positions: [1.57, -1.4, 0.0, 0.5, 0, -1.2, 0, 0.0]} \
+]}" -1
+
+CRUISE_BIN_LEFT to HOVER_BIN2_LEFT_FAR:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.4]}, \
+{time_from_start: {secs: 3}, \
+positions: [0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -0.7]} \
+]}" -1
+
+
+BIN2_HOVER_LEFT_FAR_TO_BIN_CRUISE_LEFT:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.4]}, \
+{time_from_start: {secs: 3}, \
+positions: [1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0]} \
+]}" -1
+
+CRUISE_BIN_LEFT to HOVER_Q1:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 1}, \
+positions: [1.57, 1.1, 0.0, 0.5, 0, -0.6, 0, -0.35]}, \
+{time_from_start: {secs: 3}, \
+positions: [1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35]}, \
+{time_from_start: {secs: 5}, \
+positions: [0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35]} \
+]}" -1
+
+
+HOVER_Q1 to Q1_CRUISE (simple q1 swing):
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 2}, \
+positions: [1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35]} \
+]}" -1
+
+Q1_CRUISE to HOVER_Q1  (simple q1 swing):
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 2}, \
+positions: [0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35]} \
+]}" -1
+
+
+summary:
+Q1_HOVER: 0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35
+this is pretty close to hitting camera; if necessary, may need
+to adjust rail position to allow lower elbow
+
+Q1_CRUISE:  1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35
+this is a pure q1 rotation to get arm to clear the Q1 bin camera
+
+BIN2_CRUISE_POSE: 1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0
+ relative to Q1_CRUISE, this flips from fwd (q_shoulder>0, q_elbow<0)
+ to rvrs (q_shoulder<0, q_elbow>0, q_wristbend<0)
+
+BIN2_HOVER_LEFT_NEAR: 0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.4
+
+BIN2_HOVER_LEFT_FAR: 0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -0.7
+
+connect as follows:
+BIN2_HOVER_LEFT_FAR <->
+BIN2_HOVER_LEFT_NEAR <->
+BIN2_CRUISE_POSE <->
+CRUISE_FLIP_MID <->  (don't flip q_shoulder and q_elbow simultaneously)
+Q1_CRUISE <->
+Q1_HOVER
+
+ANSWER THIS:
+from Q1_HOVER, can I reach all approach and dropoff poses without collisions?
+
+
+
+
+

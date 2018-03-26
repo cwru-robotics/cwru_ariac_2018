@@ -51,7 +51,8 @@ int main(int argc, char** argv) {
      //populate a goal message
         Eigen::VectorXd q_goal;
         q_goal.resize(8);
-        q_goal<<0,0,0,0,0,0,0,0.5;
+        //q_goal<<0,0,0,0,0,0,0,0.5;
+        q_goal<<0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, 0.0; //box hover pose:
 
         trajectory_msgs::JointTrajectoryPoint trajectory_point1;
         trajectory_point1.positions.clear();

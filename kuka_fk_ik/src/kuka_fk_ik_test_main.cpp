@@ -34,9 +34,12 @@ int main(int argc, char **argv) {
     
     Eigen::VectorXd q_in;
     q_in.resize(NJNTS);
-    q_in<<0,0,0,0,0,0,0; //7 jnts for Kuka arm
-    q_in<<0,0.1,0,0.1,0,0.1,0; //7 jnts for Kuka arm    
-   
+    //q_in<<0,0,0,0,0,0,0; //7 jnts for Kuka arm
+    //q_in<<0,0.2,0,0.1, 0.5,1.5,0.3; //7 jnts for Kuka arm   
+    //q_in<<0,0.5,0,0.5, 1,1,1;
+    //q_in<<0,1,0,-1, 1,1,1;
+    //q_goal<<0.0, 1.1, 0.0, -1.4, 0, 0.6, 1, 0.0; //box hover pose:
+    q_in<<0.0, 1.1, 0.0, -1.4, 0, 0.6, 1;
     Eigen::Affine3d A_fwd_DH = fwd_solver.fwd_kin_solve(q_in); //fwd_kin_solve
 
         std::cout << "q_in: " << q_in.transpose() << std::endl;        
@@ -51,6 +54,7 @@ int main(int argc, char **argv) {
         
         std::vector<Eigen::VectorXd> q_solns;
         
+        ROS_INFO("calling ik_solver....");
         int nsolns = ik_solver.ik_solve(A_fwd_DH,q_solns);
         //nsolns = q6dof_solns.size();
         std::cout << "number of IK solutions: " << nsolns << std::endl;    
