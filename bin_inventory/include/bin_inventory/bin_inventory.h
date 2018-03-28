@@ -14,7 +14,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <osrf_gear/LogicalCameraImage.h>
-#include <ariac_xform_utils/ariac_xform_utils.h>
+#include <xform_utils/xform_utils.h> 
 #include <inventory_msgs/Inventory.h>
 
 using namespace std;

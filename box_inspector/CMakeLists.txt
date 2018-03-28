@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ariac_xform_utils)
+project(box_inspector)
 
 find_package(catkin_simple REQUIRED)
 
@@ -24,18 +24,21 @@ catkin_simple()
 
 # C++0x support - not quite the same as final C++11!
 # use carefully;  can interfere with point-cloud library
-# SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
-cs_add_library(ariac_xform_utils src/ariac_xform_utils.cpp)   
+cs_add_library(box_inspector src/box_inspector.cpp)   
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-#cs_add_executable(example_xform_utils src/example_xform_utils.cpp)
+cs_add_executable(box_inspector_order_sender src/order_sender.cpp)
+cs_add_executable(fake_logical_camera src/fake_logical_camera.cpp)
+cs_add_executable(box_inspector_example_main src/box_inspector_example_main.cpp)
+cs_add_executable(example_order_sender src/order_sender2.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-#target_link_libraries(example_xform_utils xform_utils)
+target_link_libraries(box_inspector_example_main box_inspector)
 
 cs_install()
 cs_export()

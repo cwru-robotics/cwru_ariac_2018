@@ -5,7 +5,7 @@
 #include <vector>
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <ariac_xform_utils/ariac_xform_utils.h>
+#include <xform_utils/xform_utils.h>
 #include <bin_inventory/bin_inventory.h>
 #include <inventory_msgs/Inventory.h>
 #include <osrf_gear/Order.h>

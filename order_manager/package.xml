@@ -41,12 +41,12 @@
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>roscpp</build_depend>
-<build_depend>ariac_xform_utils</build_depend>
+<build_depend>xform_utils</build_depend>
 <build_depend>tf2_geometry_msgs</build_depend>
 <build_depend>bin_inventory</build_depend>
 <build_depend>inventory_msgs</build_depend>
   <run_depend>roscpp</run_depend>
-<run_depend>ariac_xform_utils</run_depend>
+<run_depend>xform_utils</run_depend>
 <run_depend>tf2_geometry_msgs</run_depend>
 <run_depend>bin_inventory</run_depend>
 <run_depend>inventory_msgs</run_depend>

@@ -45,7 +45,7 @@
     <build_depend>trajectory_msgs</build_depend>
     <!--build_depend>cwru_ariac</build_depend-->
     <build_depend>tf</build_depend>
-    <build_depend>ariac_xform_utils</build_depend>
+    <build_depend>xform_utils</build_depend>
     <build_depend>ariac_ur_fk_ik</build_depend>
     <build_depend>osrf_gear</build_depend>
     <build_depend>inventory_msgs</build_depend>

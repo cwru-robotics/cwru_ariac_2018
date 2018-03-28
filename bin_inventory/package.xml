@@ -44,15 +44,15 @@
 <build_depend>std_msgs</build_depend>
 <build_depend>osrf_gear</build_depend>
 <build_depend>sensor_msgs</build_depend>
-<build_depend>ariac_xform_utils</build_depend>
+<build_depend>xform_utils</build_depend>
 <build_depend>inventory_msgs</build_depend>
   <run_depend>roscpp</run_depend>
 <run_depend>std_msgs</run_depend>
 <run_depend>osrf_gear</run_depend>
 <run_depend>sensor_msgs</run_depend>
-<run_depend>ariac_xform_utils</run_depend>
+<run_depend>xform_utils</run_depend>
 <run_depend>inventory_msgs</run_depend>
-  <!-- The export tag contains other, unspecified, tags -->
+  <!-- The export tag contains other, unspecified, tags --> 
   <export>
     <!-- You can specify that this package is a metapackage here: -->
     <!-- <metapackage/> -->
