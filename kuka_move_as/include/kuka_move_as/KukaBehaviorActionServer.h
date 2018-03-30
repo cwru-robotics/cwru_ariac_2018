@@ -76,8 +76,8 @@ private:
         const control_msgs::FollowJointTrajectoryResultConstPtr& result);
 
     //void send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory);
-    void trajDoneCb_(const actionlib::SimpleClientGoalState& state,
-        const control_msgs::FollowJointTrajectoryResultConstPtr& result);
+    //void trajDoneCb_(const actionlib::SimpleClientGoalState& state,
+    //    const control_msgs::FollowJointTrajectoryResultConstPtr& result);
 
     control_msgs::FollowJointTrajectoryGoal robot_goal_;
     trajectory_msgs::JointTrajectory des_trajectory_;
