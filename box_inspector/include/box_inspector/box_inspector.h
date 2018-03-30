@@ -41,10 +41,13 @@ public:
   void get_new_snapshot_from_box_cam();
 
   bool get_box_pose_wrt_world(geometry_msgs::PoseStamped &box_pose_wrt_world);
+  
 
   void compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment_wrt_box, 
+          geometry_msgs::PoseStamped box_pose_wrt_world,
           vector<osrf_gear::Model>  &desired_models_wrt_world);
-   
+  
+
   void update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,

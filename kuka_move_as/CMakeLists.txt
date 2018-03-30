@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(box_inspector)
+project(kuka_move_as)
 
 find_package(catkin_simple REQUIRED)
 
@@ -27,19 +27,17 @@ catkin_simple()
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
-cs_add_library(box_inspector src/box_inspector.cpp)   
+cs_add_library(TransitionTrajectories src/transition_trajectories.cpp)   
+#cs_add_library(KukaBehaviorActionServer src/kuka_behavior_as.cpp)
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-cs_add_executable(fake_logical_camera src/fake_logical_camera.cpp)
-cs_add_executable(box_inspector_example_main src/box_inspector_example_main.cpp)
-cs_add_executable(order_sender_ideal src/order_sender_ideal.cpp)
-cs_add_executable(order_sender_4parts src/order_sender_4parts.cpp)
-cs_add_executable(order_sender_6parts src/order_sender_6parts.cpp)
-cs_add_executable(order_sender_errs src/order_sender_errs.cpp)
+cs_add_executable(transition_trajectories_test_main src/transition_trajectories_test_main.cpp)
+cs_add_executable(kuka_behavior_as src/kuka_behavior_as.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-target_link_libraries(box_inspector_example_main box_inspector)
+target_link_libraries(transition_trajectories_test_main TransitionTrajectories)
+target_link_libraries(kuka_behavior_as TransitionTrajectories)
 
 cs_install()
 cs_export()

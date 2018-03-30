@@ -13,9 +13,20 @@ better:
 
 rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual1_config.yaml 
 
-or:
-`rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/quals/qual1a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual1_config.yaml'
+or, for qual2 setup:
 
+rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
+
+  <node name="ariac_sim" pkg="osrf_gear" type="gear.py"
+        args="--development-mode
+          $(arg verbose_args)
+          $(arg state_logging_args)
+          $(arg gui_args)
+          $(arg fill_demo_shipment_args)
+          --visualize-sensor-views
+          -f $(find osrf_gear)/config/sample.yaml
+          $(find osrf_gear)/config/sample_user_config.yaml
+          " required="true" output="screen" />
 Start up robot move action server:
 `rosrun robot_move_as robot_move_as`
 

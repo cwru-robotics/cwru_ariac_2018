@@ -1,0 +1,118 @@
+have (confirm): box_inspector can:
+  *compute actual pose of box w/rt world (at Q1_cam)
+  *compute poses of parts in box w/rt world
+  *compute poses of parts in box w/rt box
+
+test:
+
+gear at 0.531, 0.602, 0.587, r,p,y = 0,0,0
+
+box at 0.558, 0.611, 0.585, r,p, y = 0,0,0
+
+piston-rod at: 0.601, 0.699, 0.587, r,p,y = 0,0,-2.39
+
+box_camera_1_gear_part_9_frame
+box_camera_1_piston_rod_part_9_frame
+box_camera_1_shipping_box_0_frame
+
+rosrun tf tf_echo box_camera_1_shipping_box_0_frame box_camera_1_gear_part_9_frame
+- Translation: [-0.028, -0.010, 0.003]
+- Rotation: in Quaternion [0.005, -0.003, -0.009, 1.000]
+
+
+rosrun tf tf_echo box_camera_1_shipping_box_0_frame box_camera_1_piston_rod_part_9_frame
+- Translation: [0.045, 0.086, 0.002]
+- Rotation: in Quaternion [-0.003, -0.013, 0.930, -0.369]
+
+box_inspector:
+    type: gear_part
+    pose: 
+      position: 
+        x: -0.0294975
+        y: -0.00740315
+        z: 0.00299922
+      orientation: 
+        x: 0.0106031
+        y: 0.000913302
+        z: -0.00621622
+        w: 0.999924
+
+    type: piston_rod_part
+    pose: 
+      position: 
+        x: 0.0443235
+        y: 0.0874838
+        z: 0.00355919
+      orientation: 
+        x: -0.00138443
+        y: -0.00217164
+        z: 0.930724
+        w: -0.365714
+
+The location must be within 3cm of the target and the orientation must be within 0.1 radians.
+
+TEST w/ order_sender_ideal:
+shipment:
+products[]
+  products[0]: 
+    type: gear_part
+    pose: 
+      position: 
+        x: -0.101238
+        y: 0.184793
+        z: 0
+      orientation: 
+        x: 0
+        y: 0
+        z: 0
+        w: 1
+  products[1]: 
+    type: gasket_part
+    pose: 
+      position: 
+        x: -0.009
+        y: 0.094
+        z: 0
+      orientation: 
+        x: 0
+        y: 0
+        z: 0.385
+        w: 0.923
+  products[2]: 
+    type: gasket_part
+    pose: 
+      position: 
+        x: 0.042
+        y: -0.091
+        z: 0
+      orientation: 
+        x: 0
+        y: 0
+        z: 0.385
+        w: 0.923
+  products[3]: 
+    type: piston_rod_part
+    pose: 
+      position: 
+        x: 0.17
+        y: 0.017
+        z: 0
+      orientation: 
+        x: 0
+        y: 0
+        z: 0.15
+        w: 0.988
+  products[4]: 
+    type: piston_rod_part
+    pose: 
+      position: 
+        x: -0.127
+        y: -0.08
+        z: 0
+      orientation: 
+        x: 0
+        y: 0
+        z: 0.343
+        w: 0.939
+
+
