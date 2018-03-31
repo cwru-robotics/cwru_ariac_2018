@@ -42,16 +42,46 @@
 #include <osrf_gear/VacuumGripperState.h>
 #include <inventory_msgs/Part.h>
 
-
-
-//#include <robot_move_as/RobotBehaviorInterface.h>
-
 using namespace std;
 using namespace Eigen;
 using namespace inventory_msgs;
 
 const bool UP = true;
 const bool DOWN = false;
+
+//map inventory_msgs location codes to corresponding robot pose codes:
+std::map<unsigned short int, int> location_to_pose_code_map =
+{
+   {inventory_msgs::Part::BIN1,BIN1_HOVER_FAR_CODE},
+   {inventory_msgs::Part::BIN2,BIN2_HOVER_FAR_CODE},
+   {inventory_msgs::Part::BIN3,BIN3_HOVER_FAR_CODE},
+   {inventory_msgs::Part::BIN4,BIN4_HOVER_FAR_CODE},
+   {inventory_msgs::Part::BIN5,BIN5_HOVER_FAR_CODE},
+   {inventory_msgs::Part::QUALITY_SENSOR_1,Q1_HOVER_CODE},
+   {inventory_msgs::Part::QUALITY_SENSOR_2,Q2_HOVER_CODE},
+   {inventory_msgs::Part::DISCARD_Q1,Q1_DISCARD_CODE},
+   {inventory_msgs::Part::DISCARD_Q2,Q2_DISCARD_CODE}
+};
+
+/*
+ int8 QUALITY_SENSOR_1=51
+int8 QUALITY_SENSOR_2=52
+
+int8 BIN1=1
+int8 BIN2=2
+int8 BIN3=3
+int8 BIN4=4
+int8 BIN5=5
+int8 BIN6=6
+int8 BIN7=7
+int8 BIN8=8
+int8 BIN9=9
+int8 BIN10=10
+int8 BIN11=11
+int8 BIN12=12
+
+int8 DISCARD=21
+ */
 
 
 class KukaBehaviorActionServer {
@@ -62,7 +92,7 @@ private:
     kuka_move_as::RobotBehaviorGoal goal_;
     kuka_move_as::RobotBehaviorFeedback feedback_; 
     kuka_move_as::RobotBehaviorResult result_;
-    bool isPreempt;
+    bool isPreempt_;
     bool goalComplete_;
     //RobotState robotState;
     unordered_map<int8_t, string> placeFinder;
@@ -71,9 +101,14 @@ private:
     trajectory_msgs::JointTrajectory traj_;
     trajectory_msgs::JointTrajectory jspace_pose_to_traj(Eigen::VectorXd joints, double dtime=2.0);
     TransitionTrajectories transitionTrajectories_;
+
     //callback fnc for trajectory action server interface to Kuka robots
-    void trajCtlrCb(const actionlib::SimpleClientGoalState& state,
+    void trajDoneCb_(const actionlib::SimpleClientGoalState& state,
         const control_msgs::FollowJointTrajectoryResultConstPtr& result);
+    void send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory);
+    bool traj_goal_complete_;
+    //    void armDoneCb_(const actionlib::SimpleClientGoalState& state,
+    //    const control_msgs::FollowJointTrajectoryResultConstPtr& result);
 
     //void send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory);
     //void trajDoneCb_(const actionlib::SimpleClientGoalState& state,
@@ -85,9 +120,10 @@ private:
     //actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
     //        robot_motion_action_client("/ariac/arm/follow_joint_trajectory", true);
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> traj_ctl_ac_;
-
+    int current_pose_code_;
     
     //here are the action functions: robot moves
+    unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     /*
     void move_to_jspace_pose(Eigen::VectorXd q_vec, double dtime=2.0); //case robot_move_as::RobotMoveGoal::TO_PREDEFINED_POSE:
     unsigned short int flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); 
@@ -99,7 +135,7 @@ private:
     unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
     unsigned short int is_placeable(inventory_msgs::Part part);
     */
-    int current_pose_code_;
+
 
     /*
     Eigen::VectorXd q_des_7dof_,q_cruise_pose_,bin_cruise_jspace_pose_,bin_hover_jspace_pose_;
