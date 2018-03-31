@@ -19,7 +19,10 @@ start up ariac simu, then:
 
 does robot init move; need to build out all behaviors in this action server, as well as complementary RobotBehaviorInterface 
 
+Example main using RobotBehaviorInterface:
+`rosrun kuka_move_as robot_behavior_test_main`
+
 
 TODO:  add more trajectories to transitionTrajectories.  
-create a test fnc to run/eval trajectories in simu
+extend test fnc to run/eval trajectories in simu
     
