@@ -7,41 +7,36 @@
 // use "goal", but only need to populate the "sourcePart" component
 unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
     unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
-
-    Part part = goal->sourcePart;
+    trajectory_msgs::JointTrajectory transition_traj;
+    inventory_msgs::Part part = goal->sourcePart;
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
-             placeFinder[part.location].c_str());
+             placeFinder_[part.location].c_str());
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     
     //dev/test:
     //move to hover pose for this part...SHOULD CHECK REACHABILITY FIRST
     //extract bin or box location from Part:
-    int pose_code = location_to_pose_code_map[part.location];
-    ROS_INFO("pose code from location code is: %d",pose_code);
-    ROS_INFO("current pose code is %d",current_pose_code_);
-    trajectory_msgs::JointTrajectory transition_traj;
-    int npts = transitionTrajectories_.get_trajectory(current_pose_code_,pose_code, transition_traj);
-    //ROS_INFO_STREAM("init traj: "<<transition_traj<<endl);
-    ROS_INFO("number of points in traj = %d",npts);
-    ROS_INFO("move arm to init pose: ");
-    if (npts<1) {
-        ROS_WARN("precomputed traj does not exist!");
-      }
-    else {
-      ROS_INFO_STREAM("moving with traj = "<<endl<<transition_traj<<endl);
-        robot_goal_.trajectory = transition_traj;
-      //ROS_INFO("sending goal to arm: ");
-        send_traj_goal(transition_traj);
+    int part_location_code = location_to_pose_code_map[part.location];
+    ROS_INFO("pose code from location code is: %d",part_location_code);
 
-      while (!traj_goal_complete_) {
-        //put timeout here...   
-
-        ROS_INFO("waiting for trajectory to finish...");
-        ros::Duration(1.0).sleep();
-        current_pose_code_ = pose_code;
-       }
+    
+    if (!move_posecode1_to_posecode2(current_pose_code_, part_location_code)) {
+        
+        ROS_WARN("error with move between pose codes");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
     }
+
+    
+       ROS_WARN("SHOULD DO PICKUP STEPS HERE...");
+       
+
+       
+       
+    
+    
+
     /*
     
     //compute the IK for the desired pickup pose: pickup_jspace_pose_
@@ -114,12 +109,15 @@ unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::R
             return errorCode;
         }
     }
+     * */
 
-    //if here, part is grasped; now move upwards to pickup approach pose:
-    ROS_INFO("part is attached to gripper");
-    ROS_INFO("departing upwards to approach_pickup_jspace_pose_ ");
-    move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0);
-    ros::Duration(1.0).sleep();
+    //if here, part is grasped; move part to bin cruise pose
+    //ROS_INFO("part is attached to gripper");
+    //ROS_INFO("departing upwards to approach_pickup_jspace_pose_ ");
+    //desired_approach_depart_pose_ = approach_pickup_jspace_pose_;
+    /*
+    move_to_jspace_pose(APPROACH_DEPART_CODE, 1.0);
+    //ros::Duration(1.0).sleep();
 
     ROS_INFO("moving to hover pose");
     move_to_jspace_pose(bin_hover_jspace_pose_, 1.0);
@@ -143,10 +141,44 @@ unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::R
         return errorCode;
     }
 */
-    errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
-    return errorCode;
+
+    if (part_location_code< Q1_HOVER_CODE) {
+       ROS_INFO("withdrawing to nom cruise pose");
+       ROS_INFO("from %d to %d ",current_pose_code_,NOM_BIN_CRUISE);
+       if (!move_posecode1_to_posecode2(current_pose_code_, NOM_BIN_CRUISE)) {     
+        ROS_WARN("error with move between pose codes");
+        return errorCode_;
+       }      
+       else{
+           ROS_INFO("stopping at hover pose for inspection station");
+       }
+       errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+       return errorCode_;
+    }
 }
 
+
+//this version assumes the part is already grasped, and it should  be discarded
+unsigned short int KukaBehaviorActionServer::discard_grasped_part() {
+
+    trajectory_msgs::JointTrajectory transition_traj;
+    if (!move_posecode1_to_posecode2(current_pose_code_, Q1_DISCARD_CODE)) {     
+        ROS_WARN("error with move between pose codes %d and %d ",current_pose_code_, Q1_DISCARD_CODE);
+        return errorCode_;
+    }  
+ 
+     ROS_WARN("SHOULD DO PART RELEASE HERE");
+     
+     ROS_INFO("from %d to %d ",Q1_DISCARD_CODE,Q1_CRUISE_CODE);
+    if (!move_posecode1_to_posecode2(Q1_DISCARD_CODE, Q1_CRUISE_CODE)) {     
+        ROS_WARN("error with move between pose codes %d and %d ",Q1_DISCARD_CODE, Q1_CRUISE_CODE);
+        return errorCode_;
+    }       
+     
+ 
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    return errorCode_;    
+}
     /*
 //consult the "source" Part and compute if IK is realizable
 unsigned short int RobotMoveActionServer::is_pickable(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
@@ -154,7 +186,7 @@ unsigned short int RobotMoveActionServer::is_pickable(const kuka_move_as::RobotB
 
     Part part = goal->sourcePart;
     //ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
-    //         placeFinder[part.location].c_str());
+    //         placeFinder_[part.location].c_str());
     //ROS_INFO("part info: ");
     //ROS_INFO_STREAM(part);
  

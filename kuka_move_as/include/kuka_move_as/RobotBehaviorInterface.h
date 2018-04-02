@@ -20,17 +20,31 @@ using namespace inventory_msgs;
 const double MAX_ACTION_SERVER_WAIT_TIME=30.0;  //to prevent deadlocks
 
 #include <kuka_move_as/RobotBehaviorAction.h>
-
-
+/*
+std::map<short unsigned int, string> error_code_name_map = {
+    {kuka_move_as::RobotBehaviorResult::NO_ERROR, "NO_ERROR"},
+    {kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER, "WRONG_PARAMETER"},
+    {kuka_move_as::RobotBehaviorResult::TIMEOUT, "TIMEOUT"},
+    {kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT, "GRIPPER_FAULT"},
+    {kuka_move_as::RobotBehaviorResult::PART_DROPPED, "PART_DROPPED"},
+    {kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"},
+    {kuka_move_as::RobotBehaviorResult::CANCELLED, "CANCELLED"}    
+};
+*/
 class RobotBehaviorInterface {
 public:
     RobotBehaviorInterface(ros::NodeHandle* nodehandle);
-    void sendGoal(kuka_move_as::RobotBehaviorGoal goal);
+    bool sendGoal(unsigned short int goal_type, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool sendGoal(unsigned short int goal_type, Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+
+
     void cancel();
     bool action_server_returned() { return action_server_returned_;};
-    
-    bool pick(Part part, double timeout = 0);
-    
+    short unsigned  int get_error_code() {return errorCode_;};
+    bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    //bool discard_grasped_part(double timeout=0);
+    //unsigned short int discard_grasped_part(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    bool discard_grasped_part(double timeout=0);
     /*
     bool toHome(double timeout = 0);
 
@@ -69,8 +83,8 @@ protected:
     ros::NodeHandle nh_;
     ros::Time goal_start_time_;
     actionlib::SimpleActionClient<kuka_move_as::RobotBehaviorAction> ac;
-
-    int8_t errorCode;
+    kuka_move_as::RobotBehaviorGoal behaviorServerGoal_;
+    int8_t errorCode_;
     bool goal_success_;
     //RobotState currentRobotState;
     bool action_server_returned_;
@@ -83,6 +97,7 @@ protected:
     void doneCb(const actionlib::SimpleClientGoalState& state, const kuka_move_as::RobotBehaviorResultConstPtr& result);
     void activeCb();
     void feedbackCb(const kuka_move_as::RobotBehaviorFeedbackConstPtr& feedback);
+    bool wrap_up();
 };
 
 

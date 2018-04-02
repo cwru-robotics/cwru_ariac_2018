@@ -31,25 +31,35 @@
 #include "set_key_poses.cpp"
 #include "grasp_and_release_fncs.cpp"
 #include "compute_key_poses.cpp"
-*/
+ */
 int ans; //for cout breakpoint debugging
 
 //CONSTRUCTOR:
 //this node presents an action server, and it also owns an action client;
 // incoming goals are behaviors to be invoked, and outgoing goals are trajectories to the Kuka robot
 
-
-
-
 KukaBehaviorActionServer::KukaBehaviorActionServer(ros::NodeHandle nodeHandle, string topic) :
-        nh(nodeHandle), robot_behavior_as(nh, topic, boost::bind(&KukaBehaviorActionServer::executeCB, this, _1), false),
-         traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true) {
+nh(nodeHandle), robot_behavior_as(nh, topic, boost::bind(&KukaBehaviorActionServer::executeCB, this, _1), false),
+traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true) {
     isPreempt_ = false;
-    traj_goal_complete_  = false;
+    traj_goal_complete_ = false;
+    //populate code mappings
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN1, "BIN1"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN2, "BIN2"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN3, "BIN3"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN4, "BIN4"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN5, "BIN5"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN6, "BIN6"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN7, "BIN7"));
+    placeFinder_.insert(pair<int8_t, string>(Part::BIN8, "BIN8"));
+    placeFinder_.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_1, "QUALITY_SENSOR_1"));
+    //placeFinder_.insert(pair<int8_t, string>(Part::CAMERA, "CAMERA"));
+    placeFinder_.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_2, "QUALITY_SENSOR_2"));    
+    
     robot_behavior_as.registerPreemptCallback(boost::bind(&KukaBehaviorActionServer::preemptCB, this));
     robot_behavior_as.start();
     ROS_INFO("Start Robot Behavior Action Server");
-    // attempt to connect to the server:
+    // attempt to connect to the Kuka robot-motion action server:
     ROS_INFO("waiting for arm server: ");
     bool server_exists = traj_ctl_ac_.waitForServer(ros::Duration(1.0));
     while (!server_exists) {
@@ -61,42 +71,59 @@ KukaBehaviorActionServer::KukaBehaviorActionServer(ros::NodeHandle nodeHandle, s
     ROS_INFO("connected to arm action server"); // if here, then we connected to the server;   
 
     trajectory_msgs::JointTrajectory transition_traj;
-    int npts = transitionTrajectories_.get_trajectory(HOME_POSE_CODE,INIT_POSE_CODE, transition_traj);
-    ROS_INFO_STREAM("init traj: "<<transition_traj<<endl);
-    ROS_INFO("number of points in traj = %d",npts);
-    ROS_INFO("move arm to init pose: ");
-    if (npts<1) {
-        ROS_WARN("precomputed traj does not exist!");
-      }
-    else {
-      ROS_INFO_STREAM("moving with traj = "<<endl<<transition_traj<<endl);
-        robot_goal_.trajectory = transition_traj;
-      //ROS_INFO("sending goal to arm: ");
-        goalComplete_=false;
-        //        action_client_.sendGoal(js_goal_, boost::bind(&ArmMotionInterface::armDoneCb_, this, _1, _2)); // we
-       //traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
-       send_traj_goal(transition_traj);
-       //robot_motion_action_client.sendGoal(robot_goal, &doneCb);
-
-      while (!traj_goal_complete_) {
-        ROS_INFO("waiting for trajectory to finish...");
-        ros::Duration(1.0).sleep();
-        current_pose_code_ = BIN2_CRUISE_CODE; //INIT_POSE_CODE;
-      }
+    // new code:
+    ROS_INFO("moving to init pose");
+    int npts = transitionTrajectories_.get_trajectory(HOME_POSE_CODE, INIT_POSE_CODE, transition_traj);
+    if (npts < 1) {
+        ROS_WARN("precomputed traj does not exist! giving up");
+        exit(1);
     }
+    //if here, then traj is valid:
+    //ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
+    robot_goal_.trajectory = transition_traj;
+    //ROS_INFO("sending goal to arm: ");
+    traj_goal_complete_ = false;
+    traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
 
-  
-    placeFinder.insert(pair<int8_t, string>(Part::BIN1, "BIN1"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN2, "BIN2"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN3, "BIN3"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN4, "BIN4"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN5, "BIN5"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN6, "BIN6"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN7, "BIN7"));
-    placeFinder.insert(pair<int8_t, string>(Part::BIN8, "BIN8"));
-    placeFinder.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_1, "QUALITY_SENSOR_1"));    
-    //placeFinder.insert(pair<int8_t, string>(Part::CAMERA, "CAMERA"));
-    placeFinder.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_2, "QUALITY_SENSOR_2"));
+    while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
+        //put timeout here...   possibly return falses
+        ROS_INFO("waiting for trajectory to finish...");
+        ros::Duration(0.1).sleep();
+    }
+    current_pose_code_ = INIT_POSE_CODE;     
+    
+ 
+    
+    /*
+    int npts = transitionTrajectories_.get_trajectory(HOME_POSE_CODE, INIT_POSE_CODE, transition_traj);
+    ROS_INFO_STREAM("init traj: " << transition_traj << endl);
+    ROS_INFO("number of points in traj = %d", npts);
+    ROS_INFO("move arm to init pose: ");
+    if (npts < 1) {
+        ROS_WARN("precomputed traj does not exist!");
+    } else {
+        ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
+        robot_goal_.trajectory = transition_traj;
+        //ROS_INFO("sending goal to arm: ");
+        traj_goal_complete_ = false;
+        //        action_client_.sendGoal(js_goal_, boost::bind(&ArmMotionInterface::armDoneCb_, this, _1, _2)); // we
+        //traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
+        send_traj_goal(transition_traj);
+        //robot_motion_action_client.sendGoal(robot_goal, &doneCb);
+
+        while (!traj_goal_complete_) {
+            ROS_INFO("waiting for trajectory to finish...");
+            ros::Duration(1.0).sleep();
+            current_pose_code_ = BIN2_CRUISE_CODE; //INIT_POSE_CODE;
+        }
+    }
+    ROS_INFO("end of orig traj cmd");
+    exit(1);
+    */
+
+
+
+
 
     /*
     set_key_poses();
@@ -163,22 +190,53 @@ KukaBehaviorActionServer::KukaBehaviorActionServer(ros::NodeHandle nodeHandle, s
     attach_.request.enable = 1;
     detach_.request.enable = 0;
      * */
-    ROS_INFO_STREAM("robot behavior action server is ready!"<<endl<<endl);
+
+    ROS_INFO_STREAM("robot behavior action server is ready!" << endl << endl);
 }
 
 void KukaBehaviorActionServer::trajDoneCb_(const actionlib::SimpleClientGoalState& state,
         const control_msgs::FollowJointTrajectoryResultConstPtr& result) {
     ROS_INFO(" trajDoneCb: server responded with state [%s]", state.toString().c_str());
-    traj_goal_complete_=true;
+    traj_goal_complete_ = true;
 }
 
-void KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory) {
+bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory, int destination_code) {
+    robot_goal_.trajectory = des_trajectory;
+    //ROS_INFO("sending goal to arm: ");
+    traj_goal_complete_ = false;
+    traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
+
+    while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
+        //put timeout here...   possibly return falses
+        ROS_INFO("waiting for trajectory to finish...");
+        ros::Duration(0.1).sleep();
+    }
+    current_pose_code_ = destination_code;
+    return true;
+}
+
+/*
+bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory) {
         robot_goal_.trajectory = des_trajectory;
       //ROS_INFO("sending goal to arm: ");
-        goalComplete_=false;
+        traj_goal_complete_=false;
         traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
-}
 
+      while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
+        //put timeout here...   possibly return falses
+        ROS_INFO("waiting for trajectory to finish...");
+        ros::Duration(0.1).sleep();
+       }       
+       //current_pose_code_ = destination_code;
+       return true;
+}*/
+bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory) {
+    robot_goal_.trajectory = des_trajectory;
+    //ROS_INFO("sending goal to arm: ");
+    traj_goal_complete_ = false;
+    traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
+    return true; //should test this
+}
 
 //helper fnc for  joint-space moves; puts a single jspace  pose into a trajectory msg
 /*
@@ -209,51 +267,55 @@ void RobotMoveActionServer::move_to_jspace_pose(Eigen::VectorXd q_vec, double dt
     joint_trajectory_publisher_.publish(traj_);
     //ros::Duration(dtime).sleep(); //must do timing externally
 }
-*/
+ */
 
 
 
 //EXECUTE_CB: does function  switching
+
 void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
     ROS_INFO("Received goal type: %d", goal->type);
     double start_time = ros::Time::now().toSec();
     double dt;
     double timeout = goal->timeout <= 0 ? FLT_MAX : goal->timeout;
-    unsigned short int errorCode;
+    //unsigned short int errorCode;
     bool source_is_up, target_is_up, flip_part;
-    double t_wait=0.0;
+    double t_wait = 0.0;
     double dt_wait = 0.2;
-    double t_wait_timeout = 5.0;
-    bool is_attached=false;
+    double t_wait_timeout = MAX_BEHAVIOR_SERVER_WAIT_TIME;
+    is_attached_ = false;
 
     switch (goal->type) {
         case kuka_move_as::RobotBehaviorGoal::NONE:
             ROS_INFO("NONE");
-            result_.success = true;
-            result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-            robot_behavior_as.setSucceeded(result_);
+            errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+            report_success_or_abort(); //populate result message and inform client of status
             break;
+
         case kuka_move_as::RobotBehaviorGoal::PICK:
             ROS_INFO("PICK");
             // use "goal", but only need to populate the "sourcePart" component
-               errorCode = pick_part_fnc(goal);
-                if (errorCode != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
-                   ROS_WARN("pick_part_fnc returned error code: %d", (int) errorCode);
-                    result_.success = false;
-                    result_.errorCode = errorCode;
-                    //result_.robotState = robotState;
-                    robot_behavior_as.setAborted(result_);
-                    return;
-                }
-             //if here, all is well:
-                ROS_INFO("Completed PICK action");
-                result_.success = true;
-                result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-                //result_.robotState = robotState;
-                robot_behavior_as.setSucceeded(result_);
-            break;            
-
-/*           
+            errorCode_ = pick_part_fnc(goal);
+            //report_success_or_abort();
+            break;
+        case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
+            ROS_INFO("DISCARD_GRASPED_PART_Q1");
+            errorCode_ = discard_grasped_part();
+            //report_success_or_abort(); //this is part of the fnc call
+            break;
+            /*
+            
+            move_to_jspace_pose(q_box_Q1_hover_pose_,2.0); //need to check all moves for valid timing
+            ros::Duration(2.0).sleep();
+            move_to_jspace_pose(q_Q1_discard_pose_,2.0);
+            ros::Duration(2.0).sleep();
+            ROS_INFO("releasing part");
+            errorCode = release_fnc(2.0); //timeout after 2 secs waiting
+            result_.success = true;
+            result_.errorCode = errorCode;
+            robot_behavior_as.setSucceeded(result_);            
+            break;
+           
          case kuka_move_as::RobotBehaviorGoal::FLIP_PART: // special case to flip a part
            ROS_INFO("attempting to flip a part");
             errorCode = flip_part_fnc(goal);
@@ -350,9 +412,9 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
                 //result_.robotState = robotState;
                 robot_behavior_as.setSucceeded(result_);            
             break;
- * */ 
-            
-        //NOW  OBSOLETE; have lefty and righty discard  poses
+             * */
+
+            //NOW  OBSOLETE; have lefty and righty discard  poses
             /*
         case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
@@ -379,7 +441,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             result_.errorCode = errorCode;
             robot_behavior_as.setSucceeded(result_);            
             break;            
-*/
+             */
             /*
         case kuka_move_as::RobotBehaviorGoal::RELEASE_PLACED_PART:
             //will release grasp, depart, and move  to hover pose (not cruise pose)
@@ -507,14 +569,124 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
                 //result_.robotState = robotState;
                 robot_behavior_as.setSucceeded(result_);
             break;
-*/
+             */
         default:
             ROS_INFO("Wrong parameter received for goal");
             result_.success = false;
-            result_.errorCode = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+            errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+            result_.errorCode = errorCode_;
             robot_behavior_as.setAborted(result_);
     }
     isPreempt_ = false;
+}
+
+//helper fnc to invoke motion to a single point, using action server interface to robot:
+// this function refers to one of 3 key poses--approach/depart, pickup/dropoff, pickup_deeper
+//these are computed on the fly and stored  in:
+//    Eigen::VectorXd pickup_deeper_jspace_pose_;
+//    Eigen::VectorXd desired_approach_depart_pose_,desired_grasp_dropoff_pose_;
+
+bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double arrival_time) {
+    trajectory_msgs::JointTrajectory transition_traj;
+    trajectory_msgs::JointTrajectoryPoint trajectory_point;
+    transition_traj.joint_names.push_back("iiwa_joint_1");
+    transition_traj.joint_names.push_back("iiwa_joint_2");
+    transition_traj.joint_names.push_back("iiwa_joint_3");
+    transition_traj.joint_names.push_back("iiwa_joint_4");
+    transition_traj.joint_names.push_back("iiwa_joint_5");
+    transition_traj.joint_names.push_back("iiwa_joint_6");
+    transition_traj.joint_names.push_back("iiwa_joint_7");
+    transition_traj.joint_names.push_back("linear_arm_actuator_joint");
+
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    switch (pose_code) {
+        case APPROACH_DEPART_CODE:
+            for (int i = 0; i < 8; i++) {
+                trajectory_point.positions.push_back(desired_approach_depart_pose_[i]);
+            }
+            trajectory_point.time_from_start = ros::Duration(2);
+            transition_traj.points.push_back(trajectory_point);
+            break;
+        case GRASP_PLACE_CODE:
+            for (int i = 0; i < 8; i++) {
+                trajectory_point.positions.push_back(desired_grasp_dropoff_pose_[i]);
+            }
+            trajectory_point.time_from_start = ros::Duration(2);
+            transition_traj.points.push_back(trajectory_point);
+            break;
+        case GRASP_DEEPER_CODE:
+            for (int i = 0; i < 8; i++) {
+                trajectory_point.positions.push_back(pickup_deeper_jspace_pose_[i]);
+            }
+            trajectory_point.time_from_start = ros::Duration(5);
+            transition_traj.points.push_back(trajectory_point);
+            break;
+        default:
+            errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+            return false;
+            break;
+    }
+    //if here, have a single-point trajectory to execute:
+    //robot_goal_.trajectory = transition_traj;
+    //ROS_INFO("sending goal to arm: ");
+    send_traj_goal(transition_traj, pose_code);
+
+    current_pose_code_ = pose_code;
+    return report_success_or_abort();
+
+}
+
+
+
+//this function is a helper to send a trajectory goal to the Kuka motion action server,
+//where the trajectory is implied by a start posecode and an end posecode
+//useful for large motions; still  need fine motions for grasp and placement with exact coords
+
+bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, int posecode_goal) {
+
+    trajectory_msgs::JointTrajectory transition_traj;
+    //placeFinder_[part.location].c_str()
+    ROS_INFO("attempting move from %s  to %s ", map_pose_code_to_name[posecode_start].c_str(),
+             map_pose_code_to_name[posecode_goal].c_str());
+    //ROS_INFO_STREAM("attempting move from "<<map_pose_code_to_name[posecode_start].c_str()  <<"to "<< map_pose_code_to_name[posecode_goal].c_str() <<endl);
+    int npts = transitionTrajectories_.get_trajectory(posecode_start, posecode_goal, transition_traj);
+    if (npts < 1) {
+        ROS_WARN("precomputed traj does not exist!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR;
+        return report_success_or_abort();
+    }
+    //if here, then traj is valid:
+    ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
+    robot_goal_.trajectory = transition_traj;
+    //ROS_INFO("sending goal to arm: ");
+    traj_goal_complete_ = false;
+    traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
+
+    while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
+        //put timeout here...   possibly return falses
+        ROS_INFO("waiting for trajectory to finish...");
+        ros::Duration(0.1).sleep();
+    }
+    current_pose_code_ = posecode_goal;    
+    return report_success_or_abort();
+}
+
+bool KukaBehaviorActionServer::report_success_or_abort() {
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        ROS_WARN("behavior returned error code: %d", (int) errorCode_);
+        result_.success = false;
+        result_.errorCode = errorCode_;
+        //result_.robotState = robotState;
+        robot_behavior_as.setAborted(result_);
+        return false;
+    }
+    //if here, all is well:
+    ROS_INFO("Completed behavior successfully");
+    result_.success = true;
+    result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    //result_.robotState = robotState;
+    robot_behavior_as.setSucceeded(result_);
+    return true;
 }
 
 void KukaBehaviorActionServer::preemptCB() {

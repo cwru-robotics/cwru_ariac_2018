@@ -1,0 +1,22 @@
+status 3/31/18:
+
+TransitionTrajectories defines a bunch of trajectories, stored in a 2-D map;
+
+kuka_behavior_as: 
+  gets command codes from action client within RobotBehaviorInterface
+  responds by computing collision-free trajectories (and gripper controls)
+  talks to Kuka trajectory action server to execute computed (or look-up) trajectories
+
+RobotBehaviorInterface: intended  to simplify talking to  the robot behavior server;
+ wraps action-client into function calls;
+ all function calls ONLY require behavior name (i.e. function name) and Part descriptions.
+ NO robot-specific info in RobotBehaviorInterface (robot agnostic).
+
+robot_behavior_test_main.cpp: simple example "main" to illustrate use of RobotBehaviorInterface.
+
+
+NEED TO:
+*add more trajectories to TransitionTrajectories  (or make these on the fly w/ concatenation)
+*add more functionality to behavior server
+  place,  discard, compute pickup/dropoff  poses, control gripper (including moving into part until grasp)
+*add corresponding fncs to behaviorInterface

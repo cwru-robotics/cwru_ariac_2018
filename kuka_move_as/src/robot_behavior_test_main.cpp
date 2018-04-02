@@ -1,7 +1,7 @@
 //example using RobotBehaviorInterface library
 
 #include <kuka_move_as/RobotBehaviorInterface.h>
-#include <kuka_move_as/KukaBehaviorActionServer.h>  //do I  need this?
+//#include <kuka_move_as/KukaBehaviorActionServer.h>  //do I  need this?
 
 
 void set_part_vals(Part &pick_part,Part &place_part) {
@@ -19,7 +19,7 @@ void set_part_vals(Part &pick_part,Part &place_part) {
     pick_pose.pose.orientation.w=0.99219;    
 
     pick_part.name="gear_part"; //pulley_part"; //gasket_part"; //gear_part";
-    pick_part.location= inventory_msgs::Part::BIN2; //
+    pick_part.location= inventory_msgs::Part::BIN3; //
     pick_part.pose = pick_pose;  
     
     
@@ -48,13 +48,41 @@ int main(int argc, char **argv) {
     ROS_INFO("instantiating a robotBehaviorInterface");
     RobotBehaviorInterface robotBehaviorInterface(&nh);
     
-    set_part_vals(pick_part,place_part); //populate with test vals
-    ROS_INFO("attempting pick command");
+    //set_part_vals(pick_part,place_part); //populate with test vals
+    /*
+    ROS_INFO("attempting pick command, BIN1");
+    pick_part.location= inventory_msgs::Part::BIN1;
     robotBehaviorInterface.pick(pick_part);
-    while (!robotBehaviorInterface.action_server_returned()) {
-      ros::spinOnce();
-      ros::Duration(1.0).sleep();
-    }
+    */
+    ROS_INFO("attempting pick command, BIN2");
+    pick_part.location= inventory_msgs::Part::BIN2;
+    robotBehaviorInterface.pick(pick_part);
+
+    /*
+    ROS_INFO("attempting pick command, BIN3");
+    pick_part.location= inventory_msgs::Part::BIN3;
+    robotBehaviorInterface.pick(pick_part);
+
+    ROS_INFO("attempting pick command, BIN4");
+    pick_part.location= inventory_msgs::Part::BIN4;
+    robotBehaviorInterface.pick(pick_part);
+
+    //BIN 5 is broken!!
+
+    //ROS_INFO("attempting pick command, BIN5");
+    //pick_part.location= inventory_msgs::Part::BIN5;
+    //robotBehaviorInterface.pick(pick_part);
+    */
+    ROS_INFO("attempting pick command, Q1");
+    pick_part.location= inventory_msgs::Part::QUALITY_SENSOR_1;
+    robotBehaviorInterface.pick(pick_part);
+    
+    ROS_INFO("attempting discard from Q1");
+    robotBehaviorInterface.discard_grasped_part();
+    
+    ROS_INFO("client is done");
+    return 0;
+
 }
 
 
