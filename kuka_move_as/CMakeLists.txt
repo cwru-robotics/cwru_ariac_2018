@@ -29,6 +29,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 # Libraries: uncomment the following and edit arguments to create a new library
 cs_add_library(TransitionTrajectories src/transition_trajectories.cpp)   
 cs_add_library(RobotBehaviorInterface src/robot_behavior_interface.cpp)
+cs_add_library(GripperInterface src/GripperInterface.cpp)
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
@@ -39,7 +40,7 @@ cs_add_executable(robot_behavior_test_main src/robot_behavior_test_main.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 target_link_libraries(transition_trajectories_test_main TransitionTrajectories)
-target_link_libraries(kuka_behavior_as TransitionTrajectories)
+target_link_libraries(kuka_behavior_as TransitionTrajectories GripperInterface)
 target_link_libraries(robot_behavior_test_main RobotBehaviorInterface)
 
 cs_install()

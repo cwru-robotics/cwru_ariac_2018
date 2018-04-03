@@ -3,8 +3,8 @@
 // modified wsn 3/5/18
 //
 
-#ifndef ROBOT_MOVE_AS_ROBOT_MOVE_AS_H
-#define ROBOT_MOVE_AS_ROBOT_MOVE_AS_H
+#ifndef KUKA_BEHAVIOR_AS_H
+#define KUKA_BEHAVIOR_AS_H
 
 #include <ros/ros.h>
 #include <iostream>
@@ -21,6 +21,7 @@
 #include <kuka_move_as/RobotBehaviorAction.h>
 #include <kuka_move_as/part_dimensions.h>
 #include <kuka_move_as/TransitionTrajectories.h>
+#include <kuka_move_as/GripperInterface.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/simple_action_client.h>
@@ -29,9 +30,6 @@
 #include <xform_utils/xform_utils.h>
 #include <kuka_fk_ik/kuka_kin.h>
 
-//#include <sensor_msgs/JointState.h>
-//#include <sensor_msgs/LaserScan.h>
-//#include <kuka_move_as/RobotBehaviorInterface.h>
 
 #include <geometry_msgs/PoseStamped.h>
 #include <trajectory_msgs/JointTrajectory.h>
@@ -42,6 +40,7 @@
 #include <osrf_gear/VacuumGripperState.h>
 #include <inventory_msgs/Part.h>
 
+
 using namespace std;
 using namespace Eigen;
 using namespace inventory_msgs;
@@ -50,6 +49,10 @@ const bool UP = true;
 const bool DOWN = false;
 
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
+
+const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
+
+
 
 //map inventory_msgs location codes to corresponding robot pose codes:
 std::map<unsigned short int, int> location_to_pose_code_map ={
@@ -189,8 +192,10 @@ private:
     control_msgs::FollowJointTrajectoryGoal traj_goal_;
     trajectory_msgs::JointTrajectory traj_;
     trajectory_msgs::JointTrajectory jspace_pose_to_traj(Eigen::VectorXd joints, double dtime = 2.0);
+    
     TransitionTrajectories transitionTrajectories_;
-
+    GripperInterface gripperInterface_;
+    
     //callback fnc for trajectory action server interface to Kuka robots
     void trajDoneCb_(const actionlib::SimpleClientGoalState& state,
             const control_msgs::FollowJointTrajectoryResultConstPtr& result);
@@ -221,26 +226,83 @@ private:
     unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     unsigned short int discard_grasped_part();
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
+    bool move_into_grasp(double arrival_time);
 
     inventory_msgs::Part part_of_interest_;
     inventory_msgs::Part grasped_part_;
 
     Eigen::VectorXd pickup_jspace_pose_, dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
-    Eigen::VectorXd pickup_deeper_jspace_pose_;
+    Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_, current_hover_pose_;
     Eigen::VectorXd desired_approach_depart_pose_, desired_grasp_dropoff_pose_;
-
+    double approach_dist_;
+    double deep_grasp_dist_;
+    
     Eigen::Affine3d grasp_transform_;
     Eigen::Affine3d affine_vacuum_pickup_pose_wrt_base_link_;
     Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link_;
+    
+    //trivial func to compute affine3 for robot_base w/rt world;  only depends on rail displacement
+    Eigen::Affine3d  affine_base_link(double q_rail);
+
+    double get_pickup_offset(Part part); //fnc to return offset values for gripper: part top relative to part frame
+    double get_dropoff_offset(Part part);
+    //double get_surface_height(Part part);
+    
+    //"Part" should include part pose w/rt world, so can determine if part is right-side up or up-side down
+    bool get_grasp_transform(Part part,Eigen::Affine3d &grasp_transform);
+
+
+
+    bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
+    //given rail displacement, and given Part description (including name and pose info) compute where the gripper should be, as
+    //an Affine3 w/rt base_link frame
+    Eigen::Affine3d affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail);
+    //similarly, compute gripper pose for dropoff, accounting for part height
+    Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link(Part part, double q_rail);
+    //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
+    bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
+
+    bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
+
+
+    //void grab();
+    //void release();  
+    //unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
+    //unsigned short int release_fnc(double timeout=2.0); //default timeout for release    
+
+    //osrf_gear::VacuumGripperState getGripperState();
+    //bool attached_;
+    //bool isGripperAttached();
+    //bool waitForGripperAttach(double timeout);
+  
+    //ros::ServiceClient gripper_client;
+    //osrf_gear::VacuumGripperState currentGripperState_;
+    //osrf_gear::VacuumGripperControl attach_;
+    //osrf_gear::VacuumGripperControl detach_;
+    
+    tf::TransformListener* tfListener_;
+    //tf::StampedTransform tfCameraWrtWorld_;
+    XformUtils xformUtils_;
+    KukaFwdSolver fwd_solver_;
+    KukaIkSolver ik_solver_;
+    
+    void copy_array_to_qvec(const double q_array[],Eigen::VectorXd &qvec);
+    Eigen::VectorXd source_hover_pose_, destination_hover_pose_;
+    
+    bool hover_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &qvec);
+    bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
+    bool rail_prepose(int8_t location, double &q_rail);
+
+    //inventory_msgs::Part part_of_interest_;    
+    
     //bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double arrival_time) {
 
 
     /*
     void move_to_jspace_pose(Eigen::VectorXd q_vec, double dtime=2.0); //case robot_move_as::RobotMoveGoal::TO_PREDEFINED_POSE:
     unsigned short int flip_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); 
-    unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
-    unsigned short int release_fnc(double timeout=2.0); //default timeout for release
+
     unsigned short int pick_part_fnc(const robot_move_as::RobotMoveGoalConstPtr& goal); //rtns err code; used within other fncs
     unsigned short int place_part_fnc_no_release(inventory_msgs::Part part);
     unsigned short int move_part(const robot_move_as::RobotMoveGoalConstPtr &goal,double timeout=0);   
@@ -313,51 +375,7 @@ private:
     bool cruise_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &q_vec);
     bool cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec); // { return cruise_jspace_pose(bin,robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN,&q_vec);}; //default, no box location code
     bool set_q_manip_nom_from_destination_part(Part part);
-    //trivial func to compute affine3 for robot_base w/rt world;  only depends on rail displacement
-    Eigen::Affine3d  affine_base_link(double q_rail);
 
-    double get_pickup_offset(Part part); //fnc to return offset values for gripper: part top relative to part frame
-    double get_dropoff_offset(Part part);
-    double get_surface_height(Part part);
-    
-    //"Part" should include part pose w/rt world, so can determine if part is right-side up or up-side down
-    bool get_grasp_transform(Part part,Eigen::Affine3d &grasp_transform);
-
-
-
-    bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
-    //given rail displacement, and given Part description (including name and pose info) compute where the gripper should be, as
-    //an Affine3 w/rt base_link frame
-    Eigen::Affine3d affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail);
-    //similarly, compute gripper pose for dropoff, accounting for part height
-    Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link(Part part, double q_rail);
-    //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
-    bool get_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
-
-    bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
-
-
-    void grab();
-    void release();  
-    //RobotState calcRobotState();
-    osrf_gear::VacuumGripperState getGripperState();
-    bool attached_;
-    bool isGripperAttached();
-    bool waitForGripperAttach(double timeout);
-  
-    ros::ServiceClient gripper_client;
-    osrf_gear::VacuumGripperState currentGripperState_;
-    osrf_gear::VacuumGripperControl attach_;
-    osrf_gear::VacuumGripperControl detach_;
-    
-    tf::TransformListener* tfListener_;
-    tf::StampedTransform tfCameraWrtWorld_,tfTray1WrtWorld_,tfTray2WrtWorld_;
-    XformUtils xformUtils_;
-    UR10FwdSolver fwd_solver_;
-    UR10IkSolver ik_solver_;
-    Eigen::Affine3d agv1_tray_frame_wrt_world_,agv2_tray_frame_wrt_world_;
-    double approach_dist_;
-    inventory_msgs::Part part_of_interest_;
      * */
 public:
     KukaBehaviorActionServer(ros::NodeHandle nodeHandle, string topic);

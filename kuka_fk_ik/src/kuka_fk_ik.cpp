@@ -257,41 +257,27 @@ double KukaFwdSolver::jspace_dist_from_nom(Eigen::VectorXd q_nom, Eigen::VectorX
       return q_best;
   }      
 */      
-/*
-//convert 6dof UR10 joints and provided rail displacement to consistent 7dof vector for control
- Eigen::VectorXd UR10FwdSolver::map627dof(double q_linear, Eigen::VectorXd q6dof){
-	//q7dof turn is: 0elbow; 1linear; 2shoulder_lift; 3shoulder_pan; 4wrist1; 5wrist2; 6wrist3;
-	//q6dof turn is: 0shoulder_pan; 1shoulder_lift; 2elbow; 3wrist1; 4wrist2; 5wrist3;
+
+//convert 7dof Kuka joints and provided rail displacement to consistent 8dof vector for control
+ Eigen::VectorXd KukaFwdSolver::map728dof(double q_linear, Eigen::VectorXd q7dof){
+	 Eigen::VectorXd q8dof;
+         q8dof.resize(8);
+         for (int i=0;i<7;i++) {
+             q8dof[i] = q7dof[i];
+         }
+	q8dof[7] = q_linear;
+	return q8dof;
+}
+
+//convert 8dof vector to 6dof joint angles of Kuka, in order expected by FK/IK fncs
+ Eigen::VectorXd KukaFwdSolver::map827dof(Eigen::VectorXd q8dof){
 	 Eigen::VectorXd q7dof;
          q7dof.resize(7);
-
-	q7dof[0] = q6dof[2];
-	q7dof[1] = q_linear;
-	q7dof[2] = q6dof[1];
-	q7dof[3] = q6dof[0];
-	q7dof[4] = q6dof[3];
-	q7dof[5] = q6dof[4];
-	q7dof[6] = q6dof[5];
-
+         for (int i=0;i<7;i++) q7dof[i] = q8dof[i];
+  
 	return q7dof;
 }
 
-//convert 7dof vector to 6dof joint angles of UR10, in order expected by FK/IK fncs
- Eigen::VectorXd UR10FwdSolver::map726dof(Eigen::VectorXd q7dof){
-	//q7dof turn is: 0elbow; 1linear; 2shoulder_lift; 3shoulder_pan; 4wrist1; 5wrist2; 6wrist3;
-	//q6dof turn is: 0shoulder_pan; 1shoulder_lift; 2elbow; 3wrist1; 4wrist2; 5wrist3;
-	 Eigen::VectorXd q6dof;
-         q6dof.resize(6);
-
-	q6dof[0]=q7dof[3];
-	q6dof[1]=q7dof[2];
-	q6dof[2]=q7dof[0];
-	q6dof[3]=q7dof[4];
-	q6dof[4]=q7dof[5];
-	q6dof[5]=q7dof[6];    
-	return q6dof;
-}
-*/
 //solve the eqn K = A*cos(q) + B*sin(q) for q; return "true" if at least one soln is valid
 
 bool KukaFwdSolver::solve_K_eq_Acos_plus_Bsin(double K, double A, double B, std::vector<double> &q_solns) {
@@ -421,6 +407,7 @@ KukaIkSolver::KukaIkSolver() {
 //solve IK; return solns in q_ik_solns
 //NOTE: ignores "elbow-down" solns and selects q1 closest to 0.
 // expect 2 solns: --q1 near zero and elbow up with 2 wrist options
+//NOTE: does NOT use redundant DOF; freezes jnt3 at 0
 
 int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eigen::VectorXd> &q_ik_solns) {
     Eigen::VectorXd q_ik_soln;

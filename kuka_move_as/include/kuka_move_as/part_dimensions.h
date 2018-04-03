@@ -18,7 +18,8 @@ const double GASKET_PART_GRASP_X_OFFSET = 0.03;
 const double PULLEY_PART_GRASP_Z_OFFSET = 0.007; //0.01; //0.005;
 
 //surface heights:
-const double BASE_LINK_HEIGHT = 0.8;
-const double BASE_LINK_X_COORD = 0.3; //    Oe[0] = BASE_LINK_X_COORD; //0.3;
+const double BASE_LINK_X_COORD = -0.05; //-0.05
+const double BASE_LINK_HEIGHT =  0.700; //0.700
+
 
 const double BOX_HEIGHT = 0.460; //0.4446;  //try elevating box height to provide dropoff clearance

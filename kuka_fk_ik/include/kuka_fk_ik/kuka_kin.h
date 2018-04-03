@@ -130,10 +130,13 @@ public:
 
     }
     Eigen::MatrixXd g_A_vacuum_wrt_tool0_;
-    //convert 6dof UR10 joints (in DH order) and provided rail displacement to consistent 7dof vector for ARIAC control
-    //Eigen::VectorXd map627dof(double q_linear, Eigen::VectorXd q6dof);
-    //convert 7dof vector to 6dof joint angles of UR10, in order expected by FK/IK fncs
-    //Eigen::VectorXd map726dof(Eigen::VectorXd q7dof);
+    //convert 7dof Kuka joints (in DH order) and provided rail displacement to consistent 8dof vector for ARIAC control
+    Eigen::VectorXd map728dof(double q_linear, Eigen::VectorXd q7dof);
+
+    //convert 8dof vector to 7dof joint angles of Kuka, in order expected by FK/IK fncs
+    Eigen::VectorXd map827dof(Eigen::VectorXd q7dof);
+    
+    
     //std::vector<double> map27dof(double q_linear, Eigen::VectorXd q6dof);
     //void get_joint_names_6dof(vector<string> &jnt_names);
     //void get_joint_names_7dof(vector<string> &jnt_names);

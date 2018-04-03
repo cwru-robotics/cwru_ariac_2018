@@ -36,6 +36,7 @@ vector<double>   TransitionTrajectories::c_array_to_cpp_vec(const double c_array
   }
 }
 
+
 void TransitionTrajectories::copy_point(const double q_array[],trajectory_msgs::JointTrajectoryPoint &trajectory_point) {
    trajectory_point.positions.clear();
    trajectory_point.positions.resize(8);
