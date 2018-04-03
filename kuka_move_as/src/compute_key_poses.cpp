@@ -520,9 +520,9 @@ Eigen::Affine3d KukaBehaviorActionServer::affine_base_link(double q_rail) {
     Eigen::Affine3d affine_base_link_wrt_world;
     Eigen::Quaterniond q;
     Eigen::Vector3d Oe;
-    Oe[0] = BASE_LINK_X_COORD; //0.3;
+    Oe[0] = BASE_LINK_X_COORD; //-0.05
     Oe[1] = q_rail+1.0;
-    Oe[2] = BASE_LINK_HEIGHT; //0.8;
+    Oe[2] = BASE_LINK_HEIGHT; //0.700
 
     q.x() = 0;
     q.y() = 0;
