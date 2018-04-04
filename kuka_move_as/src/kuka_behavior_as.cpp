@@ -25,6 +25,8 @@ int g_ans; //for cout breakpoint debugging
 //define these funcs in separate files
 #include "pick_part_fnc.cpp"
 #include "compute_key_poses.cpp"
+#include "place_part_fnc.cpp"
+
 //#include "grasp_and_release_fncs.cpp"
 /*
 #include "flip_part_fnc.cpp"
@@ -58,8 +60,8 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
     //placeFinder_.insert(pair<int8_t, string>(Part::CAMERA, "CAMERA"));
     placeFinder_.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_2, "QUALITY_SENSOR_2"));   
     
-    approach_dist_ = 0.1;  //arbitrary, tunable
-    deep_grasp_dist_ = -0.03;  //ditto
+    approach_dist_ = APPROACH_OFFSET_DIST;  //arbitrary, tunable
+    deep_grasp_dist_ = DEEP_GRASP_MOVE_DIST;  //ditto
     
     robot_behavior_as.registerPreemptCallback(boost::bind(&KukaBehaviorActionServer::preemptCB, this));
     robot_behavior_as.start();
@@ -163,6 +165,7 @@ bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory d
     robot_goal_.trajectory = des_trajectory;
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
+    ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
     traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
 
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
@@ -256,10 +259,18 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             // use "goal", but only need to populate the "sourcePart" component
             errorCode_ = pick_part_fnc(goal);
             break;
+            /*
+        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_NO_RELEASE:
+            ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
+            // use "goal", but only need to populate the "sourcePart" component
+            errorCode_ = place_part_Qbox_no_release(goal);
+            break;
+            */
         case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
             errorCode_ = discard_grasped_part();
             break;
+            
             /*
             
             move_to_jspace_pose(q_box_Q1_hover_pose_,2.0); //need to check all moves for valid timing
@@ -539,58 +550,65 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
 
 }
 
+//utility to convert a single jspace desired  pose to a trajectory message
+trajectory_msgs::JointTrajectory KukaBehaviorActionServer::jspace_pose_to_traj(Eigen::VectorXd joints, double dtime) {
+    trajectory_msgs::JointTrajectory jspace_traj;
+    trajectory_msgs::JointTrajectoryPoint trajectory_point;
+    jspace_traj.joint_names.push_back("iiwa_joint_1");
+    jspace_traj.joint_names.push_back("iiwa_joint_2");
+    jspace_traj.joint_names.push_back("iiwa_joint_3");
+    jspace_traj.joint_names.push_back("iiwa_joint_4");
+    jspace_traj.joint_names.push_back("iiwa_joint_5");
+    jspace_traj.joint_names.push_back("iiwa_joint_6");
+    jspace_traj.joint_names.push_back("iiwa_joint_7");
+    jspace_traj.joint_names.push_back("linear_arm_actuator_joint");    
+    trajectory_point.positions.clear();
+    for (int i = 0; i < 8; i++) {
+                trajectory_point.positions.push_back(joints[i]);
+            }
+    trajectory_point.time_from_start = ros::Duration(dtime);
+    jspace_traj.points.push_back(trajectory_point);  
+    return jspace_traj;
+}
+
 //helper fnc to invoke motion to a single point, using action server interface to robot:
 // this function refers to one of 3 key poses--approach/depart, pickup/dropoff, pickup_deeper
 //these are computed on the fly and stored  in:
 //    Eigen::VectorXd pickup_deeper_jspace_pose_;
 //    Eigen::VectorXd desired_approach_depart_pose_,desired_grasp_dropoff_pose_;
-
+// oops--looks like this fnc is broken now!!
 bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double arrival_time) {
     trajectory_msgs::JointTrajectory transition_traj;
-    trajectory_msgs::JointTrajectoryPoint trajectory_point;
-    transition_traj.joint_names.push_back("iiwa_joint_1");
-    transition_traj.joint_names.push_back("iiwa_joint_2");
-    transition_traj.joint_names.push_back("iiwa_joint_3");
-    transition_traj.joint_names.push_back("iiwa_joint_4");
-    transition_traj.joint_names.push_back("iiwa_joint_5");
-    transition_traj.joint_names.push_back("iiwa_joint_6");
-    transition_traj.joint_names.push_back("iiwa_joint_7");
-    transition_traj.joint_names.push_back("linear_arm_actuator_joint");
 
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
     switch (pose_code) {
         case APPROACH_DEPART_CODE:
             ROS_INFO("move_to_jspace_pose(APPROACH_DEPART_CODE)");
-            ROS_INFO_STREAM("desired_approach_depart_pose_"<<desired_approach_depart_pose_<<endl);
-            for (int i = 0; i < 8; i++) {
-                trajectory_point.positions.push_back(desired_approach_depart_pose_[i]);
-            }
-            trajectory_point.time_from_start = ros::Duration(2);
-            transition_traj.points.push_back(trajectory_point);
+            ROS_INFO_STREAM("desired_approach_depart_pose_"<<endl<<desired_approach_depart_pose_.transpose()<<endl);
+            transition_traj = jspace_pose_to_traj(desired_approach_depart_pose_);
             break;
         case GRASP_PLACE_CODE:
-            for (int i = 0; i < 8; i++) {
-                trajectory_point.positions.push_back(desired_grasp_dropoff_pose_[i]);
-            }
-            trajectory_point.time_from_start = ros::Duration(2);
-            transition_traj.points.push_back(trajectory_point);
+            ROS_INFO("move_to_jspace_pose(GRASP_PLACE_CODE)");
+            ROS_INFO_STREAM("desired_grasp_dropoff_pose_"<<endl<<desired_grasp_dropoff_pose_.transpose()<<endl);  
+            transition_traj = jspace_pose_to_traj(desired_grasp_dropoff_pose_);
             break;
         case CURRENT_HOVER_CODE:
-            for (int i = 0; i < 8; i++) {
-                trajectory_point.positions.push_back(current_hover_pose_[i]);
-            }
-            trajectory_point.time_from_start = ros::Duration(2);
-            transition_traj.points.push_back(trajectory_point);
+            ROS_INFO("move_to_jspace_pose(CURRENT_HOVER_CODE)");
+            ROS_INFO_STREAM("current_hover_pose_"<<endl<<current_hover_pose_.transpose()<<endl);    
+            transition_traj = jspace_pose_to_traj(current_hover_pose_);
             break;
         default:
+            ROS_WARN("move_to_jspace_pose(): pose code not recognized");
             errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
             return false;
             break;
     }
     //if here, have a single-point trajectory to execute:
-    //robot_goal_.trajectory = transition_traj;
+    robot_goal_.trajectory = transition_traj;
     //ROS_INFO("sending goal to arm: ");
-    send_traj_goal(transition_traj, pose_code);
+    ROS_INFO_STREAM("sending traj: "<<endl<<transition_traj<<endl);
+
+    send_traj_goal(transition_traj, pose_code); 
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
         //put timeout here...   possibly return falses
         ROS_INFO("waiting for trajectory to finish...");
@@ -601,29 +619,49 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
     return true;
 }
 
+//helper fnc...to be used only internally as part of a behavior;
+// does NOT return an errorcode to an action  client
+bool KukaBehaviorActionServer::move_to_jspace_pose(Eigen::VectorXd desired_jspace_pose, double arrival_time) {
+    trajectory_msgs::JointTrajectory transition_traj;
+    transition_traj = jspace_pose_to_traj(desired_jspace_pose);
+
+
+    robot_goal_.trajectory = transition_traj;
+    //ROS_INFO("sending goal to arm: ");
+    ROS_INFO_STREAM("sending traj: "<<endl<<transition_traj<<endl);
+
+    send_traj_goal(transition_traj,CUSTOM_JSPACE_POSE); //, pose_code);
+    double timer=0;
+    double dt = 0.1;
+    ROS_INFO("waiting for trajectory to finish...");    
+    while ((!traj_goal_complete_) && (timer<MAX_BEHAVIOR_SERVER_WAIT_TIME)) { //write a fnc for this: wait_for_goal_w_timeout
+        ros::Duration(dt).sleep();
+        ros::spinOnce();
+        timer+=dt;
+    }
+    if (timer>=MAX_BEHAVIOR_SERVER_WAIT_TIME)  {
+        errorCode_ = kuka_move_as::RobotBehaviorResult::TIMEOUT;
+        return false;
+    }
+    current_pose_code_ = CUSTOM_JSPACE_POSE;  //  this code will not be in the transition matrix
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    return true;
+}
+
+
+
 //must compute pickup_deeper_jspace_pose_ first!!
 //calls for robot to move towards pickup_deeper_jspace_pose_, testing gripper status along the way
 //aborts when attachment is detected
+//internal func, NOT a behavior!
 //does  NOT return status to client.  Need to do this separately
 bool KukaBehaviorActionServer::move_into_grasp(double arrival_time) {
+    ROS_INFO_STREAM("MOVE TO DEEP GRASP, pose = "<<endl<<pickup_deeper_jspace_pose_.transpose()<<endl);
     trajectory_msgs::JointTrajectory transition_traj;
-    trajectory_msgs::JointTrajectoryPoint trajectory_point;
-    transition_traj.joint_names.push_back("iiwa_joint_1");
-    transition_traj.joint_names.push_back("iiwa_joint_2");
-    transition_traj.joint_names.push_back("iiwa_joint_3");
-    transition_traj.joint_names.push_back("iiwa_joint_4");
-    transition_traj.joint_names.push_back("iiwa_joint_5");
-    transition_traj.joint_names.push_back("iiwa_joint_6");
-    transition_traj.joint_names.push_back("iiwa_joint_7");
-    transition_traj.joint_names.push_back("linear_arm_actuator_joint");
-
+    //move slowly--say 5 seconds to press into part
+    transition_traj = jspace_pose_to_traj(pickup_deeper_jspace_pose_,arrival_time);
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-
-    for (int i = 0; i < 8; i++) {
-                trajectory_point.positions.push_back(pickup_deeper_jspace_pose_[i]);
-    }
-    trajectory_point.time_from_start = ros::Duration(arrival_time);
-    transition_traj.points.push_back(trajectory_point);
+    ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
     is_attached_ = false;
     send_traj_goal(transition_traj);  //start the motion
     while (!traj_goal_complete_ && !is_attached_) { //write a fnc for this: wait_for_goal_w_timeout
@@ -638,8 +676,8 @@ bool KukaBehaviorActionServer::move_into_grasp(double arrival_time) {
         errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
         return false;
     }
+    ROS_WARN("part is attached");
     return true;
-    //return report_success_or_abort();
 
 }
 
@@ -661,7 +699,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
     if (npts < 1) {
         ROS_WARN("precomputed traj does not exist!");
         errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR;
-        //return report_success_or_abort();
+        return false;
     }
     //if here, then traj is valid:
     ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);

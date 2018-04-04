@@ -55,6 +55,7 @@ const int GRASP_DEEPER_CODE = 3;
 const int HOME_POSE_CODE = 4;
 const int CRUISE_FLIP_MID_CODE = 5; //kuka_move_as::RobotBehaviorGoal::CRUISE_FLIP_MID_CODE;
 const int CURRENT_HOVER_CODE = 6;
+const int CUSTOM_JSPACE_POSE = 7; 
 const int INIT_POSE_CODE = 9; //
 const int NOM_BIN_CRUISE = 9; //synonym
 

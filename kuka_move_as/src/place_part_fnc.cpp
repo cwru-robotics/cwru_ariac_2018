@@ -1,12 +1,14 @@
-//use this fnc to pick up a specified part; it can be used by part-flipper and generic move(from,to)
-// upon completion of "pick" robot will move to the pick-location's safe cruise pose, and it will return either:
+//use this fnc to place up a specified, grasped part; 
+// upon completion of "place" server will return either:
 //  NO_ERROR, or:  UNREACHABLE, PART_DROPPED, WRONG_PARAMETER, or GRIPPER_FAULT
 //
 
 
 // use "goal", but only need to populate the "sourcePart" component
+// specialized for placing parts in a box, either at quality-inspection station 1 or 2, as specified in goal
 
-unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
+//XXXX EDIT ME!!!
+unsigned short int KukaBehaviorActionServer::place_part_Qbox_no_release(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
     unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory transition_traj;
     inventory_msgs::Part part = goal->sourcePart;
@@ -102,26 +104,26 @@ unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::R
     cout<<"enter 1: ";
     cin>>ans;
     //now move to bin pickup pose:
-    //ROS_INFO_STREAM("moving to pickup_jspace_pose_ " << std::endl << pickup_jspace_pose_.transpose());
-    //move_to_jspace_pose(pickup_jspace_pose_, 1.0); //try it this way instead
+    ROS_INFO_STREAM("moving to pickup_jspace_pose_ " << std::endl << pickup_jspace_pose_.transpose());
+    move_to_jspace_pose(pickup_jspace_pose_, 1.0); //try it this way instead
     //move_to_jspace_pose(GRASP_PLACE_CODE, 2.0); // try to pick up part; slow approach
 
-    //is_attached_ = gripperInterface_.waitForGripperAttach(1.0); //wait for grasp for  2 sec
+    is_attached_ = gripperInterface_.waitForGripperAttach(1.0); //wait for grasp for  2 sec
 
-    //if (!is_attached_) {
-        if (!move_into_grasp(5.0)) {
+    if (!is_attached_) {
+        if (!move_into_grasp(4.0)) {
             ROS_WARN("could not grasp part; giving up");
-            move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0); //try it this way instead
-            //move_to_jspace_pose(APPROACH_DEPART_CODE, 1.0);
+            move_to_jspace_pose(APPROACH_DEPART_CODE, 1.0);
             //move to safe pose
-            ROS_INFO("moving to hover_jspace_pose_ ");//pickup_hover_pose_
-            //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
-            move_to_jspace_pose(pickup_hover_pose_, 1.0); //try it this way instead       
+            ROS_INFO("moving to hover_jspace_pose_ ");
+            move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
             current_pose_code_=current_hover_code;
+  
+
             errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
             return errorCode_;
         }
-    //}
+    }
     //if here, part is attached to  gripper
     ROS_INFO("grasped part; moving to depart pose: ");
     move_to_jspace_pose(APPROACH_DEPART_CODE, 1.0);
@@ -156,18 +158,37 @@ unsigned short int KukaBehaviorActionServer::pick_part_fnc(const kuka_move_as::R
 
 
 //this version assumes the part is already grasped, and it should  be discarded
-/*
+
 unsigned short int KukaBehaviorActionServer::discard_grasped_part() {
 
     trajectory_msgs::JointTrajectory transition_traj;
+    if (!move_posecode1_to_posecode2(current_pose_code_, Q1_CRUISE_CODE)) {
+        ROS_WARN("discard_grasped_part:  error with move between pose codes %d and %d ", current_pose_code_, Q1_CRUISE_CODE);
+        return errorCode_; 
+    }    
     if (!move_posecode1_to_posecode2(current_pose_code_, Q1_DISCARD_CODE)) {
         ROS_WARN("discard_grasped_part:  error with move between pose codes %d and %d ", current_pose_code_, Q1_DISCARD_CODE);
         return errorCode_;
     }
 
     ROS_WARN("SHOULD DO PART RELEASE HERE");
-    //cout<<"enter 1: ";
-    //cin>>g_ans;
+    gripperInterface_.release();
+    is_attached_ = gripperInterface_.isGripperAttached();
+    double timer=0;
+    double dt = 0.1;
+    while (timer<MAX_BEHAVIOR_SERVER_WAIT_TIME && is_attached_) { //write a fnc for this: wait_for_goal_w_timeout
+        //put timeout here...   possibly return falses
+        ROS_INFO("waiting for gripper release...");
+        ros::Duration(dt).sleep();
+        timer+=dt;
+        ros::spinOnce();
+        is_attached_ = gripperInterface_.isGripperAttached();
+    }
+    if (timer>= MAX_BEHAVIOR_SERVER_WAIT_TIME) {
+        errorCode_ = errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
+        return errorCode_;
+    }
+    
 
     ROS_INFO("from %d to %d ", Q1_DISCARD_CODE, Q1_CRUISE_CODE);
     if (!move_posecode1_to_posecode2(Q1_DISCARD_CODE, Q1_CRUISE_CODE)) {
@@ -178,7 +199,7 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part() {
 
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
-}*/
+}
 /*
 //consult the "source" Part and compute if IK is realizable
 unsigned short int RobotMoveActionServer::is_pickable(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {

@@ -882,6 +882,28 @@ void TransitionTrajectories::fill_transition_traj_map() {
     transition_traj.points.push_back(trajectory_point);
     transition_traj_map_[Q1_DISCARD_CODE][Q1_CRUISE_CODE] = transition_traj; 
 
+    //---------Q1 discard to/from Q1_CRUISE:
+    transition_traj.points.clear();
+    //Q1_CRUISE_array
+    copy_point(Q1_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(0.5);
+    transition_traj.points.push_back(trajectory_point);
+    //Q1_DISCARD_CODE
+    copy_point(Q1_DISCARD_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(2.0);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_CRUISE_CODE][Q1_DISCARD_CODE] = transition_traj; 
+
+    transition_traj.points.clear();
+    //Q1_DISCARD_CODE
+    copy_point(Q1_DISCARD_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(0.5);
+    transition_traj.points.push_back(trajectory_point);
+    //Q1_CRUISE_array
+    copy_point(Q1_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(2.0);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_DISCARD_CODE][Q1_CRUISE_CODE] = transition_traj; 
 
     //---------connect bin cruise poses to Q1_cruise pose:
     //probably won't use these...flip via NOM BIN CRUISE POSE

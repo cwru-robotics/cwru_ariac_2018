@@ -51,7 +51,10 @@ const bool DOWN = false;
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
+const double APPROACH_OFFSET_DIST = 0.03;
+const double DEEP_GRASP_MOVE_DIST = -0.06;
 
+int ans; //poor-man's debug response
 
 
 //map inventory_msgs location codes to corresponding robot pose codes:
@@ -192,7 +195,8 @@ private:
     control_msgs::FollowJointTrajectoryGoal traj_goal_;
     trajectory_msgs::JointTrajectory traj_;
     trajectory_msgs::JointTrajectory jspace_pose_to_traj(Eigen::VectorXd joints, double dtime = 2.0);
-    
+    bool move_to_jspace_pose(Eigen::VectorXd desired_jspace_pose, double arrival_time);
+
     TransitionTrajectories transitionTrajectories_;
     GripperInterface gripperInterface_;
     
@@ -225,6 +229,8 @@ private:
     //here are the action functions: robot moves
     unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     unsigned short int discard_grasped_part();
+    unsigned short int place_part_Qbox_no_release(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
     bool move_into_grasp(double arrival_time);
 

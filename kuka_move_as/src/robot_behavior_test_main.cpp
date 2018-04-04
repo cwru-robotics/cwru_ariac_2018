@@ -69,6 +69,9 @@ int main(int argc, char **argv) {
     ROS_INFO_STREAM("attempting pick command for part "<<pick_part<<endl);
     //pick_part.location= inventory_msgs::Part::BIN2;
     robotBehaviorInterface.pick(pick_part);
+    
+    ROS_INFO("attempting discard");
+    robotBehaviorInterface.discard_grasped_part();    
 
     /*
     ROS_INFO("attempting pick command, BIN3");

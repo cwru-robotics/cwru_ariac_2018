@@ -8,7 +8,7 @@ bool KukaBehaviorActionServer::rail_prepose(int8_t location, double &q_rail) {
             q_rail = BIN1_HOVER_FAR_array[7]; //extract rail position for bin1 key pose
             break;
         case Part::BIN2:
-            q_rail = BIN2_HOVER_FAR_array[7]; //extract rail position for bin1 key pose
+            q_rail = BIN2_HOVER_NEAR_array[7]; //extract rail position for bin1 key pose
             break;
         case Part::BIN3:
             q_rail = BIN3_HOVER_FAR_array[7]; //extract rail position for bin1 key pose
@@ -143,7 +143,7 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
             return true; //valid code
             break;
         case Part::BIN2:
-            copy_array_to_qvec(BIN2_HOVER_FAR_array,qvec);
+            copy_array_to_qvec(BIN2_HOVER_NEAR_array,qvec);
             return true; //valid code
             break;
         case Part::BIN3:
@@ -645,8 +645,8 @@ bool KukaBehaviorActionServer::compute_pickup_dropoff_IK(Eigen::Affine3d affine_
     }
     ROS_INFO_STREAM("q7dof_ref: "<<q7dof_ref.transpose()<<endl);
     q7dof_soln = fwd_solver_.select_soln_near_qnom(q7dof_solns, q7dof_ref);
-
-    double q_rail = approx_jspace_pose[1];
+ 
+    double q_rail = approx_jspace_pose[7];
 
     q_vec_soln = fwd_solver_.map728dof(q_rail, q7dof_soln);
     ROS_INFO("q8 in Kuka coords: [%4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f, %4.2f]", q_vec_soln[0],
@@ -739,6 +739,7 @@ bool KukaBehaviorActionServer::get_pickup_IK(Eigen::Affine3d affine_vacuum_gripp
 bool KukaBehaviorActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,
                                                 Eigen::VectorXd approx_jspace_pose, double approach_dist,
                                                 Eigen::VectorXd &q_vec_soln) {
+    ROS_INFO("compute_approach_IK: approach_dist = %f",approach_dist);
     bool success = true;
     std::vector<Eigen::VectorXd> q7dof_solns;
     Eigen::VectorXd q7dof_ref,q7dof_soln;
@@ -750,6 +751,10 @@ bool KukaBehaviorActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum
     zvec = R_grasp.col(2); //approach pose should back off along pure z direction (typically, vertical)
     O_grasp = affine_vacuum_gripper_pose_wrt_base_link.translation();
     O_approach = O_grasp + approach_dist * zvec; //compute offset origin relative to grasp origin
+    ROS_INFO_STREAM("gripper wrt base des grasp origin: "<<O_grasp.transpose()<<endl);
+        ROS_INFO_STREAM("gripper wrt base des approach origin: "<<O_approach.transpose()<<endl);
+        ROS_INFO_STREAM("zvec: "<<zvec.transpose()<<endl);
+
     Eigen::Affine3d approach_affine; //fill in components of approach affine
     approach_affine = affine_vacuum_gripper_pose_wrt_base_link;
     approach_affine.translation() = O_approach;
