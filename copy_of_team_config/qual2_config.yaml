@@ -1,0 +1,41 @@
+sensors:
+  logical_camera_1:
+    type: logical_camera
+    pose:
+      xyz: [-0.728,-0.490, 1.234]
+      rpy: [0,1.44,'pi']
+  logical_camera_2:
+    type: logical_camera
+    pose:
+      xyz: [-0.728,0.32, 1.234]
+      rpy: [0,1.44,'pi']
+  logical_camera_3:
+    type: logical_camera
+    pose:
+      xyz: [-0.728,1.13, 1.234]
+      rpy: [0,1.44,'pi']
+  logical_camera_4:
+    type: logical_camera
+    pose:
+      xyz: [-0.728,1.94, 1.234]
+      rpy: [0,1.44,'pi']
+  logical_camera_5:
+    type: logical_camera
+    pose:
+      xyz: [-0.728,2.75, 1.234]
+      rpy: [0,1.44,'pi']
+  box_camera_1:
+    type: logical_camera
+    pose:
+      xyz: [0.571, 0.615, 1.133]
+      rpy: ['pi', 1.5707,0]
+  box_camera_2:
+    type: logical_camera
+    pose:
+      xyz: [0.546, -0.263, 1.133]
+      rpy: ['pi', 1.5707,0]
+  laser_profiler_drone_depot:
+    type: laser_profiler
+    pose:
+      xyz: [0.553, -5, 0.2]
+      rpy: ['pi', 0, 'pi/2']
