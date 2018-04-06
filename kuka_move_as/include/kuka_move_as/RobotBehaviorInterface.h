@@ -4,7 +4,7 @@
 
 #ifndef ROBOT_BEHAVIOR_INTERFACE_H
 #define ROBOT_BEHAVIOR_INTERFACE_H
-  
+
 
 //#include <AriacBase.h>
 #include <map>
@@ -17,9 +17,10 @@
 using namespace std;
 using namespace inventory_msgs;
 //using namespace robot_move_as;
-const double MAX_ACTION_SERVER_WAIT_TIME=30.0;  //to prevent deadlocks
+const double MAX_ACTION_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 #include <kuka_move_as/RobotBehaviorAction.h>  //this is specific to Kuka; should generalize
+
 /*
 std::map<short unsigned int, string> error_code_name_map = {
     {kuka_move_as::RobotBehaviorResult::NO_ERROR, "NO_ERROR"},
@@ -30,7 +31,7 @@ std::map<short unsigned int, string> error_code_name_map = {
     {kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"},
     {kuka_move_as::RobotBehaviorResult::CANCELLED, "CANCELLED"}    
 };
-*/
+ */
 class RobotBehaviorInterface {
 public:
     RobotBehaviorInterface(ros::NodeHandle* nodehandle);
@@ -39,14 +40,18 @@ public:
 
 
     void cancel();
-    bool action_server_returned() { return action_server_returned_;};
-    short unsigned  int get_error_code() {return errorCode_;};
+
+    bool action_server_returned() {
+        return action_server_returned_;
+    };
+
+    short unsigned int get_error_code() {
+        return errorCode_;
+    };
     //bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
-    bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
-    bool place_part_in_box_no_release(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
-    //bool discard_grasped_part(double timeout=0);
-    //unsigned short int discard_grasped_part(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
-    bool discard_grasped_part(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool discard_grasped_part(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     /*
     bool toHome(double timeout = 0);
 
@@ -79,9 +84,9 @@ public:
     void setTimeTolerance(double newTimeTolerance) { time_tolerance = newTimeTolerance; }
     void enableAsync() { async_mode = true; }
     void disableAsync() { async_mode = false; }
-*/
+     */
 protected:
-    
+
     ros::NodeHandle nh_;
     ros::Time goal_start_time_;
     actionlib::SimpleActionClient<kuka_move_as::RobotBehaviorAction> ac;
