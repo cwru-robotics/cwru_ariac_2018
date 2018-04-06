@@ -17,6 +17,11 @@ or, for qual2 setup:
 
 rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
 
+ON ATLAS6 USE:
+rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
+
+
+
   <node name="ariac_sim" pkg="osrf_gear" type="gear.py"
         args="--development-mode
           $(arg verbose_args)
@@ -28,7 +33,10 @@ rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --firs
           $(find osrf_gear)/config/sample_user_config.yaml
           " required="true" output="screen" />
 Start up robot move action server:
-`rosrun robot_move_as robot_move_as`
+`rosrun kuka_move_as kuka_behavior_as`
+
+demo test pgm: 
+`rosrun shipment_filler test_part_placement_from_inventory `
 
 start the shipment filler:
 `rosrun shipment_filler simple_shipment_filler`

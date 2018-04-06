@@ -9,9 +9,10 @@
 #include <osrf_gear/Order.h>
 #include <osrf_gear/Product.h>
 #include <xform_utils/xform_utils.h>
+#include<bin_inventory/bin_inventory.h>
 using namespace std;
 
-const int NUM_PART_TYPES=5;
+/*const int NUM_PART_TYPES=5;
 //means to map part names to numerical codes, and vice-versa
 //edit the following to add more parts;
 //part ID's MUST start at 1 and MUST be sequential
@@ -32,7 +33,7 @@ std::map<int, std::string> part_id_to_name_mappings =
    {4,"disk_part"},
    {5,"pulley_part"}
 };
-
+*/
 class BoxInspector
 {
 public:
@@ -60,8 +61,9 @@ public:
     osrf_gear::Shipment &shipment_status);
   //this version operates on member var box_inspector_image_
   bool model_poses_wrt_box(osrf_gear::Shipment &shipment_status);
-
-
+  bool compare_pose(geometry_msgs::Pose , geometry_msgs::Pose);
+  bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
+  bool pre_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,osrf_gear::Model &misplaced_model_desired_coords, osrf_gear::Model &misplaced_model_actual_coords);
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 

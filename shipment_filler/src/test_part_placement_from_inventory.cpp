@@ -5,6 +5,13 @@
 
 #include <kuka_move_as/RobotBehaviorInterface.h>
 #include<bin_inventory/bin_inventory.h>
+#include<box_inspector/box_inspector.h>
+
+void part_to_model(inventory_msgs::Part part, osrf_gear::Model &model) {
+	model.type=part.name;
+	model.pose=part.pose.pose;
+
+}
 
 void set_part_vals(Part pick_part,Part &place_part) {
     geometry_msgs::PoseStamped place_pose;
@@ -39,6 +46,8 @@ int main(int argc, char** argv) {
     inventory_msgs::Part pick_part,place_part;
     inventory_msgs::Inventory inventory_msg;
 
+    BoxInspector boxInspector(&nh);
+
     ROS_INFO("main: instantiating an object of type BinInventory");
     BinInventory binInventory(&nh);  
     binInventory.update();
@@ -46,7 +55,9 @@ int main(int argc, char** argv) {
     //void BinInventory::get_inventory(inventory_msgs::Inventory &inventory_msg) {
     binInventory.get_inventory(inventory_msg);
     binInventory.print_inventory_msg();
-    
+    osrf_gear::Model model,misplaced_model_actual_coords,misplaced_model_desired_coords;
+    vector<osrf_gear::Model> desired_models_wrt_world;
+    desired_models_wrt_world.clear();
     /*     part.location = bin_num;
      part.pose = part_pose;
      part.name = part_name.c_str();*/
@@ -83,8 +94,26 @@ int main(int argc, char** argv) {
                   //gripperInterface_.release();     
                   break;
                }              
-              
+    ROS_INFO("double check starts");          
     //AUGMENT HERE!!!
+    part_to_model(place_part,model); 
+    //only for debug//
+    model.pose.position.x=999;
+    desired_models_wrt_world.push_back(model); 
+    bool pre_dropoff_check = boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_model_desired_coords, misplaced_model_actual_coords);
+    while(!pre_dropoff_check) {
+    	inventory_msgs::Part part_wrong_pose, part_desired_pose;
+    	part_wrong_pose=place_part;
+    	part_desired_pose=place_part;
+    	part_wrong_pose.pose.pose=misplaced_model_actual_coords.pose;
+    	part_desired_pose.pose.pose=misplaced_model_desired_coords.pose;
+    	//perturbation function with part_wrong_pose and part_desired_pose as args
+      	ROS_INFO_STREAM("part at wrong pose: " <<part_wrong_pose);
+      	ROS_INFO_STREAM("part at correct pose: "<<part_desired_pose);
+    	pre_dropoff_check=boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_model_desired_coords, misplaced_model_actual_coords);
+    }
+
+    //BUT MAJOR ASSUMPTION THAT ONLY ONE MODEL GETS RETURNED AS MISPLACED. FOR THIS SPECIFIC PURPOSE, IT SHOULD BE FINE, BUT NEED TO DOCUMENT THAT THIS FUNCTION IS VERY LIMITED
     // check box1 camera for part pose; convert to world coords;
     // perform adjustment, as necessary, before placing part
     // confirm part is within tolerance of goal
