@@ -17,6 +17,11 @@ or, for qual2 setup:
 
 rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
 
+ON ATLAS6 USE:
+rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
+
+
+
   <node name="ariac_sim" pkg="osrf_gear" type="gear.py"
         args="--development-mode
           $(arg verbose_args)
@@ -46,6 +51,7 @@ OR, send orders via competition interface:
 `rosservice call /ariac/start_competition`
 
 #sub-tests:
-
+Run an example move-part command (hard coded):
+`rosrun robot_move_as robot_move_as_tester`
 
 

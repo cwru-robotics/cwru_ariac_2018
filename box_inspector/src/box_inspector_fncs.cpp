@@ -8,7 +8,7 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
     geometry_msgs::PoseStamped box_pose_wrt_world, part_pose_wrt_world;
     Eigen::Affine3d affine_cam_wrt_world, affine_part_wrt_cam, affine_part_wrt_box,
             affine_box_pose_wrt_world, affine_part_wrt_world;
-
+    shipment_status.products.clear(); //maybe not?
     get_new_snapshot_from_box_cam();
     bool found_box = false;
     int i_box = 0;
@@ -46,6 +46,7 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
     }
 
     osrf_gear::Product product;
+    
     //if here, image contains box, and box pose w/rt world is in affine_box_pose_wrt_world
     for (int imodel = 0; imodel < num_models; imodel++) {
         if (imodel != i_box) { //if here, have a model NOT the box
@@ -56,9 +57,12 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
             part_pose_wrt_world = compute_stPose(cam_pose, model_pose_wrt_cam);
             ROS_INFO_STREAM("part pose wrt world: " << part_pose_wrt_world << endl);
             
-            ROS_WARN("model_poses_wrt_box(): FINISH ME!  compute part_pose_wrt_box");
-            //MISSING LINES HERE...
-            
+            //MISSING LINES HERE...FIXED IT
+            Eigen::Affine3d model_affine_wrt_cam, box_affine_wrt_cam, model_affine_wrt_box;
+            model_affine_wrt_cam=xformUtils_.transformPoseToEigenAffine3d(model_pose_wrt_cam);
+            box_affine_wrt_cam=xformUtils_.transformPoseToEigenAffine3d(box_pose_wrt_cam);
+            model_affine_wrt_box = box_affine_wrt_cam.inverse()*model_affine_wrt_cam;
+            part_pose_wrt_box=xformUtils_.transformEigenAffine3dToPose(model_affine_wrt_box);
             //put this into "shipment"  object:
             //string shipment_type
             //box_inspector/Product[] products
@@ -70,7 +74,7 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
         }
     }
     ROS_INFO_STREAM("resulting part poses w/rt box: " << shipment_status << endl);
-
+    return true;
 }
 
 
@@ -82,8 +86,23 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
 void BoxInspector::compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment_wrt_box,
         geometry_msgs::PoseStamped box_pose_wrt_world,
         vector<osrf_gear::Model> &desired_models_wrt_world) {
-
-    ROS_WARN("WRITE THIS FNC! compute_shipment_poses_wrt_world()");
+	//desired_models_wrt_world.clear(); // why not?
+	//Fixed, recheck logic later
+	osrf_gear::Product product_wrt_box;
+    
+	for(int i=0;i<shipment_wrt_box.products.size();i++) {
+	product_wrt_box.type = shipment_wrt_box.products[i].type;
+	product_wrt_box.pose = shipment_wrt_box.products[i].pose;
+	Eigen::Affine3d product_affine_wrt_box = xformUtils_.transformPoseToEigenAffine3d(product_wrt_box.pose);
+	Eigen::Affine3d box_affine_wrt_world = xformUtils_.transformPoseToEigenAffine3d(box_pose_wrt_world.pose);
+	Eigen::Affine3d product_affine_wrt_world = box_affine_wrt_world*product_affine_wrt_box;	
+	geometry_msgs::Pose product_pose_wrt_world = xformUtils_.transformEigenAffine3dToPose(product_affine_wrt_world);
+	osrf_gear::Model model;
+	model.type=product_wrt_box.type;
+	model.pose=product_pose_wrt_world;
+	desired_models_wrt_world.push_back(model);
+        }
+    
     //compute and fill in terms in desired_models_wrt_world
 }
 

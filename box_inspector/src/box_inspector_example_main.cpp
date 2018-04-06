@@ -74,31 +74,31 @@ int main(int argc, char ** argv) {
     boxInspector.update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,
        misplaced_models_actual_coords_wrt_world, misplaced_models_desired_coords_wrt_world,
        missing_models_wrt_world, orphan_models_wrt_world);
-
+    ROS_INFO("debug");
     //print out the results:
     int nmodels = satisfied_models_wrt_world.size();
     ROS_INFO("there are %d models in the correct poses; they are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       ROS_INFO_STREAM(satisfied_models_wrt_world[i]<<endl);
+       //ROS_INFO_STREAM(satisfied_models_wrt_world[i]<<endl);
     }
 
     nmodels = misplaced_models_actual_coords_wrt_world.size();
     ROS_INFO("there are %d models in  incorrect poses; actual vs desired coords are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       ROS_INFO_STREAM(misplaced_models_actual_coords_wrt_world[i]<<endl);
-       ROS_INFO_STREAM(misplaced_models_desired_coords_wrt_world[i]<<endl<<endl);
+       //ROS_INFO_STREAM(misplaced_models_actual_coords_wrt_world[i]<<endl);
+       //ROS_INFO_STREAM(misplaced_models_desired_coords_wrt_world[i]<<endl<<endl);
     }
 
     nmodels = missing_models_wrt_world.size();
     ROS_INFO("there are %d models missing; they are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       ROS_INFO_STREAM(missing_models_wrt_world[i]<<endl);
+       //ROS_INFO_STREAM(missing_models_wrt_world[i]<<endl);
     }
 
     nmodels = orphan_models_wrt_world.size();
     ROS_INFO("there are %d orphan models (in box, but don't belong); they are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       ROS_INFO_STREAM(orphan_models_wrt_world[i]<<endl);
+       //ROS_INFO_STREAM(orphan_models_wrt_world[i]<<endl);
     }
     
   
