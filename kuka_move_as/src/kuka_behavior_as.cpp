@@ -97,7 +97,12 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
         q2_hover_pose_[i] = Q2_HOVER_array[i];        
     }
 
-
+    jointstate_subscriber_  =  nh.subscribe("/ariac/joint_states", 1, &KukaBehaviorActionServer::jointstateCB,this); 
+    
+    //TEMPORARY TEST: all this does is checks if joint-state subscription is working
+    //worked OK
+    //inventory_msgs::Part part_from,part_to;
+    //adjust_part_location_no_release(part_from,part_to);
 
     //set_key_poses();
 
@@ -242,6 +247,14 @@ void RobotMoveActionServer::move_to_jspace_pose(Eigen::VectorXd q_vec, double dt
 }
  */
 
+//callback fnc to subscribe to joint-state publications;
+//make joint_states available as member var
+void KukaBehaviorActionServer::jointstateCB(const sensor_msgs::JointState& message_holder) {
+    
+    joint_state_ = message_holder;
+    got_new_joint_states_=true;
+}
+
 
 
 //EXECUTE_CB: does function  switching
@@ -283,9 +296,32 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
             errorCode_ = discard_grasped_part(part);
             break;
-            
+
+
+        case kuka_move_as::RobotBehaviorGoal::RELEASE:
+            ROS_INFO("RELEASE");
+            errorCode_ = gripperInterface_.release_fnc(timeout); //this version includes testing for release and timeout monitoring, same as below
+            break;            
             /*
-            
+        case kuka_move_as::RobotBehaviorGoal::GRASP:
+            ROS_INFO("GRASP");
+            errorCode_ = grasp_fnc();
+            if (errorCode != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+                   ROS_WARN("grasp unsuccessful");
+                    result_.success = false;
+                    result_.errorCode = errorCode;
+                    //result_.robotState = robotState;
+                    robot_behavior_as.setAborted(result_);
+                    return;
+                }
+             //if here, all is well:
+                ROS_INFO("part is grasped");
+                result_.success = true;
+                result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+                //result_.robotState = robotState;
+                robot_behavior_as.setSucceeded(result_);
+            break;
+                         
             move_to_jspace_pose(q_box_Q1_hover_pose_,2.0); //need to check all moves for valid timing
             ros::Duration(2.0).sleep();
             move_to_jspace_pose(q_Q1_discard_pose_,2.0);
@@ -516,40 +552,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             break;
             
 
-        case kuka_move_as::RobotBehaviorGoal::GRASP:
-            ROS_INFO("GRASP");
-            errorCode = grasp_fnc();
-            if (errorCode != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
-                   ROS_WARN("grasp unsuccessful");
-                    result_.success = false;
-                    result_.errorCode = errorCode;
-                    //result_.robotState = robotState;
-                    robot_behavior_as.setAborted(result_);
-                    return;
-                }
-             //if here, all is well:
-                ROS_INFO("part is grasped");
-                result_.success = true;
-                result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-                //result_.robotState = robotState;
-                robot_behavior_as.setSucceeded(result_);
-            break;
 
-        case kuka_move_as::RobotBehaviorGoal::RELEASE:
-            errorCode = release_fnc();
-            if (errorCode != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
-                   ROS_WARN("grasp unsuccessful; timed out");
-                    result_.success = false;
-                    result_.errorCode = errorCode;
-                    //result_.robotState = robotState;
-                    robot_behavior_as.setAborted(result_);
-                    return;
-                }
-                result_.success = true;
-                result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-                //result_.robotState = robotState;
-                robot_behavior_as.setSucceeded(result_);
-            break;
              */
         default:
             ROS_INFO("Wrong parameter received for goal");

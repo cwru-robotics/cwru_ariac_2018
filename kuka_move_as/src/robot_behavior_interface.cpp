@@ -120,6 +120,12 @@ bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeo
     return( sendGoal(goal_type,part,timeout));    
 }
 
+bool RobotBehaviorInterface::release(double timeout)  {
+     ROS_INFO("release fnc called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RELEASE;
+    return( sendGoal(goal_type,timeout));    
+}
+
 /*
 
 osrf_gear::VacuumGripperState RobotInterface::getGripperState() {

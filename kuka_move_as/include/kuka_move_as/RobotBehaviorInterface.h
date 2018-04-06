@@ -52,6 +52,7 @@ public:
     bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool discard_grasped_part(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool release(double timeout);
     /*
     bool toHome(double timeout = 0);
 

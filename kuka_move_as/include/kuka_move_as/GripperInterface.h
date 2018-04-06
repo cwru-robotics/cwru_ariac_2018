@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
+#include <kuka_move_as/RobotBehaviorAction.h>
 
 using namespace std;
 
@@ -16,6 +17,8 @@ public:
 
     void grab();
     void release();
+    short unsigned  int release_fnc(double timeout);
+    //short unsigned int grasp_fnc();
     osrf_gear::VacuumGripperState getGripperState();
     bool isGripperAttached();
     bool waitForGripperAttach(double timeout);
@@ -29,6 +32,7 @@ protected:
     osrf_gear::VacuumGripperControl attach_;
     osrf_gear::VacuumGripperControl detach_;
     void gripperStateCallback(const osrf_gear::VacuumGripperState::ConstPtr &msg);
+    
 };
 
 

@@ -27,6 +27,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <tf/transform_listener.h>
+#include <sensor_msgs/JointState.h>
+
+
 #include <xform_utils/xform_utils.h>
 #include <kuka_fk_ik/kuka_kin.h>
 
@@ -39,6 +42,7 @@
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
 #include <inventory_msgs/Part.h>
+
 
 
 using namespace std;
@@ -238,6 +242,8 @@ private:
 
     control_msgs::FollowJointTrajectoryGoal robot_goal_;
     trajectory_msgs::JointTrajectory des_trajectory_;
+    
+    sensor_msgs::JointState joint_state_;
 
     //actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
     //        robot_motion_action_client("/ariac/arm/follow_joint_trajectory", true);
@@ -255,6 +261,8 @@ private:
     unsigned short int discard_grasped_part(inventory_msgs::Part part);
 
     unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
+    unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
+
     
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
     bool move_into_grasp(double arrival_time); //ASSUMES deep-grasp pose
@@ -293,9 +301,12 @@ private:
     //similarly, compute gripper pose for dropoff, accounting for part height
     Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link(Part part, double q_rail);
 
-
-    //void grab();
-    //void release();  
+    ros::Subscriber jointstate_subscriber_; //
+    
+    void jointstateCB(const sensor_msgs::JointState& message_holder);
+    bool got_new_joint_states_;
+    void grab();
+    void release();  
     //unsigned short int grasp_fnc(double timeout=2.0);  //default timeout; rtns error code
     //unsigned short int release_fnc(double timeout=2.0); //default timeout for release    
 

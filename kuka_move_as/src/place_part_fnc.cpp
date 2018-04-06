@@ -3,7 +3,6 @@
 //  NO_ERROR, or:  UNREACHABLE, PART_DROPPED, WRONG_PARAMETER, or GRIPPER_FAULT
 //
 
-// use "goal", but only need to populate the "destinationPart" component
 
 unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(inventory_msgs::Part part) {
     unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
@@ -89,6 +88,11 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     }
 
     ROS_WARN("SHOULD DO PART RELEASE HERE");
+    //wait max of  10 sec
+    errorCode_ = gripperInterface_.release_fnc(10.0); //this version includes testing for release and timeout monitoring, same as below
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR)  return errorCode_;
+
+    /*
     gripperInterface_.release();
      is_attached_ = gripperInterface_.isGripperAttached();
      double timer=0;
@@ -103,6 +107,7 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
         errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
         return errorCode_;
     }   
+     */
 
     ROS_INFO("from %d to %d ", Q1_DISCARD_CODE, Q1_CRUISE_CODE);
     if (!move_posecode1_to_posecode2(Q1_DISCARD_CODE, Q1_CRUISE_CODE)) {
@@ -115,3 +120,83 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     return errorCode_;
 }
 
+unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
+    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    trajectory_msgs::JointTrajectory transition_traj;
+    //inventory_msgs::Part part = goal->destinationPart;
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    
+    geometry_msgs::PoseStamped part_current_pose_wrt_world = part_actual.pose;
+    geometry_msgs::PoseStamped part_desired_pose_wrt_world = part_desired.pose;
+    ROS_INFO_STREAM("Adjusting part location from "<<endl<<part_current_pose_wrt_world<<" to: "<<endl<<part_desired_pose_wrt_world<<endl);
+    
+    Eigen::Affine3d affine_part_current_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_current_pose_wrt_world);
+    Eigen::Affine3d affine_part_desired_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_desired_pose_wrt_world);
+    
+    //get joint states:
+    got_new_joint_states_=false;
+    while(!got_new_joint_states_)  {
+       ros::spinOnce();
+       ros::Duration(0.1).sleep();
+    }
+       ROS_INFO_STREAM("got joint states: "<<endl<<joint_state_<<endl);
+    
+    //need  to know where the gripper  is now, to deduce the current grasp transform:
+    /*
+    
+    
+    //Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
+    //("desired part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);    
+
+    ROS_INFO("part info: ");
+    ROS_INFO_STREAM(part);
+    errorCode_ = compute_box_dropoff_key_poses(part);
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        return errorCode_;
+    }
+    //extract box location codes from Part:
+    int current_hover_code = location_to_pose_code_map[part.location];
+    int current_cruise_code = location_to_cruise_code_map[part.location];
+    
+    if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
+
+        ROS_WARN("error with move between pose codes");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
+    }
+    is_attached_ = gripperInterface_.isGripperAttached();
+    if (!is_attached_) {
+            errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+            return errorCode_;
+    }
+
+    ROS_WARN(" DO DROPOFF STEPS HERE...");
+
+    cout<<"enter 1: ";
+    cin>>ans;
+
+
+    //now move to approach_dropoff_jspace_pose_:
+    ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+
+    cout<<"enter 1: ";
+    cin>>ans;
+    //now move to desired_grasp_dropoff_pose_:
+    ROS_INFO_STREAM("moving to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
+    move_to_jspace_pose(desired_grasp_dropoff_pose_, 1.0); //try it this way instead
+        
+    //check if part is still attached
+    is_attached_ = gripperInterface_.isGripperAttached();
+    if (!is_attached_) {
+        ROS_WARN("dropped part!");
+        errorCode = kuka_move_as::RobotBehaviorResult::PART_DROPPED; //debug--return error
+        return errorCode;
+    }
+    ROS_INFO("place-part complete--still grasping part");
+    cout<<"enter 1: ";
+    cin>>ans;
+        errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+     * */
+        return errorCode_;
+}

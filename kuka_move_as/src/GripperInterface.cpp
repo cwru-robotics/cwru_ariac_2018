@@ -59,3 +59,27 @@ void GripperInterface::release() {
     //ROS_INFO("release gripper");
     gripper_.call(detach_);
 }
+
+
+short unsigned  int GripperInterface::release_fnc(double timeout) {
+      release();//attempt  release
+     attached_ = isGripperAttached();
+     short unsigned int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; 
+     double timer=0;
+     double dt =0.1;
+     while (!attached_ && (timer<timeout)) {
+        ROS_WARN("trying to release part");
+        timer+=dt;
+        release();
+        ros::spinOnce();
+        attached_ = isGripperAttached();     
+    }
+     if (!attached_) {
+        errorCode = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
+        return errorCode;
+    }   
+    //errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    return errorCode;
+}
+
+//    short unsigned int grasp_fnc();
