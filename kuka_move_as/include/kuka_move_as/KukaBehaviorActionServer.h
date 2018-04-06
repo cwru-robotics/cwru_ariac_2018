@@ -51,21 +51,43 @@ const bool DOWN = false;
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
-const double APPROACH_OFFSET_DIST = 0.03;
+const double APPROACH_OFFSET_DIST = 0.02;
 const double DEEP_GRASP_MOVE_DIST = -0.06;
+
+const double MIN_BIN_GRASP_DY = -0.140; //-0.153;
+const double MAX_BIN_GRASP_DY = 0.180; //0.190;
+const double MAX_BIN_X_VAL = -0.6;
+const double MIN_BIN_X_VAL = -0.89;
+const double MID_BIN_X_VAL = -0.745;
+const double BIN_FAR_THRESHOLD = -0.83;
+const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
+const double X_BASE_WRT_WORLD = -0.050;
+
 
 int ans; //poor-man's debug response
 
 
 //map inventory_msgs location codes to corresponding robot pose codes:
 std::map<unsigned short int, int> location_to_pose_code_map ={
-    {inventory_msgs::Part::BIN1, BIN1_HOVER_FAR_CODE},
-    {inventory_msgs::Part::BIN2, BIN2_HOVER_FAR_CODE},
-    {inventory_msgs::Part::BIN3, BIN3_HOVER_FAR_CODE},
-    {inventory_msgs::Part::BIN4, BIN4_HOVER_FAR_CODE},
-    {inventory_msgs::Part::BIN5, BIN5_HOVER_FAR_CODE},
+    {inventory_msgs::Part::BIN1, BIN1_HOVER_NEAR_CODE},
+    {inventory_msgs::Part::BIN2, BIN2_HOVER_NEAR_CODE},
+    {inventory_msgs::Part::BIN3, BIN3_HOVER_NEAR_CODE},
+    {inventory_msgs::Part::BIN4, BIN4_HOVER_NEAR_CODE},
+    {inventory_msgs::Part::BIN5, BIN5_HOVER_NEAR_CODE},
     {inventory_msgs::Part::QUALITY_SENSOR_1, Q1_HOVER_CODE},
     {inventory_msgs::Part::QUALITY_SENSOR_2, Q2_HOVER_CODE},
+    {inventory_msgs::Part::DISCARD_Q1, Q1_DISCARD_CODE},
+    {inventory_msgs::Part::DISCARD_Q2, Q2_DISCARD_CODE}
+};
+
+std::map<unsigned short int, int> location_to_cruise_code_map={
+    {inventory_msgs::Part::BIN1, BIN1_CRUISE_CODE},
+    {inventory_msgs::Part::BIN2, BIN2_CRUISE_CODE},
+    {inventory_msgs::Part::BIN3, BIN3_CRUISE_CODE},
+    {inventory_msgs::Part::BIN4, BIN4_CRUISE_CODE},
+    {inventory_msgs::Part::BIN5, BIN5_CRUISE_CODE},
+    {inventory_msgs::Part::QUALITY_SENSOR_1, Q1_CRUISE_CODE},
+    {inventory_msgs::Part::QUALITY_SENSOR_2, Q2_CRUISE_CODE},
     {inventory_msgs::Part::DISCARD_Q1, Q1_DISCARD_CODE},
     {inventory_msgs::Part::DISCARD_Q2, Q2_DISCARD_CODE}
 };
@@ -227,12 +249,16 @@ private:
 
     bool report_success_or_abort(); //typical wrap-up for a behavior
     //here are the action functions: robot moves
-    unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
-    unsigned short int discard_grasped_part();
-    unsigned short int place_part_Qbox_no_release(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    //unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    //unsigned short int discard_grasped_part();
+    unsigned short int discard_grasped_part(inventory_msgs::Part part);
+
+    unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
     
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
-    bool move_into_grasp(double arrival_time);
+    bool move_into_grasp(double arrival_time); //ASSUMES deep-grasp pose
+    bool move_into_grasp(Eigen::VectorXd pickup_jspace_pose, double arrival_time); //provide target pose
 
     inventory_msgs::Part part_of_interest_;
     inventory_msgs::Part grasped_part_;
@@ -241,6 +267,9 @@ private:
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
     Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_, current_hover_pose_;
     Eigen::VectorXd desired_approach_depart_pose_, desired_grasp_dropoff_pose_;
+    Eigen::VectorXd computed_jspace_approach_, computed_bin_escape_jspace_pose_;
+    Eigen::VectorXd nom_bin_cruise_pose_,q1_cruise_pose_,computed_bin_cruise_jspace_pose_;
+    Eigen::VectorXd  q1_hover_pose_,q2_hover_pose_;
     double approach_dist_;
     double deep_grasp_dist_;
     
@@ -257,19 +286,12 @@ private:
     
     //"Part" should include part pose w/rt world, so can determine if part is right-side up or up-side down
     bool get_grasp_transform(Part part,Eigen::Affine3d &grasp_transform);
-
-
-
     bool eval_up_down(geometry_msgs::PoseStamped part_pose_wrt_world);
     //given rail displacement, and given Part description (including name and pose info) compute where the gripper should be, as
     //an Affine3 w/rt base_link frame
     Eigen::Affine3d affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail);
     //similarly, compute gripper pose for dropoff, accounting for part height
     Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link(Part part, double q_rail);
-    //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
-    bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
-
-    bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
 
 
     //void grab();
@@ -299,6 +321,18 @@ private:
     bool hover_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &qvec);
     bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
     bool rail_prepose(int8_t location, double &q_rail);
+    bool compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
+    unsigned short int compute_bin_pickup_key_poses(inventory_msgs::Part part);    
+    unsigned short int compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
+    bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
+    bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
+
+    
+    bool bin_center_y_coord(int8_t location, double &bin_y_val);
+    //bool bin_y_is_reachable(int8_t bin,double &part_y);
+    bool bin_xy_is_reachable(int8_t bin,double &part_x, double &part_y);
+
 
     //inventory_msgs::Part part_of_interest_;    
     

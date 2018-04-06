@@ -19,7 +19,7 @@ using namespace inventory_msgs;
 //using namespace robot_move_as;
 const double MAX_ACTION_SERVER_WAIT_TIME=30.0;  //to prevent deadlocks
 
-#include <kuka_move_as/RobotBehaviorAction.h>
+#include <kuka_move_as/RobotBehaviorAction.h>  //this is specific to Kuka; should generalize
 /*
 std::map<short unsigned int, string> error_code_name_map = {
     {kuka_move_as::RobotBehaviorResult::NO_ERROR, "NO_ERROR"},
@@ -41,10 +41,12 @@ public:
     void cancel();
     bool action_server_returned() { return action_server_returned_;};
     short unsigned  int get_error_code() {return errorCode_;};
-    bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    //bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
+    bool place_part_in_box_no_release(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
     //bool discard_grasped_part(double timeout=0);
     //unsigned short int discard_grasped_part(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
-    bool discard_grasped_part(double timeout=0);
+    bool discard_grasped_part(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     /*
     bool toHome(double timeout = 0);
 

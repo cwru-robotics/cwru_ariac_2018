@@ -13,7 +13,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <osrf_gear/DroneControl.h>
 #include <robot_move_as/RobotMove.h>
-#include <robot_move_as/RobotMoveActionServer.h>
+#include <robot_move_as/RobotMoveActionServer.h> //old
+#include <kuka_move_as/RoboBehaviorInterface.h> //new
 #include<bin_inventory/bin_inventory.h>
 
 //const int BOX_CAM1_LOCATION_CODE = 1;

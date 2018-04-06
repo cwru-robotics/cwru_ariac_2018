@@ -1,5 +1,286 @@
 //fncs to help compute key jspace poses
 
+
+/* NEED A FNC FOR THIS:
+ *****formula for J1 and d8 as a func of part (x,y) in bin****
+ * for bins approached with "reverse" IK soln (presently, bins 1-4):
+given bin part location (x,y) w/rt world:
+RADIUS*sin(pi/2-J1) = fabs(dx) 
+--> fabs(dx)/RADIUS = sin(pi/2-theta_J1) 
+    theta_J1 = pi/2 - asin(fabs(dx)/RADIUS) 
+
+AND: dy_part_wrt_link0 = RADIUS*cos(1.57-theta_J1)
+d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
+ * 
+ * 
+ *
+ */
+
+unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part) {
+    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+
+    if (!hover_jspace_pose(part.location, current_hover_pose_)) {
+        ROS_WARN("hover pose not recognized!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        return errorCode_;
+    }
+
+    //pickup_hover_pose_ = approx_jspace_pose; //remember this pose
+    //current_hover_pose_ = pickup_hover_pose_;
+    //ROS_INFO_STREAM("current_hover_pose_: "<<current_hover_pose_.transpose()<<endl);
+    computed_jspace_approach_.resize(8);
+    geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
+    Eigen::Affine3d affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
+    Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
+    ROS_INFO_STREAM("part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);
+    double part_x = O_part_wrt_world[0];
+    double part_y = O_part_wrt_world[1];
+    //adjust pickup x and y, as necessary, to avoid hitting bin our overreach
+    if(!bin_xy_is_reachable(part.location,part_x, part_y))
+     {
+       O_part_wrt_world[0] = part_x;
+       O_part_wrt_world[1]= part_y;   
+       affine_part_wrt_world.translation() = O_part_wrt_world;
+    }
+
+    if(!compute_bin_hover_from_xy(part_x,part_y, computed_jspace_approach_)) {
+        ROS_WARN("could not compute valid approach to bin--something wrong");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+        ROS_INFO_STREAM("computed jspace approach: "<<computed_jspace_approach_.transpose()<<endl);
+
+    //now, compute a good bin escape pose:
+        //computed_bin_escape_jspace_pose_
+        double bin_center_y;
+        if (!bin_center_y_coord(part.location, bin_center_y)) {
+        ROS_WARN("error--bin code not recognized");
+        return false;
+    }
+     if(!compute_bin_hover_from_xy(MID_BIN_X_VAL,bin_center_y+MAX_BIN_GRASP_DY-0.1, computed_bin_escape_jspace_pose_)) {
+        ROS_WARN("error computing bin escape pose--something wrong");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    ROS_INFO_STREAM("computed computed_bin_escape_jspace_pose_: "<<computed_bin_escape_jspace_pose_.transpose()<<endl);
+    computed_bin_cruise_jspace_pose_= computed_bin_escape_jspace_pose_;
+    computed_bin_cruise_jspace_pose_[0] = 1.5707; //just rotate J1
+    computed_bin_cruise_jspace_pose_[7] +=0.3; //move rail together with arm swing
+    ROS_INFO_STREAM("computed computed_bin_cruise_jspace_pose_: "<<computed_bin_cruise_jspace_pose_.transpose()<<endl);
+
+    //computed_jspace_approach_ contains pose estimate for  IKs
+    //compute the IK for the desired pickup pose: pickup_jspace_pose_
+    //first, get the equivalent desired affine of the vacuum gripper w/rt base_link;
+    //need to provide the Part info and the rail displacement
+    //Eigen::Affine3d RobotMoveActionServer::affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail)
+    affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,
+            computed_jspace_approach_[7]);
+    //provide desired gripper pose w/rt base_link, and choose soln closest to some reference jspace pose, e.g. hover pose
+    //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
+    if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, computed_jspace_approach_, pickup_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for pickup pose!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    desired_grasp_dropoff_pose_ = pickup_jspace_pose_;
+    ROS_INFO_STREAM("pickup_jspace_pose_: " << pickup_jspace_pose_.transpose());
+
+    //compute approach_pickup_jspace_pose_:  for approximate Cartesian descent and depart
+    //compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd computed_jspace_approach_,double approach_dist,Eigen::VectorXd &q_vec_soln);
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, approach_dist_,
+            approach_pickup_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for pickup approach pose!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    desired_approach_depart_pose_ = approach_pickup_jspace_pose_;
+    ROS_INFO_STREAM("approach_pickup_jspace_pose_: " << approach_pickup_jspace_pose_.transpose());
+    //modify computed_jspace_approach_ to use same wrist orientation as soln
+    for (int i=4;i<7;i++) { computed_jspace_approach_[i] = approach_pickup_jspace_pose_[i];
+                            computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i]; }    
+    
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, deep_grasp_dist_,
+            pickup_deeper_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for pickup approach pose!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
+    
+    
+    return errorCode_;
+        
+}
+
+// set these member var values:
+//current_hover_pose_
+//approach_dropoff_jspace_pose_ = desired_approach_depart_pose_
+//desired_grasp_dropoff_pose_
+//
+unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inventory_msgs::Part part) {
+    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+
+    if (!hover_jspace_pose(part.location, current_hover_pose_)) {
+        ROS_WARN("hover pose not recognized!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        return errorCode_;
+    }
+
+    //pickup_hover_pose_ = approx_jspace_pose; //remember this pose
+    //current_hover_pose_ = pickup_hover_pose_;
+    //ROS_INFO_STREAM("current_hover_pose_: "<<current_hover_pose_.transpose()<<endl);
+    //computed_jspace_approach_.resize(8);
+    geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
+    Eigen::Affine3d affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
+    Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
+    ROS_INFO_STREAM("desired part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);
+
+    //computed_jspace_approach_ contains pose estimate for  IKs
+    //compute the IK for the desired pickup pose: pickup_jspace_pose_
+    //first, get the equivalent desired affine of the vacuum gripper w/rt base_link;
+    //need to provide the Part info and the rail displacement
+    //Eigen::Affine3d RobotMoveActionServer::affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail)
+    affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,
+            current_hover_pose_[7]);
+    //provide desired gripper pose w/rt base_link, and choose soln closest to some reference jspace pose, e.g. hover pose
+    //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
+    if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, current_hover_pose_, desired_grasp_dropoff_pose_)) {
+        ROS_WARN("could not compute IK soln for dropoff pose!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    ROS_INFO_STREAM("desired_grasp_dropoff_pose_: " << desired_grasp_dropoff_pose_.transpose());
+
+    //compute approach_pickup_jspace_pose_:  for approximate Cartesian descent and depart
+    //compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd computed_jspace_approach_,double approach_dist,Eigen::VectorXd &q_vec_soln);
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, approach_dist_,
+            approach_dropoff_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
+    ROS_INFO_STREAM("approach_dropoff_jspace_pose_: " << approach_dropoff_jspace_pose_.transpose());
+    
+    return errorCode_;
+        
+}
+
+bool KukaBehaviorActionServer::bin_center_y_coord(int8_t location, double &bin_y_val) {
+    //bin y locations are: -0.49, 0.32, 1.13, 1.94, 2.75;
+    switch (location) {
+        case Part::BIN1:
+            bin_y_val = -0.49; //extract rail position for bin1 key pose
+            break;
+        case Part::BIN2:
+            bin_y_val = 0.32; //extract rail position for bin1 key pose
+            break;
+        case Part::BIN3:
+            bin_y_val = 1.13; //extract rail position for bin1 key pose
+            break;
+        case Part::BIN4:
+            bin_y_val = 1.94; //extract rail position for bin1 key pose
+            break;
+        case Part::BIN5:
+            bin_y_val = 2.75; //extract rail position for bin1 key pose
+            break;        
+        default:
+            ROS_WARN("unrecognized location code");
+            return false;
+    }
+    return true; // if here, got valid bin code and filled in q_rail
+}
+
+//for picking parts from bins, find a good value hover pose, given x,y values of
+// part w/rt world; use the rail to help with pose
+bool KukaBehaviorActionServer::compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec) {
+    qvec.resize(8);
+    double d8,J1_ang;
+    //some magic numbers: bin locations--> x_frontrow = -0.651; x_midrow = -0.776; x_backrow=-0.89
+    /* already done by bin_xy_is_reachable() 
+    if (x_part< MIN_BIN_X_VAL) {
+        ROS_WARN("part is too far away to reach");
+        x_part = MIN_BIN_X_VAL;
+        ROS_INFO("recommend trying x_part = %f", x_part);
+        return false;    
+    }
+    if (x_part> MAX_BIN_X_VAL) {
+        ROS_WARN("something wrong--part is too close to front of bin");
+        x_part = MAX_BIN_X_VAL;
+        ROS_INFO("recommend trying x_part = %f", x_part);        
+        return false;
+    }
+    */
+    if (x_part< BIN_FAR_THRESHOLD) { //FAR--backrow case:
+        //this pose has arm nearly fully outstretched and J1 rotated to face part  head-on
+        qvec<<0.0, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.527;
+        d8 = y_part -Y_BASE_WRT_WORLD_AT_D8_HOME; //head-on approach; line up sled with part y
+        qvec[7]=d8;
+        return true;
+    }
+    //else, x is not backrow; compute values for J1_ang and d8, freezing other joints:
+    double radius = 0.77; //this is radius from base to gripper at proposed arm pose
+    //slightly bent elbow, suitable for access to hover over bin;
+    //radius above corresponds to this pose of shoulder and elbow angles
+    qvec<<0.7, -1.35, 0, 0.6, -0.113, -0.807, 2.8085, -0.355; // left front part approach
+    //center front; 0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.18
+    //consider a 2-DOF robot with one revolute and one prismatic joint;
+    //J1 is the revolute joint, and the track is the prismatic joint
+    //compute J1 and d8 to place the gripper over a part at give  (x,y), assuming
+    //elbow and shoulder angles as chosen above  (--> radius)
+    //formula: fabs(dx)/RADIUS = sin(pi/2-theta_J1) 
+    // theta_J1 = pi/2 - asin(fabs(dx)/RADIUS) 
+    double dx = fabs(x_part-X_BASE_WRT_WORLD); //dist from rail to part
+    J1_ang = M_PI/2.0 - asin(dx/radius);
+    //AND: dy_part_wrt_link0 = RADIUS*cos(1.57-theta_J1)
+    //d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
+    double dy_part_wrt_link0 = radius*cos(M_PI/2.0 -J1_ang);
+    d8 = y_part -1.01 +fabs(dy_part_wrt_link0);
+    ROS_INFO("y_part = %f, dy_part_wrt_link0 = %f, d8 = %f",y_part,dy_part_wrt_link0, d8);
+            
+    qvec[0]=J1_ang;
+    qvec[7] = d8;
+    return true;
+}
+ 
+bool KukaBehaviorActionServer::bin_xy_is_reachable(int8_t bin,double &part_x, double &part_y) {
+    double bin_center_y;
+    bool rtn_val = true;
+    if (!bin_center_y_coord(bin, bin_center_y)) {
+        ROS_WARN("error--bin code not recognized");
+        return false;
+    }
+    //eval if proposed grasp y-coord would clear the bin or not:
+    //require 0.190 > y_part-y_bin >  -0.153
+    double dy = part_y - bin_center_y;
+    if (dy< MIN_BIN_GRASP_DY) {
+        part_y= MIN_BIN_GRASP_DY+bin_center_y;
+        ROS_WARN("part is too close to bin left side; proposing new y_val = %f",part_y);
+        rtn_val= false;
+    }
+    
+    if (dy> MAX_BIN_GRASP_DY) {
+        part_y= MAX_BIN_GRASP_DY+bin_center_y;
+        ROS_WARN("part is too close to bin right side; proposing new y_val = %f",part_y);
+        rtn_val =  false;
+    }    
+    
+    if (part_x< MIN_BIN_X_VAL) {
+        ROS_WARN("part is too far away to reach");
+        part_x = MIN_BIN_X_VAL;
+        ROS_INFO("recommend trying x_part = %f", part_x);
+        rtn_val = false;    
+    }
+    if (part_x> MAX_BIN_X_VAL) {
+        ROS_WARN("something wrong--part is too close to front of bin");
+        part_x = MAX_BIN_X_VAL;
+        ROS_INFO("recommend trying x_part = %f", part_x);        
+        rtn_val = false;
+    }    
+    return rtn_val;
+    
+}
+
 //for each of the 10 key poses, extract the rail position
 
 bool KukaBehaviorActionServer::rail_prepose(int8_t location, double &q_rail) { 
@@ -43,85 +324,7 @@ bool KukaBehaviorActionServer::rail_prepose(int8_t location, double &q_rail) {
     return true; // if here, got valid bin code and filled in q_rail
 }
 
-/*
-bool KukaBehaviorActionServer::get_pose_from_code(unsigned short int POSE_CODE, Eigen::VectorXd &q_vec) {
-    ROS_INFO("get_pose_from_code: POSE_CODE = %d",(int) POSE_CODE);
-               switch (POSE_CODE) {
-                   case kuka_move_as::RobotMoveGoal::INIT_POSE:
-                       ROS_INFO("get_pose_from_code: requested q_vec of INIT_POSE");
-                       //choose bin3 cruise pose:
-                       q_vec = q_bin1_cruise_pose_; //shape is good, but change sled position
-                       q_vec[1] = q_bin3_hover_pose_[1]; //set rail position same as hover pose
-                       return true;
-                    break;  
-                //various cases for pre-defined poses go here:
-                    //these are all reachable from each other:
-                    //Q1_RIGHTY_DISCARD                   
-                    //Q1_RIGHTY_HOVER
-                    //Q1_RIGHTY_HOVER_FLIP
-                    //Q1_RIGHTY_CRUISE                
-                case kuka_move_as::RobotMoveGoal::Q1_RIGHT_DISCARD_POSE:
-                    q_vec = q_Q1_rvrs_discard_;
-                    return true;
-                    break;                 
-                case kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_RIGHT_FAR:
-                    q_vec = q_Q1_rvrs_hover_flip_;
-                    return true;                  
-                    break;
-                 case kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_RIGHT_NEAR:  
-                    q_vec = q_Q1_rvrs_hover_;
-                    return true;                      
-                    break;                                     
-                case kuka_move_as::RobotMoveGoal::Q1_RIGHT_CRUISE_POSE:
-                    q_vec = q_Q1_rvrs_cruise_;
-                    return true;                       
-                    break;
-                    
-                case kuka_move_as::RobotMoveGoal::Q1_LEFT_DISCARD_POSE:
-                    q_vec = q_Q1_fwd_discard_;
-                    return true;
-                    break;                 
-                case kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR:
-                    q_vec = q_Q1_fwd_hover_;
-                    return true;                  
-                    break;
-                 case kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_NEAR:  
-                    q_vec = q_Q1_fwd_hover_flip_;
-                    return true;                      
-                    break;                                     
-                case kuka_move_as::RobotMoveGoal::Q1_LEFT_CRUISE_POSE:
-                    q_vec = q_Q1_fwd_cruise_;
-                    return true;                       
-                    break;
-                    //these are sequentially reachable:
-                    //Q1_RIGHTY_CRUISE                    
-                    //Q1_ARM_VERTICAL                     
-                    //Q1_LEFTY_CRUISE    
-                    
-                    
-                case kuka_move_as::RobotMoveGoal::Q1_ARM_VERTICAL_POSE:
-                    q_vec = q_Q1_arm_vertical_;
-                    return true;                       
-                    break;                    
-  
-        
-                //repeat for Q2:                   
-                   
-                // want bin codes too?  example:
-                case kuka_move_as::RobotMoveGoal::BIN3_CRUISE_POSE:
-                       //q_vec
-                    //bool KukaBehaviorActionServer::cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec) {
-                    return (cruise_jspace_pose(Part::BIN3,q_vec)); //this fnc uses cruise codes
-                       
-                       return true;
-                       break;
 
-                default:
-                    ROS_WARN("predefined move code not implemented!");
-                    return false;
-            }
-}
-*/
 
 void KukaBehaviorActionServer::copy_array_to_qvec(const double q_array[],Eigen::VectorXd &qvec) {
   qvec.resize(NDOF);

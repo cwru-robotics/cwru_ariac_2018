@@ -19,7 +19,7 @@
 using namespace std;
 using namespace inventory_msgs;
 //using namespace robot_move_as;
-const double MAX_ACTION_SERVER_WAIT_TIME=30.0;  //to prevent deadlocks
+const double ROBOT_MOVE_MAX_ACTION_SERVER_WAIT_TIME=30.0;  //to prevent deadlocks
 
 #include <robot_move_as/RobotMoveAction.h>
 
@@ -77,7 +77,7 @@ protected:
     bool async_mode;
     std::map<int8_t, string> errorCodeFinder;
     bool ac_timed_out(double wait_time);
-    bool wait_for_goal(double expiration_time=MAX_ACTION_SERVER_WAIT_TIME); //default wait time
+    bool wait_for_goal(double expiration_time=ROBOT_MOVE_MAX_ACTION_SERVER_WAIT_TIME); //default wait time
 
     void doneCb(const actionlib::SimpleClientGoalState& state, const robot_move_as::RobotMoveResultConstPtr& result);
     void activeCb();

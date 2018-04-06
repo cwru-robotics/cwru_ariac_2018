@@ -16,6 +16,10 @@ const double Q1_CRUISE_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35};
 const double CRUISE_FLIP_MID_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35};  
 const double Q1_DISCARD_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, 1.75};  
 
+//FIX ME!
+const double Q2_HOVER_array[NDOF] = { 0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.8}; 
+const double Q2_CRUISE_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.8}; 
+
 const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.81}; 
 const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -1.21}; 
 const double BIN1_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -1.51}; 
@@ -28,8 +32,10 @@ const double BIN3_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0.81}
 const double BIN3_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, 0.41}; 
 const double BIN3_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.11}; 
 
-const double BIN4_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.62}; 
-const double BIN4_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.22}; 
+//const double BIN4_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.62}; 
+const double BIN4_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.42}; 
+//const double BIN4_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.22}; 
+const double BIN4_HOVER_NEAR_array[NDOF] = {0.552, -1.35, 0, 0.8, -0.159, -0.913, 3.013, 1.376}; 
 const double BIN4_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.92}; 
 
 //max sled val = 1.79
@@ -99,10 +105,10 @@ class TransitionTrajectories
   int get_trajectory(int start_code, int end_code, trajectory_msgs::JointTrajectory &transition_traj);
   vector<double>  c_array_to_cpp_vec(const double c_array[],int nvals);
   trajectory_msgs::JointTrajectory concat_trajs(trajectory_msgs::JointTrajectory a,    trajectory_msgs::JointTrajectory b);
-
+   void copy_point(const double q_array[],trajectory_msgs::JointTrajectoryPoint &trajectory_point);
   private:
    void fill_transition_traj_map();
-   void copy_point(const double q_array[],trajectory_msgs::JointTrajectoryPoint &trajectory_point);
+
    std::map<int,std::map<int,trajectory_msgs::JointTrajectory>> transition_traj_map_;
 
 };

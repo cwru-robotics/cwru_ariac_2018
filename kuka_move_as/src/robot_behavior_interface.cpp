@@ -62,6 +62,7 @@ bool RobotBehaviorInterface::sendGoal(unsigned short int goal_type, double timeo
 bool RobotBehaviorInterface::sendGoal(unsigned short int goal_type, Part part, double timeout) {
     behaviorServerGoal_.type = goal_type;
     behaviorServerGoal_.sourcePart = part;
+    behaviorServerGoal_.destinationPart = part; //redundant...but some fncs look at "destination" part
     behaviorServerGoal_.timeout = timeout;
     goal_start_time_ = ros::Time::now();    
     action_server_returned_ = false;
@@ -99,23 +100,27 @@ void RobotBehaviorInterface::activeCb() {
 }
 
 //blocking function!!
-bool RobotBehaviorInterface::pick(Part part, double timeout) {
+bool RobotBehaviorInterface::pick_part_from_bin(Part part, double timeout) { 
     ROS_INFO("pick fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK;
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN;
     return( sendGoal(goal_type,part,timeout));
 }
 //    bool discard_grasped_part(double timeout=0);
 
-bool RobotBehaviorInterface::discard_grasped_part(double timeout) {
+//    bool discard_grasped_part(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+bool RobotBehaviorInterface::discard_grasped_part(inventory_msgs::Part part, double timeout) {
     ROS_INFO("discard fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1;
-    return( sendGoal(goal_type,timeout));
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1;   
+    return( sendGoal(goal_type,part,timeout));
 }
+
+bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeout) {
+    ROS_INFO("place_part_in_box_no_release fnc called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE;   
+    return( sendGoal(goal_type,part,timeout));    
+}
+
 /*
-void RobotInterface::gripperStateCallback(const osrf_gear::VacuumGripperState::ConstPtr &msg) {
-    currentGripperState = *msg;
-    attached = msg->attached;
-}
 
 osrf_gear::VacuumGripperState RobotInterface::getGripperState() {
     ros::spinOnce();

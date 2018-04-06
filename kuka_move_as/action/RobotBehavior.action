@@ -4,7 +4,7 @@ int8 predfinedPoseCode
 int32 planID	# plan id for searching exist plan from oracle, 
                 #to avoid duplicate planning work, not implemented
 inventory_msgs/Part sourcePart				# part to pick
-inventory_msgs/Part targetPart				# fake part message to place the part
+inventory_msgs/Part destinationPart				# fake part message to place the part
 float64[] jointsValue					# new joint value to be published
 float64 timeout						 	# time limit for perform any move action, timeout <=0 means no limit
 
@@ -15,20 +15,21 @@ int8 PICK						= 10	# input: planID, sourcePart (from), timeout; output: success
 int8 PLACE						= 11	# input: planID, targetPart (to), timeout; output: success, errorCode, robotState
 int8 MOVE						= 12	# input: planID, sourcePart (from), targetPart (to), timeout; output: success, errorCode, robotState
 int8 TO_HOME					= 13	# input: timeout; output: success, errorCode, robotState
-int8 SET_JOINT_VALUE	= 15	# input: jointsValue, timeout; output: success, errorCode, robotState
-int8 GET_ROBOT_STATE	= 16	# input: (none); output: success, robotState
+#int8 SET_JOINT_VALUE	= 15	# input: jointsValue, timeout; output: success, errorCode, robotState
+#int8 GET_ROBOT_STATE	= 16	# input: (none); output: success, robotState
 int8 GRASP		= 17	# input: timeout; output: success, errorCode
 int8 RELEASE		= 18	# input: timeout; output: success, errorCode
 int8 IS_ATTACHED	= 19	# input: (none); output: success (true means attached)
 int8 TO_PREDEFINED_POSE  = 20    # input: predfinedPoseCode, timeout; output: success, errorCode
 int8 FLIP_PART		= 21     # part-flipper code
-int8 PLACE_PART_NO_RELEASE = 22
+int8 PLACE_PART_IN_BOX_NO_RELEASE = 22
 int8 DISCARD_GRASPED_PART_Q1 = 23
 int8 DISCARD_GRASPED_PART_Q2 = 24
 int8 RELEASE_PLACED_PART = 25
 int8 TO_CRUISE_POSE = 26
 int8 TEST_IS_PICKABLE = 27
 int8 TEST_IS_PLACEABLE = 28
+int8 PICK_PART_FROM_BIN = 29
 
 #the following location codes correspond to relative locations in box, as viewed from robot's base
 int8 PART_FAR_RIGHT = 30

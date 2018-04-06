@@ -85,6 +85,17 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
         ROS_WARN("error with initial move! quitting");
         exit(1);
     }
+    //here are key poses, re-expressed as Eigen-type vecs
+    nom_bin_cruise_pose_.resize(NDOF);
+    q1_cruise_pose_.resize(NDOF);
+    q1_hover_pose_.resize(NDOF);
+    q2_hover_pose_.resize(NDOF);
+    for (int i=0;i<NDOF;i++) {
+        nom_bin_cruise_pose_[i] = NOM_BIN_CRUISE_array[i];
+        q1_cruise_pose_[i] = Q1_CRUISE_array[i];
+        q1_hover_pose_[i] = Q1_HOVER_array[i];
+        q2_hover_pose_[i] = Q2_HOVER_array[i];        
+    }
 
 
 
@@ -246,6 +257,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
     double dt_wait = 0.2;
     double t_wait_timeout = MAX_BEHAVIOR_SERVER_WAIT_TIME;
     is_attached_ = false;
+    inventory_msgs::Part part;
 
     switch (goal->type) {
         case kuka_move_as::RobotBehaviorGoal::NONE:
@@ -254,21 +266,22 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             //report_success_or_abort(); //populate result message and inform client of status
             break;
 
-        case kuka_move_as::RobotBehaviorGoal::PICK:
-            ROS_INFO("PICK");
+        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN:
+            ROS_INFO("PICK_PART_FROM_BIN");
             // use "goal", but only need to populate the "sourcePart" component
-            errorCode_ = pick_part_fnc(goal);
+            errorCode_ = pick_part_from_bin(goal);//pick_part_from_bin
             break;
-            /*
-        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_NO_RELEASE:
+            
+        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE:
             ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
-            // use "goal", but only need to populate the "sourcePart" component
-            errorCode_ = place_part_Qbox_no_release(goal);
+            part = goal->destinationPart;
+            errorCode_ = place_part_in_box_no_release(part);
             break;
-            */
+
         case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
+            part = goal->destinationPart;
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
-            errorCode_ = discard_grasped_part();
+            errorCode_ = discard_grasped_part(part);
             break;
             
             /*
@@ -650,37 +663,8 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(Eigen::VectorXd desired_jspac
 
 
 
-//must compute pickup_deeper_jspace_pose_ first!!
-//calls for robot to move towards pickup_deeper_jspace_pose_, testing gripper status along the way
-//aborts when attachment is detected
-//internal func, NOT a behavior!
-//does  NOT return status to client.  Need to do this separately
-bool KukaBehaviorActionServer::move_into_grasp(double arrival_time) {
-    ROS_INFO_STREAM("MOVE TO DEEP GRASP, pose = "<<endl<<pickup_deeper_jspace_pose_.transpose()<<endl);
-    trajectory_msgs::JointTrajectory transition_traj;
-    //move slowly--say 5 seconds to press into part
-    transition_traj = jspace_pose_to_traj(pickup_deeper_jspace_pose_,arrival_time);
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-    ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
-    is_attached_ = false;
-    send_traj_goal(transition_traj);  //start the motion
-    while (!traj_goal_complete_ && !is_attached_) { //write a fnc for this: wait_for_goal_w_timeout
-        //put timeout here...   possibly return falses
-        ROS_INFO("waiting for grasp...");
-        ros::Duration(0.1).sleep();
-        ros::spinOnce();
-        is_attached_ = gripperInterface_.isGripperAttached();
-        if (is_attached_) traj_ctl_ac_.cancelGoal();
-    }
-    if (!is_attached_)  {
-        errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
-        return false;
-    }
-    ROS_WARN("part is attached");
-    return true;
 
-}
-
+ 
 
 //this function is a helper to send a trajectory goal to the Kuka motion action server,
 //where the trajectory is implied by a start posecode and an end posecode
