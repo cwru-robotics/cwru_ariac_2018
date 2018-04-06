@@ -28,8 +28,14 @@ rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --firs
           $(find osrf_gear)/config/sample_user_config.yaml
           " required="true" output="screen" />
 Start up robot move action server:
-`rosrun robot_move_as robot_move_as`
+`rosrun kuka_move_as kuka_behavior_as`
 
+For a simple test that grabs items from inventory, puts them in a box, then discards them, run:
+`rosrun shipment_filler test_part_placement_from_inventory`
+
+
+
+THE FOLLOWING NEEDS UPDATING...
 start the shipment filler:
 `rosrun shipment_filler simple_shipment_filler`
 
@@ -40,7 +46,6 @@ OR, send orders via competition interface:
 `rosservice call /ariac/start_competition`
 
 #sub-tests:
-Run an example move-part command (hard coded):
-`rosrun robot_move_as robot_move_as_tester`
+
 
 
