@@ -151,15 +151,24 @@ bool BinInventory::all_cameras_updated() {
     return ready;
 }
 
-void BinInventory::update() {
+bool BinInventory::update() {
     //reset subscriber triggers: leave out non-existent cam0 
     ROS_INFO(" ");
     ROS_INFO("updating inventory");
     bin_camera_triggers_[0] = true;
     for (int i = 1; i <= NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
-    while (!all_cameras_updated()) {
+    double dt= 0.05;
+    double timer = 0.0;
+    while (!all_cameras_updated()&&(timer<BIN_INVENTORY_TIMEOUT)) {
         ros::spinOnce();
+        ros::Duration(dt).sleep();
+        timer+=dt;
     }
+    if (timer>=BIN_INVENTORY_TIMEOUT) {
+        ROS_WARN("could not update inventory!");
+        return false;
+    }
+    //if here, DID  receive input from every bin camera
     //clear out the inventory and re-fill from scratch:
     //clear_inventory();
     clear_inventory_msg();
@@ -201,6 +210,7 @@ void BinInventory::update() {
 
     }
     ROS_INFO("inventory updated");
+    return true;
     //print_inventory();
 }
 
@@ -236,18 +246,43 @@ void BinInventory::counts_all_part_types(std::vector<int> &parts_counts) {
     }
 }
 
-bool BinInventory::find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+//select a part at random from  among available parts of specified type;
+//return the partnum, so it can be removed from  inventory manually, if desired
+bool BinInventory::find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose, int &partnum) {
   int part_id = mappings[part_name];
   int num_parts_avail = num_parts(part_id);
   if (num_parts_avail<1) return false;
 
-  //get the first available part:
-  bin_num =   inventory_msg_.inventory[part_id].bins[0];
-  part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[0];
+  //select a part at random, to avoid re-trying the same part repeatedly
+  partnum = 0;
+  if (num_parts_avail>1) partnum = rand() % (num_parts_avail-1);
+  bin_num =   inventory_msg_.inventory[part_id].bins[partnum];
+  part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[partnum];
   ROS_INFO_STREAM("found part "<<part_name<<" in bin "<<bin_num<<" at pose "<<part_pose<<endl);
   return true;
 
 }
+
+bool BinInventory::remove_part_from_inventory(int part_id, int partnum) {
+    if ((part_id<1)||(part_id>NUM_PART_TYPES)) {
+        ROS_WARN("invalid part_id!");
+        return false; 
+    }
+    if (partnum>= num_parts(part_id)) {
+        ROS_WARN("invalid partnum...not that many parts!");
+        return false;
+    }
+    //OK--should be safe to do this:
+  inventory_msg_.inventory[part_id].bins.erase(inventory_msg_.inventory[part_id].bins.begin()+partnum);
+  inventory_msg_.inventory[part_id].part_stamped_poses.erase(inventory_msg_.inventory[part_id].part_stamped_poses.begin()+partnum);
+  return true;
+}
+
+/*bool OrderManager::delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec)  {
+    //e.g., myvector.erase (myvector.begin()+5);
+    order_vec.erase(order_vec.begin()+order_index); 
+}*/
+
 
 
 void BinInventory::clear_inventory_msg() {    

@@ -54,7 +54,7 @@ public:
     bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool place_part_in_box_with_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);    
     bool discard_grasped_part(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
-    bool release(double timeout);
+    bool release(double timeout= MAX_ACTION_SERVER_WAIT_TIME);
     bool adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool adjust_part_location_with_release(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     

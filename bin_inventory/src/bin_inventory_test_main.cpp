@@ -1,4 +1,5 @@
 #include<bin_inventory/bin_inventory.h>
+int ans;
 
 int main(int argc, char** argv) 
 {
@@ -10,10 +11,24 @@ int main(int argc, char** argv)
     ROS_INFO("main: instantiating an object of type BinInventory");
     BinInventory binInventory(&nh);  
 
-    while(ros::ok()) {
-      binInventory.update();
-      ros::Duration(1.0).sleep();
+    binInventory.update();
+    inventory_msgs::Inventory inventory_msg;
+    binInventory.get_inventory(inventory_msg);
+    ROS_INFO_STREAM(inventory_msg<<endl);
+    std::string part_name("piston_rod_part");
+    int part_id = mappings[part_name];
+
+    int bin_num, partnum;
+    geometry_msgs::PoseStamped part_pose;
+    while (binInventory.find_part(part_name,bin_num,part_pose, partnum)) {
+        binInventory.remove_part_from_inventory(part_id, partnum);
+        binInventory.get_inventory(inventory_msg);
+        ROS_INFO_STREAM(inventory_msg<<endl);      
+        cout<<"enter 1: ";
+        cin>>ans;
     }
+
+   
 
     return 0;
 } 

@@ -18,6 +18,7 @@
 #include <inventory_msgs/Inventory.h>
 
 using namespace std;
+const double BIN_INVENTORY_TIMEOUT=2.0; //max time to wait for an inventory update
 
 const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS
 //note:  ALSO must edit constructor to add cameras
@@ -59,12 +60,19 @@ public:
   int num_parts(std::string); //return number of parts
   int num_parts(int part_id); //return number of parts, by part_id
   //get bin number and pose of named part
-  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
-  void update(); //updates entire inventory
+  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose, int &partnum);
+  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+      int partnum;
+      return find_part(part_name,bin_num,part_pose, partnum);
+  }
+  
+
+  bool update(); //updates entire inventory
 
   void print_inventory_msg();  
   void get_inventory(inventory_msgs::Inventory &inventory_msgs);
   void counts_all_part_types(std::vector<int> &parts_counts);
+  bool remove_part_from_inventory(int part_id, int partnum);
 
 
 private:

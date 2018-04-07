@@ -307,7 +307,8 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
 
         case kuka_move_as::RobotBehaviorGoal::RELEASE:
             ROS_INFO("RELEASE");
-            errorCode_ = gripperInterface_.release_fnc(timeout); //this version includes testing for release and timeout monitoring, same as below
+            timeout_arg = goal->timeout;
+            errorCode_ = gripperInterface_.release_fnc(timeout_arg); //this version includes testing for release and timeout monitoring, same as below
             break;            
 
         case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION:
