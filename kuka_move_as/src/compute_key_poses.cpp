@@ -743,6 +743,7 @@ Eigen::Affine3d KukaBehaviorActionServer::affine_vacuum_pickup_pose_wrt_base_lin
     //from part, extract pose w/rt world
     geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
     Eigen::Affine3d affine_part_wrt_world, affine_base_link_wrt_world;
+    
     affine_base_link_wrt_world = affine_base_link(q_rail);
     affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
 
@@ -856,6 +857,90 @@ bool KukaBehaviorActionServer::compute_pickup_dropoff_IK(Eigen::Affine3d affine_
              q_vec_soln[1], q_vec_soln[2], q_vec_soln[3], q_vec_soln[4], q_vec_soln[5], q_vec_soln[6], q_vec_soln[7]);             
             
     return success;
+}
+
+//use this function to get grasp transform from camera view
+//inputs: robot joint angles, grasped part pose w/rt world (presumably from camera snapshot)
+//output: A_part/gripper (grasp transform)
+//e.g., hold part in approach pose; take snapshot, get joint angles, compute grasp transform, update dropoff pose
+//this has been incorporated  inside recompute_pickup_dropoff_IK, below
+bool KukaBehaviorActionServer::compute_grasp_transform(Eigen::Affine3d grasped_part_pose_wrt_world, Eigen::VectorXd q_vec_joint_angles_8dof, Eigen::Affine3d &affine_part_wrt_gripper) {
+    Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link, affine_vacuum_gripper_pose_wrt_world;
+    Eigen::Affine3d affine_base_link_wrt_world;
+    Eigen::VectorXd qvec_7dof;
+    qvec_7dof.resize(7);
+    for (int i = 0; i < 7; i++) { //make qvec_7dof consistent w/ FK
+        qvec_7dof[i] = q_vec_joint_angles_8dof[i];
+    }
+    double q_rail = q_vec_joint_angles_8dof[7];
+    affine_base_link_wrt_world = affine_base_link(q_rail);
+    //compute affine_vacuum_gripper_pose_wrt_base_link from q_vec_joint_angles
+    affine_vacuum_gripper_pose_wrt_base_link = fwd_solver_.fwd_kin_solve(qvec_7dof); //fwd_kin_solve
+
+    //A_part/gripper = inverse(A_gripper/world)*A_part/world
+    affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_base_link.inverse() * grasped_part_pose_wrt_world;
+    //compute vacuum gripper  pose w/rt world: A_gripper/world = A_baselink_wrt_world *A_gripper_wrt_base_link
+    affine_vacuum_gripper_pose_wrt_world = affine_base_link_wrt_world*affine_vacuum_gripper_pose_wrt_base_link;
+    //finally, the answer:
+    affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_world.inverse() * grasped_part_pose_wrt_world;
+
+}
+
+bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasped_part_pose_wrt_world,
+          Eigen::Affine3d desired_part_pose_wrt_world, Eigen::VectorXd q_vec_joint_angles_8dof,Eigen::VectorXd &q_vec_soln) {
+    Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link, affine_vacuum_gripper_pose_wrt_world;
+    Eigen::Affine3d affine_base_link_wrt_world, desired_affine_part_wrt_base_link;
+    Eigen::Affine3d desired_affine_vacuum_gripper_pose_wrt_base_link,affine_part_wrt_gripper;
+    Eigen::VectorXd qvec_7dof;
+    qvec_7dof.resize(7);
+    for (int i = 0; i < 7; i++) { //make qvec_7dof consistent w/ FK
+        qvec_7dof[i]=q_vec_joint_angles_8dof[i];
+    }
+    double q_rail = q_vec_joint_angles_8dof[7];
+    affine_base_link_wrt_world = affine_base_link(q_rail);
+    //compute affine_vacuum_gripper_pose_wrt_base_link from q_vec_joint_angles
+    affine_vacuum_gripper_pose_wrt_base_link = fwd_solver_.fwd_kin_solve(qvec_7dof); //fwd_kin_solve
+
+    //A_part/gripper = inverse(A_gripper/world)*A_part/world
+    affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_base_link.inverse() * grasped_part_pose_wrt_world;
+    //compute vacuum gripper  pose w/rt world: A_gripper/world = A_baselink_wrt_world *A_gripper_wrt_base_link
+    affine_vacuum_gripper_pose_wrt_world = affine_base_link_wrt_world*affine_vacuum_gripper_pose_wrt_base_link;
+    //now we have the observed grasp transform:
+    affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_world.inverse() * grasped_part_pose_wrt_world;
+
+    desired_affine_part_wrt_base_link = affine_base_link_wrt_world.inverse() * desired_part_pose_wrt_world;
+
+    //compute desired gripper pose from part pose and appropriate grasp transform
+    // A_gripper/base_link = A_part/base_link * inverse(A_part/gripper)
+    desired_affine_vacuum_gripper_pose_wrt_base_link = desired_affine_part_wrt_base_link * affine_part_wrt_gripper.inverse();            
+    bool ret_val=  compute_pickup_dropoff_IK(desired_affine_vacuum_gripper_pose_wrt_base_link,q_vec_joint_angles_8dof,q_vec_soln);
+    //ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln<<endl);
+    return ret_val;
+}
+
+    //in this version, do  not provide joint angles; fnc will acquire joint angles from current joint_state publication
+bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d actual_grasped_part_pose_wrt_world,Eigen::Affine3d desired_part_pose_wrt_world,
+       Eigen::VectorXd &q_vec_soln) { 
+   //get new joint angles:
+    //get joint states:
+    got_new_joint_states_=false;
+    while(!got_new_joint_states_)  {
+       ros::spinOnce();
+       ros::Duration(0.1).sleep();
+    }
+       //ROS_INFO_STREAM("got joint states: "<<endl<<joint_state_<<endl);
+       Eigen::VectorXd q_vec_joint_angles_8dof;
+       q_vec_joint_angles_8dof.resize(8);
+       for (int i=0;i<8;i++) {
+           q_vec_joint_angles_8dof[i] = joint_state_.position[i];
+       }
+       ROS_INFO_STREAM("got current joint angles: "<<endl<<q_vec_joint_angles_8dof.transpose()<<endl);
+       bool ret_val =  recompute_pickup_dropoff_IK(actual_grasped_part_pose_wrt_world,
+          desired_part_pose_wrt_world, q_vec_joint_angles_8dof,q_vec_soln);
+       ROS_INFO_STREAM("current joint angles: "<<q_vec_joint_angles_8dof.transpose()<<endl);
+       ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln.transpose()<<endl);
+       
+       return ret_val;
 }
 
 //get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, box_placement_location_code, dropoff_jspace_pose_))

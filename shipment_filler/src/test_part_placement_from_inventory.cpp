@@ -94,7 +94,15 @@ int main(int argc, char** argv) {
                   //gripperInterface_.release();     
                   break;
                }              
-<<<<<<< HEAD
+              
+              //dummy test: just claim part is observed to be in exact location
+              // replace this with actual observation from camera
+                if(!robotBehaviorInterface.adjust_part_location_no_release(place_part,place_part)) {
+                  ROS_INFO("placement failed");
+                  //gripperInterface_.release();     
+                  break;
+               }    
+              
               
               //DEMO OF "RELEASE" FNC:  need to remove this, or parts will pile up!!
               //command to release a part--waits for max of 5 seconds for confirming release, else returns "false"
@@ -104,9 +112,9 @@ int main(int argc, char** argv) {
               } 
               */
               
-=======
+
     ROS_INFO("double check starts");          
->>>>>>> 85a77f5f2ad6691377555f01367afc1beb191727
+
     //AUGMENT HERE!!!
     part_to_model(place_part,model); 
     //only for debug//

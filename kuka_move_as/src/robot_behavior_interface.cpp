@@ -71,6 +71,18 @@ bool RobotBehaviorInterface::sendGoal(unsigned short int goal_type, Part part, d
     return(wrap_up());    
 }
 
+bool RobotBehaviorInterface::sendGoal(unsigned short int goal_type, Part sourcePart, Part destinationPart,double timeout) {
+    behaviorServerGoal_.type = goal_type;
+    behaviorServerGoal_.sourcePart = sourcePart;
+    behaviorServerGoal_.destinationPart = destinationPart; //redundant...but some fncs look at "destination" part
+    behaviorServerGoal_.timeout = timeout;
+    goal_start_time_ = ros::Time::now();    
+    action_server_returned_ = false;
+    ac.sendGoal(behaviorServerGoal_, boost::bind(&RobotBehaviorInterface::doneCb, this, _1, _2), boost::bind(&RobotBehaviorInterface::activeCb, this), boost::bind(&RobotBehaviorInterface::feedbackCb, this, _1));
+    //BLOCKING!!
+    return(wrap_up());    
+}
+
 void RobotBehaviorInterface::doneCb(const actionlib::SimpleClientGoalState &state, const kuka_move_as::RobotBehaviorResultConstPtr &result) {
     action_server_returned_ = true;
     goal_success_ = result->success;
@@ -119,6 +131,12 @@ bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeo
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE;   
     return( sendGoal(goal_type,part,timeout));    
 }
+
+bool RobotBehaviorInterface::adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout) {
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION;   
+    return(sendGoal(goal_type, sourcePart, destinationPart,  timeout)); 
+}
+
 
 bool RobotBehaviorInterface::release(double timeout)  {
      ROS_INFO("release fnc called");

@@ -383,7 +383,7 @@ Eigen::Matrix4d KukaFwdSolver::fwd_kin_solve_(const Eigen::VectorXd& q_vec_DH) {
     A_mat_products[0] = A_mats[0];
     for (int i = 1; i < NJNTS; i++) {
         A_mat_products[i] = A_mat_products[i - 1] * A_mats[i];
-        ROS_INFO_STREAM("Aprod["<<i<<"] = "<<endl<<A_mat_products[i]<<endl);
+        //ROS_INFO_STREAM("Aprod["<<i<<"] = "<<endl<<A_mat_products[i]<<endl);
     }
 
     //Eigen::Matrix4d A5;

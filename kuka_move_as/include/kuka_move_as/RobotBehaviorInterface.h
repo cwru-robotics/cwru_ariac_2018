@@ -37,6 +37,7 @@ public:
     RobotBehaviorInterface(ros::NodeHandle* nodehandle);
     bool sendGoal(unsigned short int goal_type, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool sendGoal(unsigned short int goal_type, Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool sendGoal(unsigned short int goal_type, Part sourcePart, Part destinationPart,double timeout= MAX_ACTION_SERVER_WAIT_TIME);
 
 
     void cancel();
@@ -53,6 +54,7 @@ public:
     bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool discard_grasped_part(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool release(double timeout);
+    bool adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     /*
     bool toHome(double timeout = 0);
 

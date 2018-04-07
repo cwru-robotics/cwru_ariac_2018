@@ -30,6 +30,7 @@ int8 TO_CRUISE_POSE = 26
 int8 TEST_IS_PICKABLE = 27
 int8 TEST_IS_PLACEABLE = 28
 int8 PICK_PART_FROM_BIN = 29
+int8 ADJUST_PART_LOCATION = 30
 
 #the following location codes correspond to relative locations in box, as viewed from robot's base
 int8 PART_FAR_RIGHT = 30

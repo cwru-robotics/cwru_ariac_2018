@@ -34,15 +34,18 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
 
     ROS_WARN(" DO DROPOFF STEPS HERE...");
 
-    cout<<"enter 1: ";
-    cin>>ans;
-
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+   
+    //this would be a good place to recompute dropoff pose;
+    //BUT need to know actual pose of part, as observed by camera
+//bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d actual_grasped_part_pose_wrt_world,Eigen::Affine3d desired_part_pose_wrt_world,
+//       Eigen::VectorXd &q_vec_soln)    
 
-    cout<<"enter 1: ";
+    ROS_INFO("at approach_dropoff_jspace_pose_; to proceed to dropoff  pose, enter 1: ");
+    //cout<<"enter 1: ";
     cin>>ans;
     //now move to desired_grasp_dropoff_pose_:
     ROS_INFO_STREAM("moving to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
@@ -123,7 +126,6 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
 unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
     unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory transition_traj;
-    //inventory_msgs::Part part = goal->destinationPart;
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
     
     geometry_msgs::PoseStamped part_current_pose_wrt_world = part_actual.pose;
@@ -132,58 +134,19 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
     
     Eigen::Affine3d affine_part_current_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_current_pose_wrt_world);
     Eigen::Affine3d affine_part_desired_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_desired_pose_wrt_world);
-    
-    //get joint states:
-    got_new_joint_states_=false;
-    while(!got_new_joint_states_)  {
-       ros::spinOnce();
-       ros::Duration(0.1).sleep();
+    //recompute member var: desired_grasp_dropoff_pose_
+    if (!recompute_pickup_dropoff_IK(affine_part_current_wrt_world,affine_part_desired_wrt_world,desired_grasp_dropoff_pose_)) {
+        ROS_WARN("recompute_pickup_dropoff_IK() error");
+        errorCode = kuka_move_as::RobotBehaviorResult::UNREACHABLE; //debug--return error
+        return errorCode;
     }
-       ROS_INFO_STREAM("got joint states: "<<endl<<joint_state_<<endl);
-    
-    //need  to know where the gripper  is now, to deduce the current grasp transform:
-    /*
-    
-    
-    //Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
-    //("desired part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);    
-
-    ROS_INFO("part info: ");
-    ROS_INFO_STREAM(part);
-    errorCode_ = compute_box_dropoff_key_poses(part);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
-        return errorCode_;
-    }
-    //extract box location codes from Part:
-    int current_hover_code = location_to_pose_code_map[part.location];
-    int current_cruise_code = location_to_cruise_code_map[part.location];
-    
-    if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
-
-        ROS_WARN("error with move between pose codes");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
-        return errorCode_;
-    }
-    is_attached_ = gripperInterface_.isGripperAttached();
-    if (!is_attached_) {
-            errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
-            return errorCode_;
-    }
-
-    ROS_WARN(" DO DROPOFF STEPS HERE...");
-
-    cout<<"enter 1: ";
-    cin>>ans;
-
 
     //now move to approach_dropoff_jspace_pose_:
-    ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
+    ROS_INFO("moving to approach_dropoff_jspace_pose_ "); //same approach as previously computed
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
 
-    cout<<"enter 1: ";
-    cin>>ans;
     //now move to desired_grasp_dropoff_pose_:
-    ROS_INFO_STREAM("moving to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
+    ROS_INFO_STREAM("moving to recomputed desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
     move_to_jspace_pose(desired_grasp_dropoff_pose_, 1.0); //try it this way instead
         
     //check if part is still attached
@@ -194,9 +157,9 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
         return errorCode;
     }
     ROS_INFO("place-part complete--still grasping part");
-    cout<<"enter 1: ";
-    cin>>ans;
+    //cout<<"enter 1: ";
+    //cin>>ans;
         errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
-     * */
+
         return errorCode_;
 }

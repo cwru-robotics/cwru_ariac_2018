@@ -339,6 +339,21 @@ private:
     bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
 
+    //use the following functions to refine the IK soln for part dropoff;
+    //e.g., hold part in approach pose; take snapshot, get joint angles, compute grasp transform, update dropoff pose IK soln
+    //provide (presumably from camera), the observed grasped part pose wrt world;
+    //provide 8DOF  robot joint angles  (i.e., including track)
+    //provide desired dropoff pose of part (wrt world)
+    //recompute_pickup_dropoff_IK() will deduce the actual grasp transform from camera, then recompute a corresponding dropoff IK  soln
+    //inputs: robot joint angles, grasped part pose w/rt world (presumably from camera snapshot)
+    //output: q_vec_soln
+    bool recompute_pickup_dropoff_IK(Eigen::Affine3d actual_grasped_part_pose_wrt_world,Eigen::Affine3d desired_part_pose_wrt_world,
+       Eigen::VectorXd q_vec_joint_angles_8dof,Eigen::VectorXd &q_vec_soln);
+    //in this version, do  not provide joint angles; fnc will acquire joint angles from current joint_state publication
+    bool recompute_pickup_dropoff_IK(Eigen::Affine3d actual_grasped_part_pose_wrt_world,Eigen::Affine3d desired_part_pose_wrt_world,
+       Eigen::VectorXd &q_vec_soln);    
+
+    bool compute_grasp_transform(Eigen::Affine3d grasped_part_pose_wrt_world, Eigen::VectorXd q_vec_joint_angles_8dof, Eigen::Affine3d &affine_part_wrt_gripper);
     
     bool bin_center_y_coord(int8_t location, double &bin_y_val);
     //bool bin_y_is_reachable(int8_t bin,double &part_y);

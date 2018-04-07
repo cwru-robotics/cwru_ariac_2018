@@ -270,7 +270,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
     double dt_wait = 0.2;
     double t_wait_timeout = MAX_BEHAVIOR_SERVER_WAIT_TIME;
     is_attached_ = false;
-    inventory_msgs::Part part;
+    inventory_msgs::Part part, source_part,place_part;
 
     switch (goal->type) {
         case kuka_move_as::RobotBehaviorGoal::NONE:
@@ -302,6 +302,15 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             ROS_INFO("RELEASE");
             errorCode_ = gripperInterface_.release_fnc(timeout); //this version includes testing for release and timeout monitoring, same as below
             break;            
+
+        case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION:
+            ROS_INFO("ADJUST_PART_LOCATION");
+            place_part= goal->destinationPart;
+            source_part = goal->sourcePart;
+            errorCode_ = adjust_part_location_no_release(source_part, place_part);
+            break;
+            
+            
             /*
         case kuka_move_as::RobotBehaviorGoal::GRASP:
             ROS_INFO("GRASP");
