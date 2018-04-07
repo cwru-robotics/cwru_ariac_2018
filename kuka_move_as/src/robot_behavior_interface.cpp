@@ -132,17 +132,35 @@ bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeo
     return( sendGoal(goal_type,part,timeout));    
 }
 
+bool RobotBehaviorInterface::place_part_in_box_with_release(Part part,double timeout) {
+    ROS_INFO("place_part_in_box_with_release fnc called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE;   
+    return( sendGoal(goal_type,part,timeout));    
+}
+    
+
 bool RobotBehaviorInterface::adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout) {
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION;   
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout)); 
 }
 
+bool RobotBehaviorInterface::adjust_part_location_with_release(Part sourcePart, Part destinationPart, double timeout) {
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE;   
+    return(sendGoal(goal_type, sourcePart, destinationPart,  timeout)); 
+}
 
 bool RobotBehaviorInterface::release(double timeout)  {
      ROS_INFO("release fnc called");
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RELEASE;
     return( sendGoal(goal_type,timeout));    
 }
+
+bool RobotBehaviorInterface::pick_part_from_box(Part part, double timeout) {
+    ROS_INFO("pick_part_from_box fnc called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BOX;   
+    return( sendGoal(goal_type,part,timeout));    
+}
+
 
 /*
 

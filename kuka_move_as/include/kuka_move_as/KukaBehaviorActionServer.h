@@ -56,7 +56,7 @@ const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
 const double APPROACH_OFFSET_DIST = 0.02;
-const double DEEP_GRASP_MOVE_DIST = -0.06;
+const double DEEP_GRASP_MOVE_DIST = -0.02;
 
 const double MIN_BIN_GRASP_DY = -0.140; //-0.153;
 const double MAX_BIN_GRASP_DY = 0.180; //0.190;
@@ -257,11 +257,17 @@ private:
     //here are the action functions: robot moves
     //unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     unsigned short int pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int pick_part_from_box(Part part, double timeout);
+
+    
     //unsigned short int discard_grasped_part();
     unsigned short int discard_grasped_part(inventory_msgs::Part part);
 
     unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
+    unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
+
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
+    unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
 
     
     bool move_to_jspace_pose(const int pose_code, double arrival_time);

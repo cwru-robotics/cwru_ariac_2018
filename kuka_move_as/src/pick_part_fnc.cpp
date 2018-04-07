@@ -9,7 +9,7 @@
 
 unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
     //unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
-    trajectory_msgs::JointTrajectory transition_traj;
+    //trajectory_msgs::JointTrajectory transition_traj;
     inventory_msgs::Part part = goal->sourcePart;
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
             placeFinder_[part.location].c_str());
@@ -50,16 +50,16 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
 
     //OS_INFO("ready to move to computed_bin_cruise_jspace_pose_; enter 1:");
     //cin>>ans;        
-    move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 0.5);             
+    //move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 0.5);             
             
     //ROS_INFO("ready to move to computed_bin_escape_jspace_pose_; enter 1:");
     //cin>>ans;    
-    move_to_jspace_pose(computed_bin_escape_jspace_pose_, 1.0);       
+    move_to_jspace_pose(computed_bin_escape_jspace_pose_, 2.5);       
 
 //  move  to computed hover pose:
     //ROS_INFO("ready to move to computed_jspace_approach_; enter 1: ");
     //cin>>ans;    
-    move_to_jspace_pose(computed_jspace_approach_, 1.0);    
+    move_to_jspace_pose(computed_jspace_approach_, 1.5);    
 
 
     ROS_WARN(" DO PICKUP STEPS HERE...");
@@ -70,32 +70,33 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
 
     //now move to pickup approach pose:
     ROS_INFO("moving to approach_pickup_jspace_pose_ ");
-    move_to_jspace_pose(approach_pickup_jspace_pose_, 0.5); //try it this way instead
+    move_to_jspace_pose(approach_pickup_jspace_pose_, 1); //try it this way instead
     //move_to_jspace_pose(APPROACH_DEPART_CODE, 1.0); //code implies qvec in member var
     //ros::Duration(1.0).sleep();
 
     //ROS_INFO("enabling gripper");
     gripperInterface_.grab(); //do this early, so grasp can occur at first contact
     is_attached_ =  false;
-    cout<<"ready to descend to grasp; enter 1: ";
-    cin>>ans;
+    ROS_INFO("descending to grasp pose, ");
+    //cout<<"ready to descend to grasp; enter 1: ";
+    //cin>>ans;
     //now move to bin pickup pose:
     //ROS_INFO_STREAM("moving to pickup_jspace_pose_ " << std::endl << pickup_jspace_pose_.transpose());
     move_into_grasp(pickup_jspace_pose_, 1.5); //provide target pose
-    cout<<"at computed grasp pose; "<<endl;    
-    is_attached_ = gripperInterface_.waitForGripperAttach(1.0); //wait for grasp for a bit
+    ROS_INFO("at computed grasp pose;checking for gripper attachment ");    
+    is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit
 
 
     if (!is_attached_) {
         ROS_WARN("did not attach; attempting to descend further: ");
         //cin>>ans;
         if (!move_into_grasp(15.0)) {
-            ROS_WARN("could not grasp part; giving up");
+            ROS_WARN("could not grasp part; giving up; moving to approach pose...");
             move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0); //
 
-            ROS_INFO("moving to hover_jspace_pose_ ");//pickup_hover_pose_
+            ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
             //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
-            move_to_jspace_pose(pickup_hover_pose_, 1.0); //try it this way instead       
+            move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead       
             current_pose_code_=current_hover_code; //establish code for recognized, key pose
             errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
             return errorCode_;
@@ -107,7 +108,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
 
     
     //cout<<"ready to move to hover pose; enter 1: ";
-    //cin>>ans;
+    //cin>>ans; 
     
     //ROS_INFO("moving to hover_jspace_pose_ ");
 
@@ -199,6 +200,69 @@ bool KukaBehaviorActionServer::move_into_grasp(Eigen::VectorXd pickup_jspace_pos
     return true;
 
 }
+
+unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, double timeout) {
+    ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
+            placeFinder_[part.location].c_str());
+    // set these member var values:
+    //current_hover_pose_
+    //approach_dropoff_jspace_pose_ = desired_approach_depart_pose_
+    //desired_grasp_dropoff_pose_
+    errorCode_ = compute_box_dropoff_key_poses(part);
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        return errorCode_;
+    }
+    //extract box location codes from Part:
+    int current_hover_code = location_to_pose_code_map[part.location];
+    int current_cruise_code = location_to_cruise_code_map[part.location];
+    //now move to approach_dropoff_jspace_pose_:
+    ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
+    cout<<"enter 1: ";
+    cin>>ans;
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead    
+ 
+    ROS_INFO("enabling gripper");
+    gripperInterface_.grab(); //do this early, so grasp can occur at first contact
+    is_attached_ =  false;
+    //cout<<"ready to descend to grasp; enter 1: ";
+    //cin>>ans;
+    //now move to bin pickup pose:
+    ROS_INFO_STREAM("ready to  move to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
+    cout<<"enter 1: ";
+    cin>>ans;    
+    move_into_grasp(desired_grasp_dropoff_pose_, 1.5); //provide target pose
+    cout<<"at computed grasp pose; "<<endl;    
+    is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit
+
+
+    if (!is_attached_) {
+        ROS_WARN("did not attach; attempting to descend further: ");
+        //cin>>ans;
+        if (!move_into_grasp(15.0)) {
+            ROS_WARN("could not grasp part; giving up; moving to approach pose...");
+            move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //
+
+            ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
+            //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
+            move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead       
+            current_pose_code_=current_hover_code; //establish code for recognized, key pose
+            errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
+            return errorCode_;
+        }
+    }
+    //if here, part is attached to  gripper
+    ROS_INFO("grasped part; moving to depart pose: "); 
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0);    
+    ROS_INFO("done w/ pick_part_from_box; still in approach pose");
+    //ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
+    //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
+    //move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead       
+    //current_pose_code_=current_hover_code; //establish code for recognized, key pose
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+            return errorCode_;
+}
+
+
 //this version assumes the part is already grasped, and it should  be discarded
 /*
 unsigned short int KukaBehaviorActionServer::discard_grasped_part() {

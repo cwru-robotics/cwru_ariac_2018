@@ -52,9 +52,16 @@ public:
     //bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool place_part_in_box_with_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);    
     bool discard_grasped_part(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool release(double timeout);
     bool adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool adjust_part_location_with_release(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    
+    bool pick_part_from_box(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    //need these:
+    //bool pick_part_from_box(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    
     /*
     bool toHome(double timeout = 0);
 
@@ -67,9 +74,7 @@ public:
     bool place(Part destination, double timeout = 0);
     bool place_part_no_release(Part destination, double timeout = 0);
     bool move(Part part, Part destination, double timeout = 0);
-    //bool fetchPartFromConveyor(Part part,Part destination, double timeout=0);
     bool flipPart(Part part, double timeout = 0);
-    //bool setJointValues(vector<double> joints, double timeout = 0);
     bool grasp(double timeout = 0);
     bool release(double timeout = 0);
     bool isGripperAttached();

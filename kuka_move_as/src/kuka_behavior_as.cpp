@@ -269,6 +269,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
     double t_wait = 0.0;
     double dt_wait = 0.2;
     double t_wait_timeout = MAX_BEHAVIOR_SERVER_WAIT_TIME;
+    double timeout_arg = MAX_BEHAVIOR_SERVER_WAIT_TIME;
     is_attached_ = false;
     inventory_msgs::Part part, source_part,place_part;
 
@@ -290,7 +291,13 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             part = goal->destinationPart;
             errorCode_ = place_part_in_box_no_release(part);
             break;
-
+        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE:
+            ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
+            part = goal->destinationPart;
+            timeout_arg = goal->timeout;
+            errorCode_ = place_part_in_box_with_release(part,timeout_arg);
+            break;
+            
         case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
             part = goal->destinationPart;
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
@@ -309,6 +316,22 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             source_part = goal->sourcePart;
             errorCode_ = adjust_part_location_no_release(source_part, place_part);
             break;
+        case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE:
+            ROS_INFO("ADJUST_PART_LOCATION_WITH_RELEASE");
+            place_part= goal->destinationPart;
+            source_part = goal->sourcePart;
+            errorCode_ = adjust_part_location_with_release(source_part, place_part);
+            break;
+            
+        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BOX:
+            ROS_INFO("PICK_PART_FROM_BOX ");
+            part = goal->destinationPart;
+            timeout_arg = goal->timeout;
+            errorCode_ = pick_part_from_box(part,timeout);
+            break;            
+            
+            
+            
             
             
             /*
@@ -648,7 +671,7 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
 // does NOT return an errorcode to an action  client
 bool KukaBehaviorActionServer::move_to_jspace_pose(Eigen::VectorXd desired_jspace_pose, double arrival_time) {
     trajectory_msgs::JointTrajectory transition_traj;
-    transition_traj = jspace_pose_to_traj(desired_jspace_pose);
+    transition_traj = jspace_pose_to_traj(desired_jspace_pose,arrival_time);
 
 
     robot_goal_.trajectory = transition_traj;
