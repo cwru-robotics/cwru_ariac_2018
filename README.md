@@ -20,24 +20,61 @@ rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --firs
 ON ATLAS6 USE:
 rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
 
+Qualifier 2:
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+The following ariac config files present different scenarios:
+sample_dropped_products.yaml, sample_flipped.yaml, sample_interruption1.yaml, sample_interruption2.yaml, 
+sample_not_enough_products.yaml, sample_order_update.yaml, sample_sensor_blackout.yaml, sample.yaml
+
+Run these variations, e.g., on Ava (wsn laptop) with:
+
+The following setup is trouble--gears close together, and piston rods in bin5 (not ready for bin5)
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_dropped_products.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+The following has pulley parts--not ready to do pulley flips.  Also has piston-rod parts in bin5
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_interruption1.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+The following has no pulleys and no parts in bin5, but gear parts are very close together:
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_interruption2.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+The following has piston-rod parts in bin5; the rest are disk parts in bins 1 and 2
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_not_enough_products.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+order-update: order change during filling!   has tightly-spaced gears, pulleys, and bin5 piston rods
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_order_update.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+sample blackout: has piston rods in bin2, gears in bin3 and flanges in bin4
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_sensor_blackout.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+sample: 
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
 
 
-  <node name="ariac_sim" pkg="osrf_gear" type="gear.py"
-        args="--development-mode
-          $(arg verbose_args)
-          $(arg state_logging_args)
-          $(arg gui_args)
-          $(arg fill_demo_shipment_args)
-          --visualize-sensor-views
-          -f $(find osrf_gear)/config/sample.yaml
-          $(find osrf_gear)/config/sample_user_config.yaml
-          " required="true" output="screen" />
+
+ON ATLAS6:
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2a.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_dropped_products.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_interruption1.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_interruption2.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_not_enough_products.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_order_update.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample_sensor_blackout.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
+
+
 Start up robot move action server:
 `rosrun kuka_move_as kuka_behavior_as`
 
 For a simple test that grabs items from inventory, puts them in a box, then discards them, run:
 `rosrun shipment_filler test_part_placement_from_inventory`
-
 
 
 THE FOLLOWING NEEDS UPDATING...
@@ -50,8 +87,5 @@ Send a test order:
 OR, send orders via competition interface:
 `rosservice call /ariac/start_competition`
 
-#sub-tests:
-Run an example move-part command (hard coded):
-`rosrun robot_move_as robot_move_as_tester`
 
 
