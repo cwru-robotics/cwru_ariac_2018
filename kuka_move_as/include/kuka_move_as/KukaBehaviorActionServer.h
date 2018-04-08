@@ -68,7 +68,7 @@ const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
 const double X_BASE_WRT_WORLD = -0.050;
 
 
-int ans; //poor-man's debug response
+//int ans; //poor-man's debug response
 
 
 //map inventory_msgs location codes to corresponding robot pose codes:
@@ -264,6 +264,7 @@ private:
     unsigned short int discard_grasped_part(inventory_msgs::Part part);
 
     unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
+    unsigned short int release_and_retract(double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);    
     unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
 
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);

@@ -42,10 +42,10 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>roscpp</build_depend>
 <build_depend>geometry_msgs</build_depend>
+<build_depend>std_srvs</build_depend>
 <build_depend>actionlib</build_depend>
 <build_depend>ariac_transform_utils</build_depend>
 <build_depend>osrf_gear</build_depend>
-<build_depend>robot_move_as</build_depend>
 <build_depend>kuka_move_as</build_depend>
 <build_depend>ariac_ur_fk_ik</build_depend>
 <build_depend>order_manager</build_depend>
@@ -53,10 +53,10 @@
 <build_depend>box_inspector</build_depend>
   <run_depend>roscpp</run_depend>
 <run_depend>geometry_msgs</run_depend>
+<run_depend>std_srvs</run_depend>
 <run_depend>actionlib</run_depend>
 <run_depend>ariac_transform_utils</run_depend>
 <run_depend>osrf_gear</run_depend>
-<run_depend>robot_move_as</run_depend>
 <run_depend>kuka_move_as</run_depend>
 <run_depend>ariac_ur_fk_ik</run_depend>
 <run_depend>order_manager</run_depend>

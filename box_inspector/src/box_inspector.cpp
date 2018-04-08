@@ -114,7 +114,7 @@ void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
   int num_each_parts_seen[5]={0,0,0,0,0};
   int num_each_parts_des[5]={0,0,0,0,0};
   for(int i = 0; i<num_parts_seen;i++) {
-  	switch (mappings[box_inspector_image_.models[i].type]) {
+  	switch (name_to_part_id_mappings[box_inspector_image_.models[i].type]) {
   		case 1:
   			num_each_parts_seen[0]+=1;
   			break;
@@ -133,7 +133,7 @@ void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
   	}
   }
 	for(int i = 0; i<num_parts_desired;i++) {
-  		switch (mappings[desired_models_wrt_world[i].type]) {
+  		switch (name_to_part_id_mappings[desired_models_wrt_world[i].type]) {
   			case 1:
   				num_each_parts_des[0]+=1;
   				break;

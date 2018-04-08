@@ -21,6 +21,7 @@ ON ATLAS6 USE:
 rosrun osrf_gear gear.py --visualize-sensor-views -f `catkin_find --share --first-only osrf_gear`/config/sample.yaml ~/ros_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
 
 Qualifier 2:
+4 piston rods in bin1, 2 flanges in bin2, 2 disks in bin3, bin4 is empty, 3 gears in bin5
 `rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2a.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml`
 
 The following ariac config files present different scenarios:
@@ -73,13 +74,12 @@ ON ATLAS6:
 Start up robot move action server:
 `rosrun kuka_move_as kuka_behavior_as`
 
-For a simple test that grabs items from inventory, puts them in a box, then discards them, run:
-`rosrun shipment_filler test_part_placement_from_inventory`
-
-
-THE FOLLOWING NEEDS UPDATING...
 start the shipment filler:
 `rosrun shipment_filler simple_shipment_filler`
+
+For isolated tests, e.g.
+For a simple test that grabs items from inventory, puts them in a box, then discards them, run:
+`rosrun shipment_filler test_part_placement_from_inventory`
 
 Send a test order:
 `rosrun order_sender order_sender2`

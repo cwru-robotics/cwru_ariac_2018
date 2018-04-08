@@ -16,10 +16,11 @@ int main(int argc, char** argv)
     binInventory.get_inventory(inventory_msg);
     ROS_INFO_STREAM(inventory_msg<<endl);
     std::string part_name("piston_rod_part");
-    int part_id = mappings[part_name];
+    int part_id = name_to_part_id_mappings[part_name];
 
     int bin_num, partnum;
     geometry_msgs::PoseStamped part_pose;
+    //FIX ME! changed find_part()
     while (binInventory.find_part(part_name,bin_num,part_pose, partnum)) {
         binInventory.remove_part_from_inventory(part_id, partnum);
         binInventory.get_inventory(inventory_msg);

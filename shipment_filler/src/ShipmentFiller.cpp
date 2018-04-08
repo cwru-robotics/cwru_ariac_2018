@@ -1,8 +1,9 @@
 //ShipmentFiller class implementation
 #include<shipment_filler/ShipmentFiller.h>
-int ans;
+//int ans;
 
-ShipmentFiller::ShipmentFiller(ros::NodeHandle* nodehandle) : nh_(*nodehandle), robotMove(nodehandle), orderManager(nodehandle) {
+ShipmentFiller::ShipmentFiller(ros::NodeHandle* nodehandle) : nh_(*nodehandle), robotBehaviorInterface(nodehandle),
+orderManager(nodehandle), boxInspector(nodehandle), binInventory(nodehandle) {
     conveyor_client_ = nh_.serviceClient<osrf_gear::ConveyorBeltControl>("/ariac/conveyor/control");
     //rosservice call /ariac/drone "shipment_type: order_0_shipment_0"
 
@@ -55,17 +56,16 @@ void ShipmentFiller::update_inventory() {
 }
 
 bool ShipmentFiller::choose_shipment(osrf_gear::Shipment &shipment) {
-    return(orderManager.choose_shipment(shipment));
+    return (orderManager.choose_shipment(shipment));
 }
 
 bool ShipmentFiller::current_order_has_been_filled() { //delete order from its vector
-    return(orderManager.current_order_has_been_filled());
+    return (orderManager.current_order_has_been_filled());
 }
 
 bool ShipmentFiller::current_shipment_has_been_filled() { //delete order from its vector
-    return(orderManager.current_shipment_has_been_filled());
+    return (orderManager.current_shipment_has_been_filled());
 }
-
 
 void ShipmentFiller::box_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     box_cam_1_image_ = *image_msg;
@@ -80,7 +80,7 @@ void ShipmentFiller::box_camera_1_callback(const osrf_gear::LogicalCameraImage::
         //compute the box pose w/rt world
         box_1_stamped_pose_ = compute_stPose(cam_pose, box_pose);
         //correct this for known height:
-        box_1_stamped_pose_.pose.position.z = BOX_HEIGHT;
+        box_1_stamped_pose_.pose.position.z = BOX_SURFACE_HT_WRT_WORLD;
         //ROS_INFO("box_cam_1_dist_to_go_ = %f",box_cam_1_dist_to_go_);
     }
 }
@@ -113,11 +113,11 @@ void ShipmentFiller::box_camera_3_callback(const osrf_gear::LogicalCameraImage::
         //ROS_INFO("box_cam_1_dist_to_go_ = %f",box_cam_1_dist_to_go_);
     }
 }
-*/
+ */
 
 void ShipmentFiller::quality_sensor_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     qual_sensor_1_image_ = *image_msg;
-    ROS_INFO("got Qsensor1 msg...");
+    //ROS_INFO("got Qsensor1 msg...");
     qual_sensor_1_sees_faulty_part_ = find_faulty_part_Q1(qual_sensor_1_image_, bad_part_Qsensor1_);
     got_new_Q1_image_ = true;
 }
@@ -196,12 +196,13 @@ geometry_msgs::PoseStamped ShipmentFiller::compute_stPose_part_in_box_wrt_world(
 void ShipmentFiller::drone_depot_laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr & scan_msg) {
     double max_range = scan_msg->range_max;
     //double min_sensed_range = max_range;
-    ROS_INFO("max_range = %f", max_range);
+    //ROS_INFO("max_range = %f", max_range);
     drone_depot_sensor_sees_box_ = false;
     int num_rays = scan_msg->ranges.size();
     for (int iray = 0; iray < num_rays; iray++) {
         if (scan_msg->ranges[iray] < max_range - 0.01) {
             drone_depot_sensor_sees_box_ = true;
+            ROS_INFO("shipment seen at drone loading dock");
         }
     }
 }
@@ -214,14 +215,14 @@ bool ShipmentFiller::find_box(osrf_gear::LogicalCameraImage cam_image, double &y
     //cam_y_val = cam_image.pose.position.y;
     osrf_gear::Model model;
     cam_pose = cam_image.pose;
-    ROS_INFO("box cam sees %d models", num_models);
+    //ROS_INFO("box cam sees %d models", num_models);
     for (int imodel = 0; imodel < num_models; imodel++) {
         model = cam_image.models[imodel];
         string model_name(model.type);
         if (model_name == box_name) {
             y_val = model.pose.position.y;
             box_pose = model.pose;
-            ROS_INFO("found box at y_val = %f", y_val);
+            //ROS_INFO("found box at y_val = %f", y_val);
             return true;
         }
     }
@@ -229,326 +230,405 @@ bool ShipmentFiller::find_box(osrf_gear::LogicalCameraImage cam_image, double &y
     return false;
 }
 
-bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
-    ROS_INFO("attempting to fill shipment");
-    ROS_INFO_STREAM("shipment: " << shipment);
-    inventory_msgs::Part pick_part, place_part;
-    int num_parts = shipment.products.size();
-    int bin_num;
-    bool robot_move_ok;
-    osrf_gear::Product product;
-    geometry_msgs::PoseStamped bin_part_pose_stamped, box_part_pose_stamped;
-    geometry_msgs::Pose pose_wrt_box;
-    //ROS_INFO("moving to bin3 cruise pose");
-    //robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE);
+void part_to_model(inventory_msgs::Part part, osrf_gear::Model &model) {
+    model.type = part.name;
+    model.pose = part.pose.pose;
 
-    ROS_INFO("updating inventory");
-    orderManager.update_inventory();
-    //void OrderManager::get_inventory(inventory_msgs::Inventory &inventory_msg)
-    //orderManager.get_inventory(inventory_msg_);
+}
+
+void ShipmentFiller::model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location) {
+    part.name = model.type;
+    part.pose.pose = model.pose;
+    part.location = location; //by default
+}
+
+bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part) {
+    //try to find part in inventory;
+    //try to pick this part--and delete it from current inventory
+    //try to place  part in box and release;
+    //perform inspection/correction outside this func
+    //a return of "true" does not confirm success; return of "false" is a known  failure
+    bool go_on=true; 
+    int ans;
     
-    bool move_status;
-    //bool destination_close_to_near_box_edge=false; //if too close, may need wrist flip
-    //  unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);
-    unsigned short int box_placement_location_code;
-    for (int ipart = 0; ipart < num_parts; ipart++) {
-        product = shipment.products[ipart];
-        string part_name(product.type);
-        
-        ROS_INFO_STREAM("part " << ipart << " name is: " << part_name << endl);
-        //bool ShipmentFiller::select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+    std::string part_name(place_part.name);
+    ROS_INFO_STREAM("looking for part " << part_name << endl);
+    int partnum_in_inventory;
+    bool part_in_inventory = true; 
+    inventory_msgs::Part pick_part;
 
-        if (!select_part_from_inventory(part_name, bin_num, bin_part_pose_stamped)) {
-            ROS_WARN_STREAM("part " << part_name << " not in inventory!");
-        } else { //if here, have found part in inventory; grab it
-            //populate a "Part" message
-            pick_part.location = bin_num; // don't really care about the rest for move_cruise fnc
-            pick_part.name = part_name.c_str();
-            pick_part.pose = bin_part_pose_stamped;
-            ROS_INFO_STREAM("found part in bin " << bin_num << " at location " << bin_part_pose_stamped << endl);
-            if (!pick_part_fnc(pick_part)) {
-                ROS_WARN("-----------pick_part failed--------------");
-            } else {
-                ros::spinOnce(); //update view of box1
-                //populate a destination Part object
-                //compute the destination location:
-                //  geometry_msgs::PoseStamped ShipmentFiller::compute_stPose_part_in_box_wrt_world(geometry_msgs::Pose pose_wrt_box,geometry_msgs::PoseStamped box_pose_wrt_world) {
-                pose_wrt_box = product.pose;
-                box_placement_location_code = get_box_placement_location_code(pose_wrt_box);
-                ROS_INFO("part destination placement code: %d ",(int) box_placement_location_code);
-                //destination_close_to_near_box_edge = test_pose_close_to_near_box_edge(pose_wrt_box);
-                box_part_pose_stamped = compute_stPose_part_in_box_wrt_world(pose_wrt_box, box_1_stamped_pose_);
-                //correct the height of the box, which is known:
-                ROS_INFO_STREAM("want to place part in box at world coords:"<<box_part_pose_stamped<<endl);
+    while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
+      part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
+      if (!part_in_inventory) {
+        ROS_WARN("could not find desired  part in inventory; giving up on process_part()");
+        return false; //nothing more can be done     
+      }
+      ROS_INFO_STREAM("found part: " << pick_part << endl);
+      ROS_INFO("attempting pick...");
+        //manually remove this part from inventory, in case cameras are down:
+        //  bool remove_part_from_inventory(int part_id, int partnum);
+        int part_id = name_to_part_id_mappings[part_name];
+        int nparts_in_inventory = binInventory.num_parts(current_inventory,part_id);
+        ROS_INFO("number of parts of part_id= %d = %d",part_id,nparts_in_inventory);
+        binInventory.remove_part_from_inventory(part_id, partnum_in_inventory,current_inventory); //don't  try this part again
+        //int BinInventory::num_parts(inventory_msgs::Inventory inventory, int part_id) {
+        nparts_in_inventory = binInventory.num_parts(current_inventory,part_id);
+        ROS_INFO("after removal, %d parts left ",nparts_in_inventory);
+        ROS_INFO("attempting to pick part");
+        cout<<"enter 1:";
+        cin>>ans;
+        if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
+            ROS_INFO("pick failed");
+            go_on = false;
+            //gripperInterface_.release();     
+        }
+        if (go_on) {
+            ROS_INFO("attempting to place part: ");
+            cout<<"enter 1: ";
+            cin>>ans;
+            ROS_INFO_STREAM("part to be placed: " << place_part << endl);
+            if (!robotBehaviorInterface.place_part_in_box_no_release(place_part)) {
+                ROS_INFO("placement failed");
+                go_on=false;    
+            }
+        }
+        //loop back to retry with another part;
+        //should do a box inspection, though,  to make sure part is not dropped  in box, occluding desired destination   
+        if (go_on) {
+            ROS_INFO("part placement (no release) was successful!");
+            return true;
+        }
+    }
+}
+
+    /*
+    bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
+        ROS_INFO("attempting to fill shipment");
+        ROS_INFO_STREAM("shipment: " << shipment);
+        inventory_msgs::Part pick_part, place_part;
+        int num_parts = shipment.products.size();
+        int bin_num;
+        bool robot_move_ok;
+        osrf_gear::Product product;
+        geometry_msgs::PoseStamped bin_part_pose_stamped, box_part_pose_stamped;
+        geometry_msgs::Pose pose_wrt_box;
+        //ROS_INFO("moving to bin3 cruise pose");
+        //robotMove.toPredefinedPose(robot_move_as::RobotMoveGoal::BIN3_CRUISE_POSE);
+
+        ROS_INFO("updating inventory");
+        orderManager.update_inventory();
+        //void OrderManager::get_inventory(inventory_msgs::Inventory &inventory_msg)
+        //orderManager.get_inventory(inventory_msg_);
+    
+        bool move_status;
+        //bool destination_close_to_near_box_edge=false; //if too close, may need wrist flip
+        //  unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);
+        unsigned short int box_placement_location_code;
+        for (int ipart = 0; ipart < num_parts; ipart++) {
+            product = shipment.products[ipart];
+            string part_name(product.type);
+        
+            ROS_INFO_STREAM("part " << ipart << " name is: " << part_name << endl);
+            //bool ShipmentFiller::select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+
+            if (!select_part_from_inventory(part_name, bin_num, bin_part_pose_stamped)) {
+                ROS_WARN_STREAM("part " << part_name << " not in inventory!");
+            } else { //if here, have found part in inventory; grab it
+                //populate a "Part" message
+                pick_part.location = bin_num; // don't really care about the rest for move_cruise fnc
+                pick_part.name = part_name.c_str();
+                pick_part.pose = bin_part_pose_stamped;
+                ROS_INFO_STREAM("found part in bin " << bin_num << " at location " << bin_part_pose_stamped << endl);
+                if (!pick_part_fnc(pick_part)) {
+                    ROS_WARN("-----------pick_part failed--------------");
+                } else {
+                    ros::spinOnce(); //update view of box1
+                    //populate a destination Part object
+                    //compute the destination location:
+                    //  geometry_msgs::PoseStamped ShipmentFiller::compute_stPose_part_in_box_wrt_world(geometry_msgs::Pose pose_wrt_box,geometry_msgs::PoseStamped box_pose_wrt_world) {
+                    pose_wrt_box = product.pose;
+                    box_placement_location_code = get_box_placement_location_code(pose_wrt_box);
+                    ROS_INFO("part destination placement code: %d ",(int) box_placement_location_code);
+                    //destination_close_to_near_box_edge = test_pose_close_to_near_box_edge(pose_wrt_box);
+                    box_part_pose_stamped = compute_stPose_part_in_box_wrt_world(pose_wrt_box, box_1_stamped_pose_);
+                    //correct the height of the box, which is known:
+                    ROS_INFO_STREAM("want to place part in box at world coords:"<<box_part_pose_stamped<<endl);
                 
 
-                place_part = pick_part;
-                //FIX ME: should use RobotMove codes for destination
-                //???jspace cruise pose expects location code from PART message!!
-                //reconcile this!!
-                //Part::QUALITY_SENSOR_1
-                place_part.location = inventory_msgs::Part::QUALITY_SENSOR_1;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
+                    place_part = pick_part;
+                    //FIX ME: should use RobotMove codes for destination
+                    //???jspace cruise pose expects location code from PART message!!
+                    //reconcile this!!
+                    //Part::QUALITY_SENSOR_1
+                    place_part.location = inventory_msgs::Part::QUALITY_SENSOR_1;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
                         
-                //place_part.location = robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
-                place_part.pose = box_part_pose_stamped;
-                place_part.box_placement_location_code = box_placement_location_code; //choose wrist near vs wrist far soln
-                ROS_INFO_STREAM("part destination: " << place_part << endl);
-                //bool release_placed_part(double timeout=2.0);
-                //move_status = place_part_no_release(place_part);
-                ROS_INFO("calling place_part_no_release");
-                if (!place_part_no_release(place_part)) {
-                    ROS_WARN("place_part failed");
-                } else { //release the part
-                    ROS_WARN("SHOULD CHECK GOOD/BAD INSPECTION NOW");
-                    ROS_WARN("IF INSPECTION GOOD, CHECK PART LOCATION AND FIX, IF NECESSARY");
+                    //place_part.location = robot_move_as::RobotMoveGoal::Q1_DROPOFF_UNKNOWN;  //inventory_msgs::Part::QUALITY_SENSOR_1; //CODE FOR Q1 LOCATION; 
+                    place_part.pose = box_part_pose_stamped;
+                    place_part.box_placement_location_code = box_placement_location_code; //choose wrist near vs wrist far soln
+                    ROS_INFO_STREAM("part destination: " << place_part << endl);
+                    //bool release_placed_part(double timeout=2.0);
+                    //move_status = place_part_no_release(place_part);
+                    ROS_INFO("calling place_part_no_release");
+                    if (!place_part_no_release(place_part)) {
+                        ROS_WARN("place_part failed");
+                    } else { //release the part
+                        ROS_WARN("SHOULD CHECK GOOD/BAD INSPECTION NOW");
+                        ROS_WARN("IF INSPECTION GOOD, CHECK PART LOCATION AND FIX, IF NECESSARY");
                     
-                    ROS_INFO("shipment-filler requesting release placed  part...");
-                    if (!robotMove.release_placed_part()) {
-                        ROS_WARN("trouble releasing part");
+                        ROS_INFO("shipment-filler requesting release placed  part...");
+                        if (!robotBehaviorInterface.release()) {
+                            ROS_WARN("trouble releasing part");
 
+                        }
                     }
+
                 }
 
+
             }
-
-
+            orderManager.update_inventory();
         }
-        orderManager.update_inventory();
+        cout<<"enter 1: ";
+        cin>>ans;
+        return true;
     }
-    cout<<"enter 1: ";
-    cin>>ans;
-    return true;
-}
+     */
 
-bool ShipmentFiller::pick_part_fnc(inventory_msgs::Part part) {
-    bool robot_move_ok;
-    ROS_INFO("moving to bin cruise pose ");
-    robot_move_ok = robotMove.move_cruise_pose(part,4.0);
-    ros::Duration(2.0).sleep();
-    if (!robot_move_ok) {
-        ROS_WARN("problem moving to bin cruise pose");
-        return false;
-    }
-    ROS_INFO("acquiring part");
-    robot_move_ok = robotMove.pick(part);
-    //this ends up in hover pose
-    if (!robot_move_ok) {
-        ROS_WARN("problem picking part");
-        return false;
-    }
-
-    ROS_INFO("moving to bin cruise pose");
-    robot_move_ok = robotMove.move_cruise_pose(part,4.0);
-    ros::Duration(2.0).sleep();
-    if (!robot_move_ok) {
-        ROS_WARN("problem moving to bin cruise pose");
-        return false;
-    }
-
-    return true;
-}
-
-//    geometry_msgs::Pose pose_wrt_box;
-/*
-bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
-//FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
-  //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
-    double x = pose_wrt_box.position.x;
-    double y = pose_wrt_box.position.y;
-    if ((x<0)&&(y>0)) return true;
-  //maybe good enough??
-    return false;
-}
-*/
-//box placement codes:
-//int8 PART_FAR_RIGHT = 30
-//int8 PART_FAR_LEFT = 31
-//int8 PART_NEAR_RIGHT = 32
-//int8 PART_NEAR_LEFT = 33
-//pose_of_part_wrt_box:
-//x<0 is "near"  x>0 is "far"
-//y<0 is "right", y>0 is "left"
-unsigned short int ShipmentFiller::get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box) {
-    double x = pose_wrt_box.position.x;
-    double y = pose_wrt_box.position.y;
-    if ((x<=0)&&(y<=0)) { 
-        return robot_move_as::RobotMoveGoal::PART_NEAR_RIGHT;
-    }
-    if ((x<0)&&(y>0)) { 
-        return robot_move_as::RobotMoveGoal::PART_NEAR_LEFT;
-    }    
-     if ((x>0)&&(y<=0)) { 
-        return robot_move_as::RobotMoveGoal::PART_FAR_RIGHT;
-    }
-
-    return robot_move_as::RobotMoveGoal::PART_FAR_LEFT;
-}
-
-/*
-bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
-//FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
-  //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
-    double x = pose_wrt_box.position.x;
-    double y = pose_wrt_box.position.y;
-    if ((x<0)&&(y>0)) return true;
-  //maybe good enough??
-    return false;
-}
-*/
-
-//given a part name, see if it is in inventory AND is IK reachable (pickable)
-bool ShipmentFiller::select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
-    orderManager.get_inventory(inventory_msg_);
-    int part_id = mappings[part_name];
-    int num_parts_avail = inventory_msg_.inventory[part_id].part_stamped_poses.size();
-    if (num_parts_avail<1) return false;
-    inventory_msgs::Part part;  //object to populate for use w/ robotMove 
-
-  //get the first available part:
-  for (int ipart=0;ipart<num_parts_avail;ipart++) {
-     bin_num =   inventory_msg_.inventory[part_id].bins[ipart];
-     part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[ipart];
-     //convert to a "Part" object
-     part.location = bin_num;
-     part.pose = part_pose;
-     part.name = part_name.c_str();
-     //check if this part is pickable:
-     //    unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
-     //bool RobotMove::test_is_pickable(Part part) {
-     if (robotMove.test_is_pickable(part)) {
-         return true; //found a viable candidate; stop here, returning arg values
-     }
-  }
-  //ROS_WARN_STREAMER("no "<<part_name<<" parts are both in stock and pickable");
-  return false;
-
-}
-
-
-//assumes starts from bin cruise pose
-
-bool ShipmentFiller::place_part_no_release(inventory_msgs::Part destination_part) {
-    bool robot_move_ok;
-    //ROS_INFO("moving to box-fill cruise pose ");
-    //robot_move_ok = robotMove.move_cruise_pose(destination_part,4.0);
-    //ros::Duration(2.0).sleep();
-    //if (!robot_move_ok) {
-    //    ROS_WARN("problem moving to box-fill cruise pose");
-    //    return false;
-    //}
-    ROS_INFO("attempting part placement; timeout at %f sec",MAX_ACTION_SERVER_WAIT_TIME);
-    robot_move_ok = robotMove.place_part_no_release(destination_part, MAX_ACTION_SERVER_WAIT_TIME);
-    ROS_INFO("robotMove.place_part_no_release() returned with robot_move_ok = %d",robot_move_ok);
-    //ros::Duration(5.0).sleep();
-    return robot_move_ok;
-}
-
-bool ShipmentFiller::replace_faulty_parts_inspec1(osrf_gear::Shipment shipment) {
-    ROS_INFO("dummy: replace faulty parts");
-    ros::Duration(2.0).sleep();
-    return true;
-}
-
-bool ShipmentFiller::replace_faulty_parts_inspec2(osrf_gear::Shipment shipment) {
-    ROS_INFO("dummy: replace faulty parts2");
-    ros::Duration(2.0).sleep();
-    return true;
-}
-
-bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) {
-    ROS_INFO("dummy: adjust part locations");
-    ros::Duration(2.0).sleep();
-    return true;
-}
-
-bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
-    return true;
-}
-
-void ShipmentFiller::set_drone_shipment_name(osrf_gear::Shipment shipment) {
-    droneControl_.request.shipment_type = shipment.shipment_type;
-}
-
-bool ShipmentFiller::report_shipment_to_drone() {
-    //rosservice call /ariac/drone "shipment_type: order_0_shipment_0"
-    //droneControl_.shipment_type =  SHOULD ALREADY BE SET
-    ROS_INFO("informing drone of ready shipment");
-    //rosservice call /ariac/drone "shipment_type: order_0_shipment_0"
-    droneControl_.response.success = false;
-    while (!droneControl_.response.success) {
-        drone_client_.call(droneControl_);
-        ros::Duration(0.5).sleep();
-    }
-    return true;
-}
-
-bool ShipmentFiller::advance_shipment_on_conveyor(int location_code) {
-    //$ rosservice call /ariac/conveyor/control "power: 100"
-    ROS_INFO("advancing conveyor to location code %d", location_code);
-    bool conveyor_ok =false;
-    switch (location_code) {
-        case BOX_INSPECTION1_LOCATION_CODE:
-            while (!conveyor_ok) {
-               conveyor_client_.call(conveyor_svc_msg_GO_);
-               conveyor_ok = conveyor_svc_msg_GO_.response.success;
-               ros::spinOnce();
-            }
-            ROS_INFO("conveyor commanded to move");
-            if (!box_cam1_sees_box_) ROS_INFO("box not yet seen at cam1 station");
-            while (!box_cam1_sees_box_) {
-                ROS_INFO("box not yet seen at cam1 station");
-                conveyor_client_.call(conveyor_svc_msg_GO_);
-                ros::spinOnce();
-                ros::Duration(0.5).sleep();
-            }
-            ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
-            while (box_cam_1_dist_to_go_ > 0) {
-                ros::spinOnce();
-                ros::Duration(0.1).sleep();
-            }
-            ROS_INFO("stopping conveyor");
-            conveyor_client_.call(conveyor_svc_msg_STOP_);
-            ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
-            return true;
-            break;
-
-        case BOX_INSPECTION2_LOCATION_CODE:
-            ROS_INFO("advancing box to first inspection station at box cam2");
-            conveyor_client_.call(conveyor_svc_msg_GO_);
-            if (!box_cam2_sees_box_) ROS_INFO("box not yet seen at inspection 1 station");
-            while (!box_cam2_sees_box_) {
-                ROS_INFO("box not yet seen at cam2 station");
-                ros::spinOnce();
-                ros::Duration(0.5).sleep();
-            }
-            ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
-            while (box_cam_2_dist_to_go_ > 0) {
-                ros::spinOnce();
-                ros::Duration(0.1).sleep();
-            }
-            ROS_INFO("stopping conveyor");
-            conveyor_client_.call(conveyor_svc_msg_STOP_);
-            ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
-            return true;
-            break;
-
-        case DRONE_DOCK_LOCATION_CODE:
-            ROS_INFO("advancing box to drone depot");
-            conveyor_client_.call(conveyor_svc_msg_GO_);
-            while (!drone_depot_sensor_sees_box_) {
-                ros::Duration(0.5).sleep();
-                ros::spinOnce();
-                ROS_INFO("scanner does  not see box at drone depot");
-            }
-            ROS_INFO("prox sensor sees box!");
-            conveyor_client_.call(conveyor_svc_msg_STOP_);
-            return true;
-            break;
-
-        default: ROS_WARN("advance_shipment_on_conveyor: location code not recognized");
+    /*
+    bool ShipmentFiller::pick_part_fnc(inventory_msgs::Part part) {
+        bool robot_move_ok;
+        ROS_INFO("moving to bin cruise pose ");
+        robot_move_ok = robotBehaviorInterface.move_cruise_pose(part,4.0);
+        ros::Duration(2.0).sleep();
+        if (!robot_move_ok) {
+            ROS_WARN("problem moving to bin cruise pose");
             return false;
-            break;
+        }
+        ROS_INFO("acquiring part");
+        robot_move_ok = robotBehaviorInterface.pick(part);
+        //this ends up in hover pose
+        if (!robot_move_ok) {
+            ROS_WARN("problem picking part");
+            return false;
+        }
+
+        ROS_INFO("moving to bin cruise pose");
+        robot_move_ok = robotBehaviorInterface.move_cruise_pose(part,4.0);
+        ros::Duration(2.0).sleep();
+        if (!robot_move_ok) {
+            ROS_WARN("problem moving to bin cruise pose");
+            return false;
+        }
+
+        return true;
+    }
+     */
+    //    geometry_msgs::Pose pose_wrt_box;
+    /*
+    bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
+    //FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
+      //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
+        double x = pose_wrt_box.position.x;
+        double y = pose_wrt_box.position.y;
+        if ((x<0)&&(y>0)) return true;
+      //maybe good enough??
+        return false;
+    }
+     */
+    //box placement codes:
+    //int8 PART_FAR_RIGHT = 30
+    //int8 PART_FAR_LEFT = 31
+    //int8 PART_NEAR_RIGHT = 32
+    //int8 PART_NEAR_LEFT = 33
+    //pose_of_part_wrt_box:
+    //x<0 is "near"  x>0 is "far"
+    //y<0 is "right", y>0 is "left"
+    /*
+    unsigned short int ShipmentFiller::get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box) {
+        double x = pose_wrt_box.position.x;
+        double y = pose_wrt_box.position.y;
+        if ((x<=0)&&(y<=0)) { 
+            return robot_move_as::RobotMoveGoal::PART_NEAR_RIGHT;
+        }
+        if ((x<0)&&(y>0)) { 
+            return robot_move_as::RobotMoveGoal::PART_NEAR_LEFT;
+        }    
+         if ((x>0)&&(y<=0)) { 
+            return robot_move_as::RobotMoveGoal::PART_FAR_RIGHT;
+        }
+
+        return robot_move_as::RobotMoveGoal::PART_FAR_LEFT;
+    }
+     */
+    /*
+    bool ShipmentFiller::test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box) {
+    //FINISH ME!!!  default to true, so will choose wrist "far", if that's an option
+      //w/rt box, if x<0 and y>0, pose is close to robot and left side w/rt robot
+        double x = pose_wrt_box.position.x;
+        double y = pose_wrt_box.position.y;
+        if ((x<0)&&(y>0)) return true;
+      //maybe good enough??
+        return false;
+    }
+     */
+
+    //given a part name, see if it is in inventory AND is IK reachable (pickable)
+
+    bool ShipmentFiller::select_part_from_inventory(std::string part_name, int &bin_num, geometry_msgs::PoseStamped &part_pose) {
+        orderManager.get_inventory(inventory_msg_);
+        int part_id = name_to_part_id_mappings[part_name];
+        int num_parts_avail = inventory_msg_.inventory[part_id].part_stamped_poses.size();
+        if (num_parts_avail < 1) return false;
+        inventory_msgs::Part part; //object to populate for use w/ robotMove 
+
+        //get the first available part:
+        for (int ipart = 0; ipart < num_parts_avail; ipart++) {
+            bin_num = inventory_msg_.inventory[part_id].bins[ipart];
+            part_pose = inventory_msg_.inventory[part_id].part_stamped_poses[ipart];
+            //convert to a "Part" object
+            part.location = bin_num;
+            part.pose = part_pose;
+            part.name = part_name.c_str();
+            //check if this part is pickable:
+            //    unsigned short int is_pickable(const robot_move_as::RobotMoveGoalConstPtr &goal);
+            //bool RobotMove::test_is_pickable(Part part) {
+            //if (robotBehaviorInterface.test_is_pickable(part)) {
+            //    return true; //found a viable candidate; stop here, returning arg values
+            //}
+        }
+        //ROS_WARN_STREAMER("no "<<part_name<<" parts are both in stock and pickable");
+        //return false;
+        return true;
+
     }
 
-    return true;
-}
+
+    //assumes starts from bin cruise pose
+
+    /*
+    bool ShipmentFiller::place_part_no_release(inventory_msgs::Part destination_part) {
+        bool robot_move_ok;
+        //ROS_INFO("moving to box-fill cruise pose ");
+        //robot_move_ok = robotMove.move_cruise_pose(destination_part,4.0);
+        //ros::Duration(2.0).sleep();
+        //if (!robot_move_ok) {
+        //    ROS_WARN("problem moving to box-fill cruise pose");
+        //    return false;
+        //}
+        ROS_INFO("attempting part placement; timeout at %f sec",MAX_ACTION_SERVER_WAIT_TIME);
+        robot_move_ok = robotBehaviorInterface.place_part_no_release(destination_part, MAX_ACTION_SERVER_WAIT_TIME);
+        ROS_INFO("robotBehaviorInterface.place_part_no_release() returned with robot_move_ok = %d",robot_move_ok);
+        //ros::Duration(5.0).sleep();
+        return robot_move_ok;
+    }
+     */
+
+    bool ShipmentFiller::replace_faulty_parts_inspec1(osrf_gear::Shipment shipment) {
+        ROS_INFO("dummy: replace faulty parts");
+        ros::Duration(2.0).sleep();
+        return true;
+    }
+
+    bool ShipmentFiller::replace_faulty_parts_inspec2(osrf_gear::Shipment shipment) {
+        ROS_INFO("dummy: replace faulty parts2");
+        ros::Duration(2.0).sleep();
+        return true;
+    }
+
+    bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) {
+        ROS_INFO("dummy: adjust part locations");
+        ros::Duration(2.0).sleep();
+        return true;
+    }
+
+    bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
+        return true;
+    }
+
+    void ShipmentFiller::set_drone_shipment_name(osrf_gear::Shipment shipment) {
+        droneControl_.request.shipment_type = shipment.shipment_type;
+    }
+
+    bool ShipmentFiller::report_shipment_to_drone() {
+        //rosservice call /ariac/drone "shipment_type: order_0_shipment_0"
+        //droneControl_.shipment_type =  SHOULD ALREADY BE SET
+        ROS_INFO("informing drone of ready shipment");
+        //rosservice call /ariac/drone "shipment_type: order_0_shipment_0"
+        droneControl_.response.success = false;
+        while (!droneControl_.response.success) {
+            drone_client_.call(droneControl_);
+            ros::Duration(0.5).sleep();
+        }
+        return true;
+    }
+
+    bool ShipmentFiller::advance_shipment_on_conveyor(int location_code) {
+        //$ rosservice call /ariac/conveyor/control "power: 100"
+        ROS_INFO("advancing conveyor to location code %d", location_code);
+        bool conveyor_ok = false;
+        switch (location_code) {
+            case BOX_INSPECTION1_LOCATION_CODE:
+                while (!conveyor_ok) {
+                    conveyor_client_.call(conveyor_svc_msg_GO_);
+                    conveyor_ok = conveyor_svc_msg_GO_.response.success;
+                    ros::spinOnce();
+                }
+                ROS_INFO("conveyor commanded to move");
+                if (!box_cam1_sees_box_) ROS_INFO("box not yet seen at cam1 station");
+                while (!box_cam1_sees_box_) {
+                    ROS_INFO("box not yet seen at cam1 station");
+                    conveyor_client_.call(conveyor_svc_msg_GO_);
+                    ros::spinOnce();
+                    ros::Duration(0.5).sleep();
+                }
+                ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
+                while (box_cam_1_dist_to_go_ > 0) {
+                    ros::spinOnce();
+                    ros::Duration(0.1).sleep();
+                }
+                ROS_INFO("stopping conveyor");
+                conveyor_client_.call(conveyor_svc_msg_STOP_);
+                ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
+                return true;
+                break;
+
+            case BOX_INSPECTION2_LOCATION_CODE:
+                ROS_INFO("advancing box to first inspection station at box cam2");
+                conveyor_client_.call(conveyor_svc_msg_GO_);
+                if (!box_cam2_sees_box_) ROS_INFO("box not yet seen at inspection 1 station");
+                while (!box_cam2_sees_box_) {
+                    ROS_INFO("box not yet seen at cam2 station");
+                    ros::spinOnce();
+                    ros::Duration(0.5).sleep();
+                }
+                ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
+                while (box_cam_2_dist_to_go_ > 0) {
+                    ros::spinOnce();
+                    ros::Duration(0.1).sleep();
+                }
+                ROS_INFO("stopping conveyor");
+                conveyor_client_.call(conveyor_svc_msg_STOP_);
+                ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
+                return true;
+                break;
+
+            case DRONE_DOCK_LOCATION_CODE:
+                ROS_INFO("advancing box to drone depot");
+                conveyor_client_.call(conveyor_svc_msg_GO_);
+                while (!drone_depot_sensor_sees_box_) {
+                    ros::Duration(0.5).sleep();
+                    ros::spinOnce();
+                    ROS_INFO("scanner does  not see box at drone depot");
+                }
+                ROS_INFO("prox sensor sees box!");
+                conveyor_client_.call(conveyor_svc_msg_STOP_);
+                return true;
+                break;
+
+            default: ROS_WARN("advance_shipment_on_conveyor: location code not recognized");
+                return false;
+                break;
+        }
+
+        return true;
+    }

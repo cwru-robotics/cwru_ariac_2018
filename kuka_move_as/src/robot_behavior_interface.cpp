@@ -155,6 +155,13 @@ bool RobotBehaviorInterface::release(double timeout)  {
     return( sendGoal(goal_type,timeout));    
 }
 
+bool RobotBehaviorInterface::release_and_retract(double timeout) {
+     ROS_INFO("release_and_retract called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RELEASE_AND_RETRACT;
+    return( sendGoal(goal_type,timeout));      
+}
+
+
 bool RobotBehaviorInterface::pick_part_from_box(Part part, double timeout) {
     ROS_INFO("pick_part_from_box fnc called");
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BOX;   

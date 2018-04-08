@@ -28,7 +28,7 @@ public:
   bool parts_available(std::vector<int> parts_list);
   bool choose_order(osrf_gear::Order &order);
   bool choose_shipment(osrf_gear::Shipment &shipment);
-  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
+  //bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
 
   bool current_order_has_been_filled(); //delete order from its vector
   bool current_shipment_has_been_filled();

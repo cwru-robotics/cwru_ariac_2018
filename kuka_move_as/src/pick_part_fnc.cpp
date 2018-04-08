@@ -231,9 +231,9 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
     //now move to approach_dropoff_jspace_pose_:
-    ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
-    cout<<"enter 1: ";
-    cin>>ans;
+    //ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
+    //cout<<"enter 1: ";
+    //cin>>ans;
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead    
  
     ROS_INFO("enabling gripper");
@@ -243,8 +243,8 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     //cin>>ans;
     //now move to bin pickup pose:
     ROS_INFO_STREAM("ready to  move to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
-    cout<<"enter 1: ";
-    cin>>ans;    
+    //cout<<"enter 1: ";
+    //cin>>ans;    
     move_into_grasp(desired_grasp_dropoff_pose_, 1.5); //provide target pose
     cout<<"at computed grasp pose; "<<endl;    
     is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit

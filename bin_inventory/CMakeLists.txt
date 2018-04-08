@@ -31,11 +31,11 @@ cs_add_library(bin_inventory src/bin_inventory.cpp)
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-cs_add_executable(bin_inventory_test_main src/bin_inventory_test_main.cpp)
+#cs_add_executable(bin_inventory_test_main src/bin_inventory_test_main.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-target_link_libraries(bin_inventory_test_main bin_inventory)
+#target_link_libraries(bin_inventory_test_main bin_inventory)
 
 cs_install()
 cs_export()

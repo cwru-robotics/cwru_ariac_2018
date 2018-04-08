@@ -23,6 +23,12 @@ BinInventory::BinInventory(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     camera_to_bin_mapping_.resize(NUM_CAMERAS+1);
     fillCamToBinMapping();  //not used?
     ROS_INFO("initializing triggers");
+    if (NUM_CAMERAS<5) {
+        int ans;
+        ROS_WARN("bin_inventory.cpp is ignoring bin5;edit header file NUM_CAMERAS=5 to change this");
+        //ROS_WARN("enter 1 to acknowledge: ");
+        //cin>>ans;
+    }
     for (int i = 0; i < NUM_CAMERAS; i++) bin_camera_triggers_[i] = false;
 
     ROS_INFO("initializing inventory");
@@ -119,7 +125,7 @@ void BinInventory::update_camera_data(int cam_num, const osrf_gear::LogicalCamer
         bin_camera_triggers_[cam_num] = true;
         ROS_INFO("CAMERA %d data has been updated", cam_num);
     } else {
-        ROS_WARN("can't update camera %d; does  not exist!", cam_num);
+        //ROS_WARN("can't update camera %d; does  not exist!", cam_num);
     }
 }
 
@@ -190,7 +196,7 @@ bool BinInventory::update() {
             for (int imodel = 0; imodel < num_models; imodel++) {
                 std::string name(image_data.models[imodel].type);
                 // cout << "model name: " << name << endl;
-                int part_id = mappings[name];
+                int part_id = name_to_part_id_mappings[name];
                 if (part_id == 0) {
                     ROS_WARN("model name %s is not in mappings! ", name.c_str());
                 }
@@ -229,13 +235,24 @@ geometry_msgs::PoseStamped BinInventory::compute_stPose(geometry_msgs::Pose cam_
 }
 
 int BinInventory::num_parts(std::string name) {
-    int part_id = mappings[name];
+    int part_id = name_to_part_id_mappings[name];
     int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();
     return num_parts_in_inventory;
 } 
 
 int BinInventory::num_parts(int part_id) {
     int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();
+    return num_parts_in_inventory;
+}
+
+int BinInventory::num_parts(inventory_msgs::Inventory inventory, int part_id) {
+    int num_parts_in_inventory = inventory.inventory[part_id].part_stamped_poses.size();
+    return num_parts_in_inventory;
+}
+
+int BinInventory::num_parts(inventory_msgs::Inventory inventory, std::string name) { //return number of parts
+    int part_id = name_to_part_id_mappings[name];
+    int num_parts_in_inventory = inventory.inventory[part_id].part_stamped_poses.size();
     return num_parts_in_inventory;
 }
 
@@ -248,8 +265,9 @@ void BinInventory::counts_all_part_types(std::vector<int> &parts_counts) {
 
 //select a part at random from  among available parts of specified type;
 //return the partnum, so it can be removed from  inventory manually, if desired
-bool BinInventory::find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose, int &partnum) {
-  int part_id = mappings[part_name];
+/*
+bool BinInventory::find_part(std::string part_name,int &bin_num, geometry_msgs::PoseStamped &part_pose, int &partnum) {
+  int part_id = name_to_part_id_mappings[part_name];
   int num_parts_avail = num_parts(part_id);
   if (num_parts_avail<1) return false;
 
@@ -262,6 +280,41 @@ bool BinInventory::find_part(std::string part_name,int &bin_num,geometry_msgs::P
   return true;
 
 }
+ * */
+//as above,  but also populates a Part object
+/*
+bool BinInventory::find_part(std::string part_name,inventory_msgs::Part &pick_part, int &partnum) {
+    geometry_msgs::PoseStamped part_pose;
+    unsigned short int bin_num;
+    find_part(part_name,bin_num,part_pose, partnum);
+    //populate a Part  object:
+    pick_part.location = bin_num;
+    pick_part.pose = part_pose;
+    pick_part.name = part_name.c_str();
+  return true;
+
+}
+   */           
+bool BinInventory::find_part(inventory_msgs::Inventory current_inventory,std::string part_name,inventory_msgs::Part &pick_part, int &partnum) {
+  int part_id = name_to_part_id_mappings[part_name];
+  int num_parts_avail = num_parts(part_id);
+  if (num_parts_avail<1) return false;
+
+  //select a part at random, to avoid re-trying the same part repeatedly
+  partnum = 0;
+  if (num_parts_avail>1) partnum = rand() % (num_parts_avail-1);
+  int bin_num =   current_inventory.inventory[part_id].bins[partnum];
+  geometry_msgs::PoseStamped part_pose = current_inventory.inventory[part_id].part_stamped_poses[partnum];
+  ROS_INFO_STREAM("found part "<<part_name<<" in bin "<<bin_num<<" at pose "<<part_pose<<endl);
+    //populate a Part  object:
+    pick_part.location = bin_num;
+    pick_part.pose = part_pose;
+    pick_part.name = part_name.c_str();
+  return true;
+    
+}
+              
+              
 
 bool BinInventory::remove_part_from_inventory(int part_id, int partnum) {
     if ((part_id<1)||(part_id>NUM_PART_TYPES)) {
@@ -277,6 +330,24 @@ bool BinInventory::remove_part_from_inventory(int part_id, int partnum) {
   inventory_msg_.inventory[part_id].part_stamped_poses.erase(inventory_msg_.inventory[part_id].part_stamped_poses.begin()+partnum);
   return true;
 }
+
+bool BinInventory::remove_part_from_inventory( int part_id, int partnum, inventory_msgs::Inventory &inventory) {
+    if ((part_id<1)||(part_id>NUM_PART_TYPES)) {
+        ROS_WARN("invalid part_id!");
+        return false; 
+    }
+    int num_parts = inventory.inventory[part_id].bins.size();
+    if (partnum>= num_parts) {
+        ROS_WARN("invalid partnum...not that many parts in provided inventory!");
+        return false;
+    }
+    //OK--should be safe to do this:
+  inventory.inventory[part_id].bins.erase(inventory.inventory[part_id].bins.begin()+partnum);
+  inventory.inventory[part_id].part_stamped_poses.erase(inventory.inventory[part_id].part_stamped_poses.begin()+partnum);
+  return true;    
+    
+}
+
 
 /*bool OrderManager::delete_from_order_queue(int order_index, std::vector<osrf_gear::Order> &order_vec)  {
     //e.g., myvector.erase (myvector.begin()+5);

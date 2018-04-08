@@ -64,8 +64,7 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
     deep_grasp_dist_ = DEEP_GRASP_MOVE_DIST;  //ditto
     
     robot_behavior_as.registerPreemptCallback(boost::bind(&KukaBehaviorActionServer::preemptCB, this));
-    robot_behavior_as.start();
-    ROS_INFO("Start Robot Behavior Action Server");
+
     // attempt to connect to the Kuka robot-motion action server:
     ROS_INFO("waiting for arm server: ");
     bool server_exists = traj_ctl_ac_.waitForServer(ros::Duration(1.0));
@@ -99,75 +98,10 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
 
     jointstate_subscriber_  =  nh.subscribe("/ariac/joint_states", 1, &KukaBehaviorActionServer::jointstateCB,this); 
     
-    //TEMPORARY TEST: all this does is checks if joint-state subscription is working
-    //worked OK
-    //inventory_msgs::Part part_from,part_to;
-    //adjust_part_location_no_release(part_from,part_to);
-
     //set_key_poses();
 
-    /*
-    tfListener_ = new tf::TransformListener;
-    bool tferr = true;
-
-    ROS_INFO("waiting for tf between world and base_link...");
-    tf::StampedTransform tfBaseLinkWrtWorld;
-    while (tferr) {
-        tferr = false;
-        try {
-            //try to lookup transform, link2-frame w/rt base_link frame; this will test if
-            // a valid transform chain has been published from base_frame to link2
-            tfListener_->lookupTransform("world", "base_link", ros::Time(0), tfBaseLinkWrtWorld);
-        } catch (tf::TransformException &exception) {
-            ROS_WARN("%s; retrying...", exception.what());
-            tferr = true;
-            ros::Duration(0.5).sleep(); // sleep for half a second
-            ros::spinOnce();
-        }
-    }
-    tferr = true;
-    ROS_INFO("waiting for tf between base_link and vacuum_gripper_link...");
-    tf::StampedTransform tfGripperWrtWorld;
-
-    while (tferr) {
-        tferr = false;
-        try {
-            //try to lookup transform, link2-frame w/rt base_link frame; this will test if
-            // a valid transform chain has been published from base_frame to link2
-            tfListener_->lookupTransform("base_link", "vacuum_gripper_link", ros::Time(0), tfGripperWrtWorld);
-        } catch (tf::TransformException &exception) {
-            ROS_WARN("%s; retrying...", exception.what());
-            tferr = true;
-            ros::Duration(0.5).sleep(); // sleep for half a second
-            ros::spinOnce();
-        }
-    }
-    tferr = true;
-    ROS_INFO("waiting for tf between world and logical_camera_frame...");
-
-    while (tferr) {
-        tferr = false;
-        try {
-            //try to lookup transform, link2-frame w/rt base_link frame; this will test if
-            // a valid transform chain has been published from base_frame to link2
-            tfListener_->lookupTransform("world", "logical_camera_1_frame", ros::Time(0), tfCameraWrtWorld_);
-        } catch (tf::TransformException &exception) {
-            ROS_WARN("%s; retrying...", exception.what());
-            tferr = true;
-            ros::Duration(0.5).sleep(); // sleep for half a second
-            ros::spinOnce();
-        }
-    }
-*/
-    //gripper_client = nodeHandle.serviceClient<osrf_gear::VacuumGripperControl>("/ariac/gripper/control");
-    //ROS_INFO("waiting to connect to gripper service");
-    //if (!gripper_client.exists()) {
-    //    gripper_client.waitForExistence();
-    //}
-    //ROS_INFO("gripper service exists");
-    //attach_.request.enable = 1;
-    //detach_.request.enable = 0;
-
+    robot_behavior_as.start();
+    ROS_INFO("Start Robot Behavior Action Server");
     ROS_INFO_STREAM("robot behavior action server is ready!" << endl << endl);
 }
 
@@ -313,6 +247,12 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             timeout_arg = goal->timeout;
             errorCode_ = gripperInterface_.release_fnc(timeout_arg); //this version includes testing for release and timeout monitoring, same as below
             break;            
+        case kuka_move_as::RobotBehaviorGoal::RELEASE_AND_RETRACT:
+            ROS_INFO("RELEASE_AND_RETRACT");
+            timeout_arg = goal->timeout;
+            errorCode_ = release_and_retract(timeout_arg);
+            errorCode_ = gripperInterface_.release_fnc(timeout_arg); //this version includes testing for release and timeout monitoring, same as below
+            break;              
 
         case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION:
             ROS_INFO("ADJUST_PART_LOCATION");

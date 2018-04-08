@@ -34,6 +34,7 @@ int8 ADJUST_PART_LOCATION = 30
 int8 PICK_PART_FROM_BOX = 31
 int8 PLACE_PART_IN_BOX_WITH_RELEASE = 32
 int8 ADJUST_PART_LOCATION_WITH_RELEASE = 33
+int8 RELEASE_AND_RETRACT = 34
 
 #the following location codes correspond to relative locations in box, as viewed from robot's base
 int8 PART_FAR_RIGHT = 30

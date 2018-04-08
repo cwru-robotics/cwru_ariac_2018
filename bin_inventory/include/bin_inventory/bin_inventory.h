@@ -16,18 +16,20 @@
 #include <osrf_gear/LogicalCameraImage.h>
 #include <xform_utils/xform_utils.h> 
 #include <inventory_msgs/Inventory.h>
+#include <inventory_msgs/Part.h>
 
 using namespace std;
 const double BIN_INVENTORY_TIMEOUT=2.0; //max time to wait for an inventory update
 
-const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS
+//const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS
+const int NUM_CAMERAS=4;  //MUST EDIT THIS VALUE TO ADD CAMERAS
 //note:  ALSO must edit constructor to add cameras
 //also must add more  subscribers and callback functions
 
 const int NUM_PART_TYPES=5;
 //edit the following to add more parts;
 //part ID's MUST start at 1 and MUST be sequential
-std::map<std::string, int> mappings =
+std::map<std::string, int> name_to_part_id_mappings =
 {
    {"gear_part",1},
    {"piston_rod_part",2},
@@ -55,16 +57,22 @@ struct PartInventory {
 class BinInventory
 {
 public:
-
+ 
   BinInventory(ros::NodeHandle* nodehandle);
   int num_parts(std::string); //return number of parts
   int num_parts(int part_id); //return number of parts, by part_id
+  int num_parts(inventory_msgs::Inventory inventory, int part_id);
+  int num_parts(inventory_msgs::Inventory inventory, std::string); //return number of parts
+
   //get bin number and pose of named part
-  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose, int &partnum);
-  bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
-      int partnum;
-      return find_part(part_name,bin_num,part_pose, partnum);
-  }
+  //bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose, int &partnum);
+  //bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose) {
+  //    int partnum;
+  //   return find_part(part_name,bin_num,part_pose, partnum);
+  //}
+  //bool find_part(std::string part_name,inventory_msgs::Part &pick_part, int &partnum);
+  //as above, but operate on provided inventory
+  bool find_part(inventory_msgs::Inventory current_inventory,std::string part_name,inventory_msgs::Part &pick_part, int &partnum);
   
 
   bool update(); //updates entire inventory
@@ -73,7 +81,8 @@ public:
   void get_inventory(inventory_msgs::Inventory &inventory_msgs);
   void counts_all_part_types(std::vector<int> &parts_counts);
   bool remove_part_from_inventory(int part_id, int partnum);
-
+   //this version operates on an inventory that is provided
+  bool remove_part_from_inventory( int part_id, int partnum, inventory_msgs::Inventory &inventory);
 
 private:
     std::map<std::string, int> part_id_mappings;

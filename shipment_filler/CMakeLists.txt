@@ -27,13 +27,13 @@ catkin_simple()
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
-#cs_add_library(ShipmentFiller src/ShipmentFiller.cpp)   
+cs_add_library(ShipmentFiller src/ShipmentFiller.cpp)   
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
 #cs_add_executable(shipment_filler src/shipment_filler.cpp)
 #cs_add_executable(shipment_filler_test_bad_part src/shipment_filler_test_bad_part.cpp)
-#cs_add_executable(simple_shipment_filler src/simple_shipment_filler.cpp)
+cs_add_executable(simple_shipment_filler src/simple_shipment_filler.cpp)
 cs_add_executable(test_pick_from_inventory src/test_pick_from_inventory.cpp)
 cs_add_executable(test_part_placement_from_inventory src/test_part_placement_from_inventory.cpp)
 cs_add_executable(test_robot_behaviors src/test_robot_behaviors.cpp)
@@ -41,7 +41,7 @@ cs_add_executable(test_robot_behaviors src/test_robot_behaviors.cpp)
 # edit the arguments to reference the named node and named library within this package
 #target_link_libraries(shipment_filler ShipmentFiller)
 #target_link_libraries(shipment_filler_test_bad_part ShipmentFiller)
-#target_link_libraries(simple_shipment_filler ShipmentFiller) 
+target_link_libraries(simple_shipment_filler ShipmentFiller) 
 cs_install()
 cs_export()
     
