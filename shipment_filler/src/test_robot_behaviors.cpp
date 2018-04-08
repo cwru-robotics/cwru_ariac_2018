@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
         ROS_INFO_STREAM("found " << nparts << " of these" << endl);
         for (int ipart = 0; ipart < nparts; ipart++) {
             go_on = true;
+            
             ROS_INFO("removing item %d of part_id %d", ipart, i_part_type);
             unsigned short int bin_num = inventory_msg.inventory[i_part_type].bins[ipart];
             geometry_msgs::PoseStamped part_pose = inventory_msg.inventory[i_part_type].part_stamped_poses[ipart];
@@ -77,8 +78,7 @@ int main(int argc, char** argv) {
             pick_part.name = part_name.c_str();
             ROS_INFO_STREAM("pick_part: " << pick_part << endl);
 
-            //ROS_INFO_STREAM("attempting pick command for part "<<pick_part<<endl);
-            //pick_part.location= inventory_msgs::Part::BIN2;
+            
             ROS_INFO("attempting pick...");
             if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
                 ROS_INFO("pick failed");
