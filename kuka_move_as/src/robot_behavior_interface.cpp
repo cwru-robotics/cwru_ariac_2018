@@ -205,9 +205,14 @@ void RobotInterface::release() {
 
  * */
 bool RobotBehaviorInterface::wrap_up() {
+    double dt = 0.1;
+    int pose_count=0;
     while (!action_server_returned_) {
-        ROS_INFO("waiting on action  server");
-        ros::Duration(0.5).sleep();
+        pose_count++;
+        if (pose_count%10==0) {
+          ROS_INFO("waiting on action  server");
+        }
+        ros::Duration(dt).sleep();
         ros::spinOnce();
     }
     if (errorCode_==kuka_move_as::RobotBehaviorResult::NO_ERROR) {

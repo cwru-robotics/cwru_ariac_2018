@@ -279,11 +279,11 @@ private:
 
     Eigen::VectorXd pickup_jspace_pose_, dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
-    Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_, current_hover_pose_;
+    Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_, current_hover_pose_, current_key_pose_;
     Eigen::VectorXd desired_approach_depart_pose_, desired_grasp_dropoff_pose_;
     Eigen::VectorXd computed_jspace_approach_, computed_bin_escape_jspace_pose_;
     Eigen::VectorXd nom_bin_cruise_pose_,q1_cruise_pose_,computed_bin_cruise_jspace_pose_;
-    Eigen::VectorXd  q1_hover_pose_,q2_hover_pose_;
+    Eigen::VectorXd  q1_hover_pose_,q2_hover_pose_, q_temp_pose_;
     double approach_dist_;
     double deep_grasp_dist_;
     
@@ -337,6 +337,8 @@ private:
     
     bool hover_jspace_pose_w_code(int8_t bin, unsigned short int box_placement_location_code, Eigen::VectorXd &qvec);
     bool hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec);
+    bool hover_jspace_pose_from_pose_code(int pose_code, Eigen::VectorXd &q_vec);
+
     bool rail_prepose(int8_t location, double &q_rail);
     bool compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
     unsigned short int compute_bin_pickup_key_poses(inventory_msgs::Part part);    
@@ -364,6 +366,8 @@ private:
     bool bin_center_y_coord(int8_t location, double &bin_y_val);
     //bool bin_y_is_reachable(int8_t bin,double &part_y);
     bool bin_xy_is_reachable(int8_t bin,double &part_x, double &part_y);
+
+    bool find_nearest_key_pose(int &pose_code, Eigen::VectorXd &q_vec_joint_angles_8dof);
 
 
     //inventory_msgs::Part part_of_interest_;    

@@ -22,6 +22,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part)
     errorCode_ = compute_bin_pickup_key_poses(part);   
     if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        
         return errorCode_;
     }
 
@@ -34,12 +35,26 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
 
     
     //MOVES START HERE
+    int move_to_pose_code;
     ROS_INFO("moving to respective cruise pose...");
     if (!move_posecode1_to_posecode2(current_pose_code_, current_cruise_code)) {
         ROS_WARN("error with move between pose codes");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
-        return errorCode_;
+        ROS_INFO("trying to recover w/ move to closest key pose");
+        if (find_nearest_key_pose(move_to_pose_code, current_key_pose_)) {
+            move_to_jspace_pose(current_key_pose_, 2.5);
+            current_pose_code_ = move_to_pose_code;
+            ROS_INFO("current_pose_code_ = %d",current_pose_code_);
+            
+        }
+            //try again:
+        if (!move_posecode1_to_posecode2(current_pose_code_, current_cruise_code)) {
+            ROS_WARN("error with move between pose codes; recovery failed");   
+            errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+            return errorCode_;
+        }
+        
     }
+
     //ROS_INFO("moving to respective hover pose");
     //if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
 

@@ -33,11 +33,20 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
     }
 
     ROS_WARN(" DO DROPOFF STEPS HERE...");
+    //get the wrist pose ready:
+    ROS_INFO("position wrist at hover pose");
+    if(hover_jspace_pose_from_pose_code(current_hover_code, q_temp_pose_)) {
+        for (int i=4;i<6;i++) {
+             q_temp_pose_[i]=approach_dropoff_jspace_pose_[i];
+        }
+        move_to_jspace_pose(q_temp_pose_, 1.5);
+    }
+
 
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move
    
     //this would be a good place to recompute dropoff pose;
     //BUT need to know actual pose of part, as observed by camera
@@ -138,7 +147,9 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     trajectory_msgs::JointTrajectory transition_traj;
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location]; 
+    /*
     if (current_hover_code == Q1_HOVER_CODE) {
+        ROS_INFO("moving to hover pose");
         move_to_jspace_pose(q1_hover_pose_, 1.0);
         current_pose_code_=current_hover_code;
     }
@@ -151,6 +162,10 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
         errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }
+    */
+    ROS_INFO("moving to previously computed approach pose: ");
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move    
+    
     ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
     move_to_jspace_pose(current_hover_pose_, 1.0);     
     current_pose_code_=current_hover_code; //set establish code for recognized, key pose

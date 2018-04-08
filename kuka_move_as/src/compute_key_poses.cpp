@@ -16,8 +16,68 @@ d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
  *
  */
 
+//if left robot in bad state, find the closest key pose:
+bool KukaBehaviorActionServer::find_nearest_key_pose(int &pose_code, Eigen::VectorXd &q_vec_key_pose_joint_angles_8dof) {
+    //get current joint angles:
+    ROS_INFO("seeking nearest key pose");
+    //q_vec_hover_joint_angles_8dof.resize(8);
+    got_new_joint_states_=false;
+    while(!got_new_joint_states_)  {
+       ros::spinOnce();
+       ros::Duration(0.1).sleep();
+    }
+       //ROS_INFO_STREAM("got joint states: "<<endl<<joint_state_<<endl);
+       Eigen::VectorXd q_vec_joint_angles_8dof;
+       q_vec_joint_angles_8dof.resize(8);
+       for (int i=0;i<8;i++) {
+           q_vec_joint_angles_8dof[i] = joint_state_.position[i];
+       }
+       ROS_INFO_STREAM("got current joint angles: "<<endl<<q_vec_joint_angles_8dof.transpose()<<endl);    
+       double q_rail = q_vec_joint_angles_8dof[7];
+       double q_turret = q_vec_joint_angles_8dof[0];
+       double q_shoulder = q_vec_joint_angles_8dof[1];
+       if (q_shoulder> 0.7) {  
+           //MUST  be a Q1 or Q2 pose...maybe BIN5 later...
+           if (fabs(q_turret)< 0.3) {  //looks like near a HOVER pose
+               if (q_rail > -0.5) { //must be Q1 station
+                   //void KukaBehaviorActionServer::copy_array_to_qvec(const double q_array[],Eigen::VectorXd &qvec) {
+                   copy_array_to_qvec(Q1_HOVER_array,q_vec_key_pose_joint_angles_8dof);
+                   pose_code = Q1_HOVER_CODE;
+                   ROS_INFO("Q1 Hover is closest key pose; pose_code = %d",pose_code);
+                   return true;
+               }
+               else { //Q2 hover pose:
+                    copy_array_to_qvec(Q2_HOVER_array,q_vec_key_pose_joint_angles_8dof);
+                   pose_code = Q2_HOVER_CODE;   
+                   ROS_INFO("Q2 Hover is closest key pose");
+                   return true;
+               }
+           }
+           else { //q_turret is too large--must be a cruise pose:
+               if (q_rail > -0.5) { //must be Q1 station
+                   //void KukaBehaviorActionServer::copy_array_to_qvec(const double q_array[],Eigen::VectorXd &qvec) {
+                   copy_array_to_qvec(Q1_CRUISE_array,q_vec_key_pose_joint_angles_8dof);
+                   pose_code = Q1_CRUISE_CODE;
+                   ROS_INFO("Q1 CRUISE is closest key pose");
+                   return true;                   
+               }
+               else { //Q2 hover pose:
+                    copy_array_to_qvec(Q2_CRUISE_array,q_vec_key_pose_joint_angles_8dof);
+                   pose_code = Q2_CRUISE_CODE; 
+                   ROS_INFO("Q2 CRUISE is closest key pose");
+                   return true;                   
+               }               
+               
+           }
+           
+       }
+       ROS_WARN("closest pose is not a Q-pose; find_nearest_key_pose() has no response ");
+       return false;
+}
+
+
 unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part) {
-    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
 
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
@@ -107,7 +167,8 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     }
     ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
     
-    
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    ROS_INFO("SUCCESSFUL COMPUTATION OF KEY POSES FOR BIN PICKUP");
     return errorCode_;
         
 }
@@ -333,9 +394,23 @@ void KukaBehaviorActionServer::copy_array_to_qvec(const double q_array[],Eigen::
   }
 }
 
+bool KukaBehaviorActionServer::hover_jspace_pose_from_pose_code(int pose_code, Eigen::VectorXd &q_vec) {
+  switch (pose_code) {
+        case Q1_HOVER_CODE:
+            copy_array_to_qvec(Q1_HOVER_array,q_vec);
+            return true;
+      case Q2_HOVER_CODE:
+            copy_array_to_qvec(Q2_HOVER_array,q_vec);
+            return true;       
+       default:
+            ROS_WARN("location code not recognized");
+            return false;   
+  }
+}
+
 bool KukaBehaviorActionServer::hover_jspace_pose(int8_t bin, Eigen::VectorXd &q_vec) {
-        unsigned short int dropoff_code = kuka_move_as::RobotBehaviorGoal::Q1_NOM_DROPOFF_POSE_UNKNOWN;
-   return hover_jspace_pose_w_code(bin,dropoff_code,q_vec);  
+    unsigned short int box_placement_location_code=0; //obsolete--unused
+    return hover_jspace_pose_w_code(bin, box_placement_location_code,q_vec);
 }
 
 
@@ -377,6 +452,8 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
              * */
         case Part::QUALITY_SENSOR_1: //4 different drop-off hover poses, depending on placement location in box
             ROS_INFO("destination location QUALITY_SENSOR_1");
+            copy_array_to_qvec(Q1_HOVER_array,qvec);
+
             /*
             if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_LEFT) {
                 unsigned short int hover_code = kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR;
@@ -400,7 +477,6 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
                 //qvec = q_Q1_righty_hover_;//Q1_RIGHTY_HOVER
                 return true;
             }*/
-            copy_array_to_qvec(Q1_HOVER_array,qvec);
 
             //if here, failed            
             //ROS_WARN("dropoff location code not recognized!");

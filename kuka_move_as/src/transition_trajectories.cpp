@@ -75,7 +75,7 @@ trajectory_msgs::JointTrajectory TransitionTrajectories::concat_trajs(trajectory
 
 
 void TransitionTrajectories::fill_transition_traj_map() {
-   trajectory_msgs::JointTrajectory transition_traj;
+   trajectory_msgs::JointTrajectory transition_traj, transistion_traj_save;
    trajectory_msgs::JointTrajectoryPoint trajectory_point;
    trajectory_point.positions.clear();
    trajectory_point.positions.resize(8);
@@ -1185,6 +1185,58 @@ void TransitionTrajectories::fill_transition_traj_map() {
     trajectory_point.time_from_start = ros::Duration(2);
     transition_traj.points.push_back(trajectory_point);
     transition_traj_map_[BIN5_CRUISE_CODE][BIN2_CRUISE_CODE] = transition_traj; 
+
+
+
+
+    //from Q1_HOVER to all bin cruise poses:
+    transition_traj.points.clear();
+    copy_point(Q1_HOVER_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(0.2);
+    transition_traj.points.push_back(trajectory_point);
+    copy_point(Q1_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(1);
+    transition_traj.points.push_back(trajectory_point);
+    //flip
+    copy_point(CRUISE_FLIP_MID_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(1.5);
+    transition_traj.points.push_back(trajectory_point);
+    //nom bin cruise:
+    copy_point(NOM_BIN_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(3);
+    transition_traj.points.push_back(trajectory_point);
+    transistion_traj_save = transition_traj; //this much from q1hover to q1nom bin cruise
+    transition_traj_map_[Q1_HOVER_CODE][NOM_BIN_CRUISE] = transition_traj; 
+
+    copy_point(BIN1_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(5);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_HOVER_CODE][BIN1_CRUISE_CODE] = transition_traj; 
+
+    transition_traj=transistion_traj_save;
+    copy_point(BIN2_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(5);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_HOVER_CODE][BIN2_CRUISE_CODE] = transition_traj; 
+
+    transition_traj=transistion_traj_save;
+    copy_point(BIN3_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(5);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_HOVER_CODE][BIN3_CRUISE_CODE] = transition_traj; 
+
+    transition_traj=transistion_traj_save;
+    copy_point(BIN4_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(5);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_HOVER_CODE][BIN4_CRUISE_CODE] = transition_traj; 
+
+    transition_traj=transistion_traj_save;
+    copy_point(BIN5_CRUISE_array,trajectory_point);
+    trajectory_point.time_from_start = ros::Duration(5);
+    transition_traj.points.push_back(trajectory_point);
+    transition_traj_map_[Q1_HOVER_CODE][BIN5_CRUISE_CODE] = transition_traj; 
+
 
    ROS_INFO("done populating map");
 }

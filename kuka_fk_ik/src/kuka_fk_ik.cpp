@@ -618,12 +618,17 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     q_soln[4] = qw1;
     q_soln[5] = qw2;
     q_soln[6] = qw3;
+    while (q_soln[6]>DH_q_max7) q_soln[6]-= 2.0*M_PI;
+    while (q_soln[6]<DH_q_min7) q_soln[6]+= 2.0*M_PI;    
     q_solns.clear();
     q_solns.push_back(q_soln);
     //2nd wrist soln: 
     q_soln[4] = qw1b;
     q_soln[5] *= -1.0; // flip wrist opposite direction
     q_soln[6] += M_PI; // fix the periodicity later; 
+    while (q_soln[6]>DH_q_max7) q_soln[6]-= 2.0*M_PI;
+    while (q_soln[6]<DH_q_min7) q_soln[6]+= 2.0*M_PI;
+    
     ROS_INFO("alt qw1,qw2,qw3 = %f, %f, %f",q_soln[4],q_soln[5],q_soln[6]);
     q_solns.push_back(q_soln);        
     return is_singular;

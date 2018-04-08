@@ -183,10 +183,13 @@ bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory d
     traj_goal_complete_ = false;
     ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
     traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
-
+    int print_count=0;
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
         //put timeout here...   possibly return falses
-        ROS_INFO("waiting for trajectory to finish...");
+        print_count++;
+        if (print_count%10==0) {
+           ROS_INFO("waiting for trajectory to finish...");
+        }
         ros::Duration(0.1).sleep();
     }
     current_pose_code_ = destination_code;
@@ -658,9 +661,13 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
     ROS_INFO_STREAM("sending traj: "<<endl<<transition_traj<<endl);
 
     send_traj_goal(transition_traj, pose_code); 
+    int print_count=0;
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
         //put timeout here...   possibly return falses
-        ROS_INFO("waiting for trajectory to finish...");
+         print_count++;
+        if (print_count%10==0) {
+           ROS_INFO("waiting for trajectory to finish...");
+        }
         ros::Duration(0.1).sleep();
     }
     current_pose_code_ = pose_code;    
@@ -727,10 +734,13 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
     traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
-
+    int print_count=0;
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
         //put timeout here...   possibly return falses
-        ROS_INFO("waiting for trajectory to finish...");
+        print_count++;
+        if (print_count%10==0) {
+           ROS_INFO("waiting for trajectory to finish...");
+        }
         ros::Duration(0.1).sleep();
     }
     current_pose_code_ = posecode_goal;    
