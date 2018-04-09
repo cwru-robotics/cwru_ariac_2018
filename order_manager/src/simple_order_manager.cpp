@@ -20,9 +20,9 @@ void OrderManager::order_callback(const osrf_gear::Order::ConstPtr & order_msg) 
     if (is_priority(order)) {
          priority_orders_.push_back(order);
      }   
-    else if (!order_is_fillable(order)) {
-     unfillable_orders_.push_back(order);
-    }
+    //else if (!order_is_fillable(order)) {
+    // unfillable_orders_.push_back(order);
+    //}
     //else, is fillable and is not priority:
     else {
        pending_orders_.push_back(order);
