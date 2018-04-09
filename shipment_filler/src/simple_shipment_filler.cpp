@@ -148,15 +148,15 @@ int main(int argc, char** argv) {
                   go_on=false; //give up on placing this model in the box
                   i_model++; //give up on placing this part; it seems to be impossible
             }
-            /*            
+                        
             if (go_on) {
                 ROS_INFO("successful part placement; should inspect before release");
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
-
+            /*
             if (go_on) {
                 //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
+                go_on = shipmentFiller.adjust_shipment_part_locations(place_part);
             }
              * */
             if (go_on) {

@@ -10,6 +10,7 @@
 #include <osrf_gear/Product.h>
 #include <xform_utils/xform_utils.h>
 #include<bin_inventory/bin_inventory.h>
+#include <inventory_msgs/Part.h>
 using namespace std;
 
 /*const int NUM_PART_TYPES=5;
@@ -63,7 +64,7 @@ public:
   bool model_poses_wrt_box(osrf_gear::Shipment &shipment_status);
   bool compare_pose(geometry_msgs::Pose , geometry_msgs::Pose);
   bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
-  bool pre_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,osrf_gear::Model &misplaced_model_desired_coords, osrf_gear::Model &misplaced_model_actual_coords);
+  bool pre_dropoff_check(inventory_msgs::Part,osrf_gear::Model &misplaced_model_desired_coords, osrf_gear::Model &misplaced_model_actual_coords);
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 

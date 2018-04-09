@@ -34,12 +34,13 @@ public:
   //bool fill_shipment(osrf_gear::Shipment shipment);
   bool replace_faulty_parts_inspec1(osrf_gear::Shipment shipment);
   bool replace_faulty_parts_inspec2(osrf_gear::Shipment shipment);
-  bool adjust_shipment_part_locations(osrf_gear::Shipment shipment);
+  bool adjust_shipment_part_locations(inventory_msgs::Part);
   bool correct_dropped_part(osrf_gear::Shipment shipment);
   bool report_shipment_to_drone();
   bool advance_shipment_on_conveyor(int location_code);
   void set_drone_shipment_name(osrf_gear::Shipment shipment);
   bool get_bad_part_Q1(inventory_msgs::Part &bad_part);
+  bool get_bad_part_Q2(inventory_msgs::Part &bad_part);
   void update_inventory();
   bool choose_shipment(osrf_gear::Shipment &shipment);
 
@@ -113,5 +114,6 @@ private:
   osrf_gear::DroneControl droneControl_; //set shipment_type
 
   bool got_new_Q1_image_;
+  bool got_new_Q2_image_;
 };
 #endif
