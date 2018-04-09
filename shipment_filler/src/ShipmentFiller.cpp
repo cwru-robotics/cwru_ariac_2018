@@ -567,7 +567,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         
             ROS_INFO("No (more) faulty parts");
             return 1;
-        }
+    }
     
 
     bool ShipmentFiller::adjust_shipment_part_locations(inventory_msgs::Part part) { //Slight confusion regarding when this function is called, will we have to use the same function ever after filling the box?
