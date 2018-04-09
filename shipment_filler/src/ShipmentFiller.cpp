@@ -562,12 +562,11 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             }
 
             ROS_INFO("successfully discarded faulty part from Q2");
-            return true;
             ros::spinOnce();
         }
         
             ROS_INFO("No (more) faulty parts");
-            return true;
+            return 1;
         }
     
 
@@ -581,17 +580,51 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             ROS_INFO("unable to adjust");
             return 0;
         }
+        else{
             ROS_INFO("successfully adjusted part");
             return 1;
-
+        }
        }
     }
 
 
     bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
-        return true;
+        vector<osrf_gear::Model> desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
+        boxInspector.compute_shipment_poses_wrt_world(shipment,box_1_stamped_pose_,desired_models_wrt_world);
+        boxInspector.update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world);
+        bool success;
+        if(misplaced_models_actual_coords_wrt_world.size()==0){
+            ROS_INFO("cant find dropped part");
+            success=false; //or true depending on whether the fnc is only called when neccessary
+        }
+        else{
+            for(int ipart=0;ipart<misplaced_models_actual_coords_wrt_world.size();ipart++) {
+                inventory_msgs::Part part_to_retrieve,part_corrected;
+                model_to_part(misplaced_models_actual_coords_wrt_world[ipart],part_to_retrieve);
+                if(!robotBehaviorInterface.pick_part_from_box(part_to_retrieve)) {
+                    ROS_INFO("error picking up dropped part");
+                    ipart++;
+                    success=false;
+                }
+                else {
+                    model_to_part(misplace_models_desired_coords_wrt_world[ipart],part_corrected);
+                    if(!robotBehaviorInterface.place_part_in_box_with_release(part_corrected)) {
+                        ROS_INFO("Cannot place part where desired");
+                        ipart++;
+                        success=false;
+                    }
+                    else {
+                        ROS_INFO("corrected part %d",ipart);
+                        ipart++;  
+                        success=true;          
+                    }
+                }
+            }
+        }
+        return success;
     }
 
+       
     void ShipmentFiller::set_drone_shipment_name(osrf_gear::Shipment shipment) {
         droneControl_.request.shipment_type = shipment.shipment_type;
     }

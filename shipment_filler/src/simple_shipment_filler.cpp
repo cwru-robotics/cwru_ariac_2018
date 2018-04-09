@@ -153,12 +153,12 @@ int main(int argc, char** argv) {
                 ROS_INFO("successful part placement; should inspect before release");
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
-            /*
+            
             if (go_on) {
                 //adjust part locations in box: 
                 go_on = shipmentFiller.adjust_shipment_part_locations(place_part);
             }
-             * */
+            
             if (go_on) {
                 ROS_INFO("attempting part release; enter 1: ");
                 cin>>ans;
