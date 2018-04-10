@@ -125,6 +125,7 @@ void ShipmentFiller::quality_sensor_1_callback(const osrf_gear::LogicalCameraIma
 void ShipmentFiller::quality_sensor_2_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     qual_sensor_2_image_ = *image_msg;
     qual_sensor_2_sees_faulty_part_ = find_faulty_part_Q2(qual_sensor_2_image_, bad_part_Qsensor2_);
+    got_new_Q2_image_ =true;
 }
 
 bool ShipmentFiller::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qual_sensor_image,
@@ -148,6 +149,12 @@ bool ShipmentFiller::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
     got_new_Q1_image_ = false;
     bad_part = bad_part_Qsensor1_;
     return qual_sensor_1_sees_faulty_part_;
+}
+
+bool ShipmentFiller::get_bad_part_Q2(inventory_msgs::Part &bad_part) {
+    got_new_Q2_image_ = false;
+    bad_part = bad_part_Qsensor2_;
+    return qual_sensor_2_sees_faulty_part_;
 }
 
 bool ShipmentFiller::find_faulty_part_Q2(const osrf_gear::LogicalCameraImage qual_sensor_image,
@@ -524,27 +531,100 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
      */
 
     bool ShipmentFiller::replace_faulty_parts_inspec1(osrf_gear::Shipment shipment) {
-        ROS_INFO("dummy: replace faulty parts");
-        ros::Duration(2.0).sleep();
-        return true;
-    }
+        inventory_msgs::Part bad_part;
+        while(get_bad_part_Q1(bad_part)){   //should optimally use IF statement here since we will be discarding these parts even before putting in the box, but no harm
+        	if(!robotBehaviorInterface.discard_grasped_part(bad_part)) {
+                ROS_INFO("Unable to discard");
+                return 0;
+            }
+
+            ROS_INFO("successfully discarded faulty part from Q1");
+            return true;
+            ros::spinOnce(); //For the callbacks to work, unsure if it is neccessary as there could be a spinOnce on a higher level
+        }
+        
+            ROS_INFO("No (more) faulty parts");
+            return true;
+        }
+    
 
     bool ShipmentFiller::replace_faulty_parts_inspec2(osrf_gear::Shipment shipment) {
-        ROS_INFO("dummy: replace faulty parts2");
-        ros::Duration(2.0).sleep();
-        return true;
+     
+        inventory_msgs::Part bad_part;
+        while(get_bad_part_Q2(bad_part)){
+            if(!robotBehaviorInterface.pick_part_from_box(bad_part)){
+                ROS_INFO("unable to pick faulty part at inspection2");
+               return 0;
+            }
+            if(!robotBehaviorInterface.discard_grasped_part(bad_part)) {
+                ROS_INFO("Unable to discard");
+                return 0;
+            }
+
+            ROS_INFO("successfully discarded faulty part from Q2");
+            ros::spinOnce();
+        }
+        
+            ROS_INFO("No (more) faulty parts");
+            return 1;
+    }
+    
+
+    bool ShipmentFiller::adjust_shipment_part_locations(inventory_msgs::Part part) { //Slight confusion regarding when this function is called, will we have to use the same function ever after filling the box?
+       osrf_gear::Model model_desired_coords, model_actual_coords;
+       while(!boxInspector.pre_dropoff_check(part,model_desired_coords,model_actual_coords)){
+        inventory_msgs::Part sourcePart, destinationPart;
+        model_to_part(model_desired_coords,destinationPart);
+        model_to_part(model_actual_coords,sourcePart);
+        if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart)) { //no release because we havent released it in the higher level yet
+            ROS_INFO("unable to adjust");
+            return 0;
+        }
+        else{
+            ROS_INFO("successfully adjusted part");
+            return 1;
+        }
+       }
     }
 
-    bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) {
-        ROS_INFO("dummy: adjust part locations");
-        ros::Duration(2.0).sleep();
-        return true;
-    }
 
     bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
-        return true;
+        vector<osrf_gear::Model> desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
+        boxInspector.compute_shipment_poses_wrt_world(shipment,box_1_stamped_pose_,desired_models_wrt_world);
+        boxInspector.update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world);
+        bool success;
+        if(misplaced_models_actual_coords_wrt_world.size()==0){
+            ROS_INFO("cant find dropped part");
+            success=false; //or true depending on whether the fnc is only called when neccessary
+        }
+        else{
+            for(int ipart=0;ipart<misplaced_models_actual_coords_wrt_world.size();ipart++) {
+                inventory_msgs::Part part_to_retrieve,part_corrected;
+                model_to_part(misplaced_models_actual_coords_wrt_world[ipart],part_to_retrieve);
+                if(!robotBehaviorInterface.pick_part_from_box(part_to_retrieve)) {
+                    ROS_INFO("error picking up dropped part");
+                    ipart++;
+                    success=false;
+                }
+                else {
+                    model_to_part(misplace_models_desired_coords_wrt_world[ipart],part_corrected);
+                    if(!robotBehaviorInterface.place_part_in_box_with_release(part_corrected)) {
+                        ROS_INFO("Cannot place part where desired");
+                        ipart++;
+                        success=false;
+                    }
+                    else {
+                        ROS_INFO("corrected part %d",ipart);
+                        ipart++;  
+                        success=true;          
+                    }
+                }
+            }
+        }
+        return success;
     }
 
+       
     void ShipmentFiller::set_drone_shipment_name(osrf_gear::Shipment shipment) {
         droneControl_.request.shipment_type = shipment.shipment_type;
     }

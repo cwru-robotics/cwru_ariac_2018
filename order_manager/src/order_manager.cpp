@@ -309,16 +309,19 @@ bool OrderManager::is_priority(osrf_gear::Order order) {
 }
 
 void OrderManager::move_order_to_unfillable(int order_num,std::vector<osrf_gear::Order> order_vec) {
-  //write  me!
+	unfillable_orders_.push_back(order_vec[order_num]);
+
 }
 
 geometry_msgs::PoseStamped OrderManager::target_pose_to_world_coords(geometry_msgs::Pose part_pose_wrt_box, 
-     geometry_msgs::PoseStamped box_pose_wrt_world) {
-
-   geometry_msgs::PoseStamped target_part_pose_wrt_world;
-   //write xform code here:
-
-   return target_part_pose_wrt_world;
+    geometry_msgs::PoseStamped box_pose_wrt_world) {
+	geometry_msgs::PoseStamped target_part_pose_wrt_world;
+	Eigen::Affine3d part_affine_wrt_box, box_affine_wrt_world, target_part_affine_wrt_world;
+  	part_affine_wrt_box = xformUtils.transformPoseToEigenAffine3d(part_pose_wrt_box);
+  	box_affine_wrt_world = xformUtils.transformPoseToEigenAffine3d(box_pose_wrt_world);
+  	target_part_affine_wrt_world = box_affine_wrt_world*part_affine_wrt_box;
+  	target_part_pose_wrt_world=xformUtils.transformEigenAffine3dToPoseStamped(target_part_affine_wrt_world);
+   	return target_part_pose_wrt_world;
 }
 
  void OrderManager::update_inventory() {
