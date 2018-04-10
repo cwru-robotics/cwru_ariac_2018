@@ -77,14 +77,15 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //cin>>ans;        
     //move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 0.5);             
             
+    /* try cutting this step...
     ROS_WARN("ready to move to computed_bin_escape_jspace_pose_; enter 1:");
     cin>>ans;    
     move_to_jspace_pose(computed_bin_escape_jspace_pose_, 1);       
-
+*/
 //  move  to computed hover pose:
-    ROS_WARN("ready to move to computed_jspace_approach_; enter 1: ");
-    cin>>ans;    
-    move_to_jspace_pose(computed_jspace_approach_, 1);    
+    //ROS_WARN("ready to move to computed_jspace_approach_; enter 1: ");
+    //cin>>ans;    
+    //move_to_jspace_pose(computed_jspace_approach_, 1);    
 
 
     ROS_WARN(" DO PICKUP STEPS HERE...");
@@ -141,7 +142,8 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //cout<<"ready to move to hover pose; enter 1: ";
     //cin>>ans; 
     
-    //ROS_INFO("moving to hover_jspace_pose_ ");
+    ROS_INFO("moving to hover_jspace_pose_ ");
+    move_to_jspace_pose(current_hover_pose_, 1.5); 
 
     //if (current_hover_code < Q1_HOVER_CODE) {
     //    ROS_INFO("withdrawing to nom cruise pose");
@@ -152,10 +154,12 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     move_to_jspace_pose(computed_bin_escape_jspace_pose_, 1.0);  
     //modify J1-ang only to get to a cruise pose:
 
-    ROS_INFO("moving to computed cruise pose; enter 1");
-    cin>>ans;
-    move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 1.0);     
-   ROS_INFO("moving to current_cruise_pose_ cruise pose; enter 1");
+    //try cutting this move:
+    //ROS_INFO("moving to  cruise pose; enter 1");
+    //cin>>ans;
+    //move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 1.0);   //current_cruise_pose_ instead?  
+
+    ROS_INFO("moving to current_cruise_pose_ cruise pose; enter 1");
     cin>>ans;    
     move_to_jspace_pose(current_cruise_pose_, 1.0);     
     current_pose_code_ = current_cruise_code; //keep track of where we are, in terms of pose codes
@@ -252,6 +256,15 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     //extract box location codes from Part:
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
+    
+    //get actual q_vecs for current cruise and hover poses
+    if (!transitionTrajectories_.get_cruise_pose(part.location,current_cruise_pose_,current_cruise_code)) {
+        ROS_WARN("get_cruise_pose(): bad location code!!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
+    }
+    
+    transitionTrajectories_.get_hover_pose(part.location,current_hover_pose_,current_hover_code);    
     //now move to approach_dropoff_jspace_pose_:
     //ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
     //cout<<"enter 1: ";

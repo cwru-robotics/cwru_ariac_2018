@@ -161,9 +161,11 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, deep_grasp_dist_,
             pickup_deeper_jspace_pose_)) {
-        ROS_WARN("could not compute IK soln for pickup approach pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
-        return errorCode_;
+        ROS_WARN("could not compute IK soln for deep pickup approach pose");
+        ROS_WARN("re-using grasp pose; not returning an error");
+        pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
+        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //return errorCode_;
     }
     ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
     
@@ -177,9 +179,18 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
          fwd_qvec_from_rvrs_qvec(part_y, pickup_jspace_pose_);
          fwd_qvec_from_rvrs_qvec(part_y, approach_pickup_jspace_pose_);
          fwd_qvec_from_rvrs_qvec(part_y, pickup_deeper_jspace_pose_);
-         computed_bin_escape_jspace_pose_ = computed_jspace_approach_; //hack; maybe make d8 somewhat more negative??
+         //try hard coding the bin5 escape pose:
+         transitionTrajectories_.c_array_to_qvec(BIN5_ESCAPE_array,computed_bin_escape_jspace_pose_);
+         /*
+         //compute_bin_hover_from_xy(MID_BIN_X_VAL,bin_center_y-MIN_BIN_GRASP_DY+0.1, computed_bin_escape_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, computed_bin_escape_jspace_pose_);
+         //fix the wrist:
+         for (int i=4;i<7;i++) {
+             computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i];
+         }
+         //computed_bin_escape_jspace_pose_ = computed_jspace_approach_; //hack; maybe make d8 somewhat more negative??
          //fwd_qvec_from_rvrs_qvec(part_y, computed_bin_escape_jspace_pose_);
-         
+         */
          computed_bin_cruise_jspace_pose_= computed_bin_escape_jspace_pose_;
          //computed_bin_escape_jspace_pose_[7]+=0.1; //fix??         
          

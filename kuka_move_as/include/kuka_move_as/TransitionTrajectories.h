@@ -44,9 +44,10 @@ const double BIN4_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.9
 
 //max sled val = 1.79; careful--bin5 approach NOT  flipped
 //position: [2.870471561614764, 1.3903678520995415, -0.015429008846624015, -0.7447154011426811, -2.932944045506636, -0.8267392468382049, -0.3143643136622174, 1.4464382879099866, 0.0]
-const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.2}; 
+const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.0}; 
 const double BIN5_HOVER_NEAR_array[NDOF] = {2.64, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.3}; 
 const double BIN5_HOVER_FAR_array[NDOF] = {2.93, 1.35, 0.0, -0.3, 0, 0.45, 0, 1.3}; 
+const double BIN5_ESCAPE_array[NDOF] = {2.3, 1.35, 0, -0.6, 0.18, 1.0, -1.0, 1.1}; 
 
 const double INIT_POSE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0}; 
 const double NOM_BIN_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0}; 
