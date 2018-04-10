@@ -79,11 +79,15 @@ bool KukaBehaviorActionServer::find_nearest_key_pose(int &pose_code, Eigen::Vect
 unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part) {
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
 
+
+    /*
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
         errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }
+     * */
+    //current_hover_pose_
 
     //pickup_hover_pose_ = approx_jspace_pose; //remember this pose
     //current_hover_pose_ = pickup_hover_pose_;
@@ -156,7 +160,8 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     desired_approach_depart_pose_ = approach_pickup_jspace_pose_;
     ROS_INFO_STREAM("approach_pickup_jspace_pose_: " << approach_pickup_jspace_pose_.transpose());
     //modify computed_jspace_approach_ to use same wrist orientation as soln
-    for (int i=4;i<7;i++) { computed_jspace_approach_[i] = approach_pickup_jspace_pose_[i];
+    for (int i=4;i<7;i++) { current_hover_pose_[i] = approach_pickup_jspace_pose_[i];
+                            computed_jspace_approach_[i] = approach_pickup_jspace_pose_[i];
                             computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i]; }    
     
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, deep_grasp_dist_,
