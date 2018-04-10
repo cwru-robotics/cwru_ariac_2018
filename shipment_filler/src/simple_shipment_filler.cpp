@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
     inventory_msgs::Part pick_part,place_part;
     inventory_msgs::Inventory current_inventory;
     osrf_gear::Shipment shipment;
+    osrf_gear::Order order;
     geometry_msgs::PoseStamped box_pose_wrt_world;  
     vector<osrf_gear::Model>  desired_models_wrt_world;
     osrf_gear::Model current_model;
@@ -105,11 +106,12 @@ int main(int argc, char** argv) {
     }
     ROS_INFO_STREAM("box pose wrt world is: "<<box_pose_wrt_world<<endl);
 
+
     //first box is at Q1 inspection station; get a shipment:
-        //got_shipment = orderManager.choose_shipment(shipment);
-        successfully_filled_order = false;
-        //can't go any further until receive new shipment request, or until near competition expiration
-        while(ros::ok()) {
+    //got_shipment = orderManager.choose_shipment(shipment);
+    successfully_filled_order = false;
+    //can't go any further until receive new shipment request, or until near competition expiration
+     while(ros::ok()) { //check for conditions where we might have to stop otherwise
 
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
@@ -163,31 +165,37 @@ int main(int argc, char** argv) {
                 go_on = robotBehaviorInterface.release_and_retract(); //release the part
             }
             
-            if (go_on) {
-                //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
-            }
-            
-
+           
             if (go_on) { //if here, 
                 ROS_INFO("declaring success, and moving on to the  next product");
               i_model++;
             }
 
+            if (go_on) {
+                //adjust part locations in box: 
+                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
+            }
+
         }
+        ROS_INFO("debug: box should have %d models", num_parts);
+
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
                  
-            //if making conveyor seperate action server, can have inf loop above this
             //advance shipment to next inspection  station:
+            
             advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION2_LOCATION_CODE);
             //fix any faulty parts at inspection station Q2
             //dummy fnc for now
-            replaced_faulty_parts = shipmentFiller.replace_faulty_parts_inspec2(shipment);
+            
 
+            replaced_faulty_parts = shipmentFiller.replace_faulty_parts_inspec2(shipment);
+        	
             //report shipment has been filled:
-            shipmentFiller.current_shipment_has_been_filled();
+            
+            orderManager.current_shipment_has_been_filled();
+            
             //advance order to drone dock:
             advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(DRONE_DOCK_LOCATION_CODE);
@@ -195,7 +203,11 @@ int main(int argc, char** argv) {
             
             reported_shipment_to_drone= shipmentFiller.report_shipment_to_drone();
             //send robot to waiting pose; update inventory
-        }    
+			if(binInventory.update()) {
+                binInventory.get_inventory(current_inventory);
+            }            
+            
+            }
             ROS_WARN("stopping after single shipment...FIX ME!");
             return 0;
 }
