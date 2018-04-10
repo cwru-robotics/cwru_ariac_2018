@@ -582,6 +582,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             inventory_msgs::Part sourcePart,destinationPart;
             model_to_part(misplaced_models_actual_coords_wrt_world[i],sourcePart);
             model_to_part(misplaced_models_desired_coords_wrt_world[i],destinationPart);
+            //need to pick first, pick and go to hover. maybe could use pick-adjust-place?
             if(!robotBehaviorInterface.adjust_part_location_with_release(sourcePart,destinationPart)) {
                 ROS_INFO("cannot adjust, maybe pick first?");
                 all_success=false;
