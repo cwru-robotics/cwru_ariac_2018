@@ -265,6 +265,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
     inventory_msgs::Part pick_part;
 
     while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
+      bool go_on=true; 
       part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
       if (!part_in_inventory) {
         ROS_WARN("could not find desired  part in inventory; giving up on process_part()");
@@ -532,7 +533,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
 
     bool ShipmentFiller::replace_faulty_parts_inspec1(osrf_gear::Shipment shipment) {
         inventory_msgs::Part bad_part;
-        while(get_bad_part_Q1(bad_part)){   //should optimally use IF statement here since we will be discarding these parts even before putting in the box, but no harm
+        if(get_bad_part_Q1(bad_part)){   
         	if(!robotBehaviorInterface.discard_grasped_part(bad_part)) {
                 ROS_INFO("Unable to discard");
                 return 0;
@@ -540,10 +541,10 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
 
             ROS_INFO("successfully discarded faulty part from Q1");
             return true;
-            ros::spinOnce(); //For the callbacks to work, unsure if it is neccessary as there could be a spinOnce on a higher level
+            
         }
         
-            ROS_INFO("No (more) faulty parts");
+            ROS_INFO(" The currently grasped part satisfies quality requirements");
             return true;
         }
     
@@ -553,7 +554,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         inventory_msgs::Part bad_part;
         while(get_bad_part_Q2(bad_part)){
             if(!robotBehaviorInterface.pick_part_from_box(bad_part)){
-                ROS_INFO("unable to pick faulty part at inspection2");
+                ROS_INFO("unable to pick faulty part at inspection2"); //Making it very verbose
                return 0;
             }
             if(!robotBehaviorInterface.discard_grasped_part(bad_part)) {
@@ -569,24 +570,27 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             return 1;
     }
     
-
-    bool ShipmentFiller::adjust_shipment_part_locations(inventory_msgs::Part part) { //Slight confusion regarding when this function is called, will we have to use the same function ever after filling the box?
-       osrf_gear::Model model_desired_coords, model_actual_coords;
-       while(!boxInspector.pre_dropoff_check(part,model_desired_coords,model_actual_coords)){
-        inventory_msgs::Part sourcePart, destinationPart;
-        model_to_part(model_desired_coords,destinationPart);
-        model_to_part(model_actual_coords,sourcePart);
-        if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart)) { //no release because we havent released it in the higher level yet
-            ROS_INFO("unable to adjust");
-            return 0;
+    //NEEDS MORE WORK. HAVE TO FIGURE OUT HOW TO CHECK IF OBJECT IS ALREADY GRASPED. OR MAKE A DEFAULT OF GRABBING OBJECT SINCE WE NEED THIS AT TWO LOGICAL CAMERA STATIONS
+    bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) { 
+        vector<osrf_gear::Model> desired_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
+        geometry_msgs::PoseStamped box_pose_wrt_world;
+        boxInspector.get_box_pose_wrt_world(box_pose_wrt_world); 
+        boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
+        bool all_success=true;
+        while(!boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
+        for(int i=0;i<misplaced_models_actual_coords_wrt_world.size();i++) {
+            inventory_msgs::Part sourcePart,destinationPart;
+            model_to_part(misplaced_models_actual_coords_wrt_world[i],sourcePart);
+            model_to_part(misplaced_models_desired_coords_wrt_world[i],destinationPart);
+            if(!robotBehaviorInterface.adjust_part_location_with_release(sourcePart,destinationPart)) {
+                ROS_INFO("cannot adjust, maybe pick first?");
+                all_success=false;
+            }
+            
         }
-        else{
-            ROS_INFO("successfully adjusted part");
-            return 1;
-        }
-       }
     }
-
+    return all_success;
+}
 
     bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
         vector<osrf_gear::Model> desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
