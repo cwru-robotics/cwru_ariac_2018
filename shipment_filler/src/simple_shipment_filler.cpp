@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     //inventory_msgs::Part current_part;
     int bin_num,partnum;
     geometry_msgs::PoseStamped part_pose;
-    
+    int a;//remove after debyg
     bool got_shipment = false;
     bool successfully_filled_order = false;
     bool init_pack_shipment= false;
@@ -157,27 +157,41 @@ int main(int argc, char** argv) {
                 ROS_INFO("successful part placement; should inspect before release");
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
-            
-            
+            ROS_INFO("after qual inspection");
+            cin>>ans;
+
+
+            if (go_on) {
+                //adjust part locations in box: 
+                go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
+            }
+
+  
+        ROS_INFO("done pre adjusting");
+            cin>>ans;            
+
             if (go_on) {
                 ROS_INFO("attempting part release; enter 1: ");
                 cin>>ans;
                 go_on = robotBehaviorInterface.release_and_retract(); //release the part
             }
             
-           
+           ROS_INFO("waiting for 1");
+            cin>>ans;
+
             if (go_on) { //if here, 
                 ROS_INFO("declaring success, and moving on to the  next product");
               i_model++;
             }
 
-            if (go_on) {
-                //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
-            }
 
         }
-        ROS_INFO("debug: box should have %d models", num_parts);
+
+        if(!shipmentFiller.adjust_shipment_part_locations(shipment)) {
+            ROS_INFO("Unable to post adjust parts");
+        }
+
+        robotBehaviorInterface.release_and_retract();
 
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");

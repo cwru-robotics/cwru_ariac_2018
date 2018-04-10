@@ -64,7 +64,8 @@ public:
   bool model_poses_wrt_box(osrf_gear::Shipment &shipment_status);
   bool compare_pose(geometry_msgs::Pose , geometry_msgs::Pose);
   bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
-  bool pre_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords);
+  bool post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords);
+  bool pre_dropoff_check(inventory_msgs::Part part, osrf_gear::Model model_actual, osrf_gear::Model model_desired);
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 

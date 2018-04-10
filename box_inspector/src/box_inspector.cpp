@@ -10,7 +10,7 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
 
 }
 
-bool BoxInspector::pre_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords) {
+bool BoxInspector::post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords) {
   vector<osrf_gear::Model> satisfied_models_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
   update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world,orphan_models_wrt_world);
   
@@ -23,6 +23,27 @@ bool BoxInspector::pre_dropoff_check(vector<osrf_gear::Model> desired_models_wrt
       
     return 0;
   }
+}
+
+bool BoxInspector::pre_dropoff_check(inventory_msgs::Part part,osrf_gear::Model misplaced_model_actual_coords, osrf_gear::Model misplaced_model_desired_coords) {
+  osrf_gear::Model model;
+  vector<osrf_gear::Model> desired,satisfied_models_wrt_world,missing_models_wrt_world,orphan_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords;
+  //spart_to_model(part,model);
+  model.type=part.name;
+  model.pose=part.pose.pose;
+  desired.clear();
+  desired.push_back(model);
+  update_inspection(desired,satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world, orphan_models_wrt_world);
+  if(misplaced_models_desired_coords.size()==0) {
+    ROS_INFO("pre drop off check good");
+    return 1;
+  }
+  else{
+    misplaced_model_desired_coords=misplaced_models_desired_coords[0];
+    misplaced_model_actual_coords=misplaced_models_actual_coords[0];
+    return 0;
+  }
+
 }
 
 bool BoxInspector::compare_pose(geometry_msgs::Pose pose_A, geometry_msgs::Pose pose_B) {

@@ -577,21 +577,52 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         boxInspector.get_box_pose_wrt_world(box_pose_wrt_world); 
         boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
         bool all_success=true;
-        while(!boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
+        if(!boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
         for(int i=0;i<misplaced_models_actual_coords_wrt_world.size();i++) {
+            bool go_on=true;
             inventory_msgs::Part sourcePart,destinationPart;
-            model_to_part(misplaced_models_actual_coords_wrt_world[i],sourcePart);
-            model_to_part(misplaced_models_desired_coords_wrt_world[i],destinationPart);
+            unsigned long int des_location=BOX_INSPECTION1_LOCATION_CODE;
+            model_to_part(misplaced_models_actual_coords_wrt_world[i],sourcePart,des_location);
+            model_to_part(misplaced_models_desired_coords_wrt_world[i],destinationPart,des_location);
             //need to pick first, pick and go to hover. maybe could use pick-adjust-place?
-            if(!robotBehaviorInterface.adjust_part_location_with_release(sourcePart,destinationPart)) {
+            if(!robotBehaviorInterface.pick_part_from_box(sourcePart,2)) {
+            	ROS_INFO("unable to repick misplaced part");
+            	all_success = false;
+            }
+            if(go_on) {
+            if(!robotBehaviorInterface.adjust_part_location_with_release(sourcePart,destinationPart,2)) {
                 ROS_INFO("cannot adjust, maybe pick first?");
                 all_success=false;
             }
-            
+            }
         }
     }
     return all_success;
 }
+
+	bool ShipmentFiller::adjust_part_location_before_dropoff(inventory_msgs::Part part) {
+		osrf_gear::Model model_actual_coords, model_desired_coords;
+		if(!boxInspector.pre_dropoff_check(part, model_actual_coords,model_desired_coords)) {
+			inventory_msgs::Part sourcePart,destinationPart;
+			model_to_part(model_actual_coords,sourcePart);
+			model_to_part(model_desired_coords,destinationPart);
+			if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart)) {
+				ROS_INFO("Failed to adjust part location");
+			}
+			else {
+				ROS_INFO("successfully adjusted part");
+				return 1;
+			}
+		}
+		else {
+			ROS_INFO("No need to adjust");
+			return 1;
+		}
+
+	}
+		
+
+
 
     bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
         vector<osrf_gear::Model> desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;

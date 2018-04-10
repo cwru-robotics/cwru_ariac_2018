@@ -35,6 +35,7 @@ public:
   bool replace_faulty_parts_inspec1(osrf_gear::Shipment shipment);
   bool replace_faulty_parts_inspec2(osrf_gear::Shipment shipment);
   bool adjust_shipment_part_locations(osrf_gear::Shipment shipment);
+  bool adjust_part_location_before_dropoff(inventory_msgs::Part part);
   bool correct_dropped_part(osrf_gear::Shipment shipment);
   bool report_shipment_to_drone();
   bool advance_shipment_on_conveyor(int location_code);
