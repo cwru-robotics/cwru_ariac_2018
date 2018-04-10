@@ -201,6 +201,11 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
          
          computed_bin_cruise_jspace_pose_[0] = 1.5707; //just rotate J1
          computed_bin_cruise_jspace_pose_[7] -=0.3; //move rail together with arm swing
+         //coerce the wrist to agree w/ IK poses
+         for (int i=4;i<7;i++) { current_hover_pose_[i] = approach_pickup_jspace_pose_[i];
+                            computed_jspace_approach_[i] = approach_pickup_jspace_pose_[i];
+                            computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i]; }  
+
 
          
     }
