@@ -10,6 +10,7 @@
 unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
     //unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     //trajectory_msgs::JointTrajectory transition_traj;
+    int ans;
     inventory_msgs::Part part = goal->sourcePart;
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
             placeFinder_[part.location].c_str());
@@ -29,6 +30,13 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //extract bin location from Part:
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
+    if (!transitionTrajectories_.get_cruise_pose(part.location,current_cruise_pose_,current_cruise_code)) {
+        ROS_WARN("get_cruise_pose(): bad location code!!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
+    }
+    
+    transitionTrajectories_.get_hover_pose(part.location,current_hover_pose_,current_hover_code);
     
     //current_hover_code is the bin-far or bin-near hover code
     ROS_INFO("pose code from location code is: %d", current_hover_code);
@@ -36,7 +44,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     
     //MOVES START HERE
     int move_to_pose_code;
-    ROS_INFO("moving to respective cruise pose...");
+    ROS_WARN("moving to respective cruise pose...");
     if (!move_posecode1_to_posecode2(current_pose_code_, current_cruise_code)) {
         ROS_WARN("error with move between pose codes");
         ROS_INFO("trying to recover w/ move to closest key pose");
@@ -55,7 +63,9 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
         
     }
 
-    //ROS_INFO("moving to respective hover pose");
+    ROS_WARN("moving to respective hover pose");
+    move_to_jspace_pose(current_hover_pose_, 1.5); 
+    
     //if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
 
     //    ROS_WARN("error with move between pose codes");
@@ -67,14 +77,14 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //cin>>ans;        
     //move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 0.5);             
             
-    //ROS_INFO("ready to move to computed_bin_escape_jspace_pose_; enter 1:");
-    //cin>>ans;    
-    move_to_jspace_pose(computed_bin_escape_jspace_pose_, 2.5);       
+    ROS_WARN("ready to move to computed_bin_escape_jspace_pose_; enter 1:");
+    cin>>ans;    
+    move_to_jspace_pose(computed_bin_escape_jspace_pose_, 1);       
 
 //  move  to computed hover pose:
-    //ROS_INFO("ready to move to computed_jspace_approach_; enter 1: ");
-    //cin>>ans;    
-    move_to_jspace_pose(computed_jspace_approach_, 1.5);    
+    ROS_WARN("ready to move to computed_jspace_approach_; enter 1: ");
+    cin>>ans;    
+    move_to_jspace_pose(computed_jspace_approach_, 1);    
 
 
     ROS_WARN(" DO PICKUP STEPS HERE...");
@@ -105,23 +115,29 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     if (!is_attached_) {
         ROS_WARN("did not attach; attempting to descend further: ");
         //cin>>ans;
-        if (!move_into_grasp(15.0)) {
+        if (!move_into_grasp(10.0)) {
             ROS_WARN("could not grasp part; giving up; moving to approach pose...");
-            move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0); //
+            move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0); //approach_pickup_jspace_pose_
 
             ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
             //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
-            move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead       
+            move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead     
+            
             current_pose_code_=current_hover_code; //establish code for recognized, key pose
+            ROS_INFO("moving to current_cruise_pose_ ");            
+            move_to_jspace_pose(current_cruise_pose_, 1.0);     
+            current_pose_code_ = current_cruise_code; //keep track of where we are, in terms of pose codes
+            
             errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
             return errorCode_;
         }
     }
     //if here, part is attached to  gripper
-    ROS_INFO("grasped part; moving to depart pose: ");
-    move_to_jspace_pose(computed_jspace_approach_, 1.0);    
+    ROS_INFO("grasped part; moving to depart pose; enter 1: ");//approach_pickup_jspace_pose_
+    cin>>ans;
+    move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0);    
 
-    
+     //move_to_jspace_pose(computed_jspace_approach_, 1.0);   
     //cout<<"ready to move to hover pose; enter 1: ";
     //cin>>ans; 
     
@@ -131,17 +147,23 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //    ROS_INFO("withdrawing to nom cruise pose");
     //    ROS_INFO("from %d to %d ", current_hover_code, NOM_BIN_CRUISE);
     
-    ROS_INFO("moving to computed_bin_escape_jspace_pose_");
+    ROS_WARN("moving to computed_bin_escape_jspace_pose_; enter 1: ");
+    cin>>ans;
     move_to_jspace_pose(computed_bin_escape_jspace_pose_, 1.0);  
     //modify J1-ang only to get to a cruise pose:
 
-    ROS_INFO("moving to computed cruise pose");
-    //cin>>ans;
+    ROS_INFO("moving to computed cruise pose; enter 1");
+    cin>>ans;
     move_to_jspace_pose(computed_bin_cruise_jspace_pose_, 1.0);     
-   ROS_INFO("moving to nom cruise pose");
-    //cin>>ans;    
-    move_to_jspace_pose(nom_bin_cruise_pose_, 1.0);     
-    current_pose_code_ = NOM_BIN_CRUISE; //keep track of where we are, in terms of pose codes
+   ROS_INFO("moving to current_cruise_pose_ cruise pose; enter 1");
+    cin>>ans;    
+    move_to_jspace_pose(current_cruise_pose_, 1.0);     
+    current_pose_code_ = current_cruise_code; //keep track of where we are, in terms of pose codes
+    
+    
+    if (!move_posecode1_to_posecode2(current_pose_code_, Q1_CRUISE_CODE)) {
+        ROS_WARN("error with move between pose codes");
+    }
 
     //check if part is still attached
     is_attached_ = gripperInterface_.isGripperAttached();
@@ -170,7 +192,7 @@ bool KukaBehaviorActionServer::move_into_grasp(double arrival_time) {
     //move slowly--say 5 seconds to press into part
     transition_traj = jspace_pose_to_traj(pickup_deeper_jspace_pose_,arrival_time);
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-    ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
+    //ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
     is_attached_ = false;
     send_traj_goal(transition_traj);  //start the motion
     while (!traj_goal_complete_ && !is_attached_) { //write a fnc for this: wait_for_goal_w_timeout
@@ -196,7 +218,7 @@ bool KukaBehaviorActionServer::move_into_grasp(Eigen::VectorXd pickup_jspace_pos
     //move slowly--say 5 seconds to press into part
     transition_traj = jspace_pose_to_traj(pickup_jspace_pose,arrival_time);
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
-    ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
+    //ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
     is_attached_ = false;
     send_traj_goal(transition_traj);  //start the motion
     while (!traj_goal_complete_ && !is_attached_) { //write a fnc for this: wait_for_goal_w_timeout

@@ -6,6 +6,10 @@
 #include <ros/ros.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <trajectory_msgs/JointTrajectoryPoint.h>
+#include <eigen3/Eigen/Eigen>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
+#include <inventory_msgs/Part.h>
 using namespace std;
 
 //key poses, hard coded:
@@ -35,13 +39,14 @@ const double BIN3_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.1
 //const double BIN4_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.62}; 
 const double BIN4_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.42}; 
 //const double BIN4_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, 1.22}; 
-const double BIN4_HOVER_NEAR_array[NDOF] = {0.552, -1.35, 0, 0.8, -0.159, -0.913, 3.013, 1.376}; 
+const double BIN4_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0, 0.5, -0.12, -0.913, 3.013, 1.376}; 
 const double BIN4_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.92}; 
 
-//max sled val = 1.79
-const double BIN5_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 2.43}; 
-const double BIN5_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, 2.03}; 
-const double BIN5_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 1.73}; 
+//max sled val = 1.79; careful--bin5 approach NOT  flipped
+//position: [2.870471561614764, 1.3903678520995415, -0.015429008846624015, -0.7447154011426811, -2.932944045506636, -0.8267392468382049, -0.3143643136622174, 1.4464382879099866, 0.0]
+const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.2}; 
+const double BIN5_HOVER_NEAR_array[NDOF] = {2.64, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.3}; 
+const double BIN5_HOVER_FAR_array[NDOF] = {2.93, 1.35, 0.0, -0.3, 0, 0.45, 0, 1.3}; 
 
 const double INIT_POSE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0}; 
 const double NOM_BIN_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0}; 
@@ -104,8 +109,12 @@ class TransitionTrajectories
   //look up a trajectory.  rtn val is number of pts in traj; specify start and end location codes
   int get_trajectory(int start_code, int end_code, trajectory_msgs::JointTrajectory &transition_traj);
   vector<double>  c_array_to_cpp_vec(const double c_array[],int nvals);
-  trajectory_msgs::JointTrajectory concat_trajs(trajectory_msgs::JointTrajectory a,    trajectory_msgs::JointTrajectory b);
+  trajectory_msgs::JointTrajectory concat_trajs(trajectory_msgs::JointTrajectory a,trajectory_msgs::JointTrajectory b);
    void copy_point(const double q_array[],trajectory_msgs::JointTrajectoryPoint &trajectory_point);
+  //look up cruise pose by location code
+  bool get_cruise_pose(unsigned short int location_code, Eigen::VectorXd &q_vec, int &pose_code);
+  bool get_hover_pose(unsigned short int location_code, Eigen::VectorXd &q_vec, int &pose_code);
+  void c_array_to_qvec(const double array[],Eigen::VectorXd &q_vec);
   private:
    void fill_transition_traj_map();
 

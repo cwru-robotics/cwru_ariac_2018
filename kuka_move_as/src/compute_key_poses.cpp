@@ -167,10 +167,54 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     }
     ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
     
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;   
+    
+    //APPLY SYMMETRY FOR BIN5 CASE:
+    // fix: computed_jspace_approach_, computed_bin_escape_jspace_pose_, pickup_jspace_pose_, approach_pickup_jspace_pose_, pickup_deeper_jspace_pose_
+    if (part.location==Part::BIN5 ) {
+         fwd_qvec_from_rvrs_qvec(part_y, computed_jspace_approach_);
+         fwd_qvec_from_rvrs_qvec(part_y, computed_bin_cruise_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, pickup_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, approach_pickup_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, pickup_deeper_jspace_pose_);
+         computed_bin_escape_jspace_pose_ = computed_jspace_approach_; //hack; maybe make d8 somewhat more negative??
+         //fwd_qvec_from_rvrs_qvec(part_y, computed_bin_escape_jspace_pose_);
+         
+         computed_bin_cruise_jspace_pose_= computed_bin_escape_jspace_pose_;
+         //computed_bin_escape_jspace_pose_[7]+=0.1; //fix??         
+         
+         computed_bin_cruise_jspace_pose_[0] = 1.5707; //just rotate J1
+         computed_bin_cruise_jspace_pose_[7] -=0.3; //move rail together with arm swing
+
+         
+    }
+    
+    
     ROS_INFO("SUCCESSFUL COMPUTATION OF KEY POSES FOR BIN PICKUP");
     return errorCode_;
         
+}
+
+//having solved for bin1 IK key poses, infer corresponding non-flipped poses applicable to bin5:
+    //APPLY SYMMETRY FOR BIN5 CASE:
+    // fix: computed_jspace_approach_, computed_bin_escape_jspace_pose_, pickup_jspace_pose_, approach_pickup_jspace_pose_, pickup_deeper_jspace_pose_
+  //get corresponding "fwd" soln from reverse soln; includes sled offset in opposite direction
+void KukaBehaviorActionServer::fwd_qvec_from_rvrs_qvec(double part_y, Eigen::VectorXd &q_vec) {
+    q_vec[0] = M_PI - q_vec[0];
+    q_vec[1] = -q_vec[1];
+    q_vec[2] = 0.0;
+    q_vec[3] = -q_vec[3];
+    q_vec[4] = -q_vec[4]+M_PI; //check this for 3 wrist angs...
+    while (q_vec[4]>DH_q_max5) q_vec[4]-=2.0*M_PI;
+    q_vec[5] = q_vec[5];
+    q_vec[6] = -q_vec[6]; //+M_PI;
+    //while (q_vec[6]>DH_q_max7) q_vec[6]-=2.0*M_PI;
+
+    //sled position is special case--what is displacement relative to part_y; negate this offset relative to part_y
+    double d8_bin1= q_vec[7];
+    //    d8 = y_part -Y_BASE_WRT_WORLD_AT_D8_HOME +fabs(dy_part_wrt_link0);
+    double dsled = d8_bin1 - part_y + Y_BASE_WRT_WORLD_AT_D8_HOME;
+    q_vec[7] =  part_y -Y_BASE_WRT_WORLD_AT_D8_HOME - dsled;
 }
 
 // set these member var values:
@@ -273,9 +317,10 @@ bool KukaBehaviorActionServer::compute_bin_hover_from_xy(double x_part,double y_
     }
     */
     if (x_part< BIN_FAR_THRESHOLD) { //FAR--backrow case:
-        //this pose has arm nearly fully outstretched and J1 rotated to face part  head-on
-        qvec<<0.0, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.527;
-        d8 = y_part -Y_BASE_WRT_WORLD_AT_D8_HOME; //head-on approach; line up sled with part y
+        //this pose has arm nearly fully outstretched and J1 rotated to face part, nearly  head-on
+        //adjust slightly, so approach is partly angled, reflected from non-flipped approach
+        qvec<<0.21, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.527;
+        d8 = y_part -Y_BASE_WRT_WORLD_AT_D8_HOME + 0.14; //head-on approach; line up sled with part y
         qvec[7]=d8;
         return true;
     }
@@ -296,11 +341,12 @@ bool KukaBehaviorActionServer::compute_bin_hover_from_xy(double x_part,double y_
     //AND: dy_part_wrt_link0 = RADIUS*cos(1.57-theta_J1)
     //d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
     double dy_part_wrt_link0 = radius*cos(M_PI/2.0 -J1_ang);
-    d8 = y_part -1.01 +fabs(dy_part_wrt_link0);
+    d8 = y_part -Y_BASE_WRT_WORLD_AT_D8_HOME +fabs(dy_part_wrt_link0);
     ROS_INFO("y_part = %f, dy_part_wrt_link0 = %f, d8 = %f",y_part,dy_part_wrt_link0, d8);
             
     qvec[0]=J1_ang;
     qvec[7] = d8;
+    
     return true;
 }
  

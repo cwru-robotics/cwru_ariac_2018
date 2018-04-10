@@ -22,7 +22,7 @@ using namespace std;
 const double BIN_INVENTORY_TIMEOUT=2.0; //max time to wait for an inventory update
 
 //const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS
-const int NUM_CAMERAS=4;  //MUST EDIT THIS VALUE TO ADD CAMERAS
+const int NUM_CAMERAS=5;  //MUST EDIT THIS VALUE TO ADD CAMERAS 
 //note:  ALSO must edit constructor to add cameras
 //also must add more  subscribers and callback functions
 

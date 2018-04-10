@@ -5,7 +5,7 @@
 
 #include <kuka_move_as/RobotBehaviorInterface.h>
 #include<bin_inventory/bin_inventory.h>
-
+int ans;
 
 int main(int argc, char** argv) {
     // ROS set-ups:
@@ -32,13 +32,15 @@ int main(int argc, char** argv) {
      part.pose = part_pose;
      part.name = part_name.c_str();*/
     //start from 2--skip the gear parts
-    for (int i_part_type=2;i_part_type<=NUM_PART_TYPES;i_part_type++) {
+    for (int i_part_type=1;i_part_type<=NUM_PART_TYPES;i_part_type++) {
         std::string part_name = part_id_to_name_mappings[i_part_type];
         ROS_INFO_STREAM("attempting to remove parts  of  type "<<part_name<<endl);
         int nparts = binInventory.num_parts(i_part_type);
         ROS_INFO_STREAM("found "<<nparts<<" of these"<<endl);
         for (int ipart=0;ipart<nparts;ipart++) {
             ROS_INFO("removing item %d of part_id %d",ipart, i_part_type);
+            cout<<"enter 1: ";
+            cin>>ans;
               unsigned short int bin_num =   inventory_msg.inventory[i_part_type].bins[ipart];
               geometry_msgs::PoseStamped part_pose = inventory_msg.inventory[i_part_type].part_stamped_poses[ipart];
               ROS_INFO_STREAM("found part in bin "<<bin_num<<" at pose "<<part_pose<<endl);
@@ -47,12 +49,11 @@ int main(int argc, char** argv) {
               pick_part.name = part_name.c_str();
               ROS_INFO_STREAM("pick_part: "<<pick_part<<endl);
               
-              //ROS_INFO_STREAM("attempting pick command for part "<<pick_part<<endl);
-                //pick_part.location= inventory_msgs::Part::BIN2;
+
               ROS_INFO("attempting pick...");
                if(robotBehaviorInterface.pick_part_from_bin(pick_part)) {
-                  ROS_INFO("attempting discard");
-                  robotBehaviorInterface.discard_grasped_part(pick_part);      
+                  ROS_INFO("dropping part");
+                  robotBehaviorInterface.release();      
                }                  
                       
         }
