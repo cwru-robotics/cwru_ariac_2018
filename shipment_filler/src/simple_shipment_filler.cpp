@@ -109,6 +109,8 @@ int main(int argc, char** argv) {
         //got_shipment = orderManager.choose_shipment(shipment);
         successfully_filled_order = false;
         //can't go any further until receive new shipment request, or until near competition expiration
+        while(ros::ok()) {
+
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
           ros::Duration(0.5).sleep();
@@ -154,17 +156,19 @@ int main(int argc, char** argv) {
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
             
-            if (go_on) {
-                //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_shipment_part_locations(place_part);
-            }
             
             if (go_on) {
                 ROS_INFO("attempting part release; enter 1: ");
                 cin>>ans;
-                robotBehaviorInterface.release_and_retract(); //release the part
+                go_on = robotBehaviorInterface.release_and_retract(); //release the part
             }
             
+            if (go_on) {
+                //adjust part locations in box: 
+                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
+            }
+            
+
             if (go_on) { //if here, 
                 ROS_INFO("declaring success, and moving on to the  next product");
               i_model++;
@@ -173,7 +177,8 @@ int main(int argc, char** argv) {
         }
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
-        
+                 
+            //if making conveyor seperate action server, can have inf loop above this
             //advance shipment to next inspection  station:
             advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION2_LOCATION_CODE);
@@ -190,6 +195,7 @@ int main(int argc, char** argv) {
             
             reported_shipment_to_drone= shipmentFiller.report_shipment_to_drone();
             //send robot to waiting pose; update inventory
+        }    
             ROS_WARN("stopping after single shipment...FIX ME!");
             return 0;
 }

@@ -119,8 +119,8 @@ int main(int argc, char** argv) {
     part_to_model(place_part,model); 
     //only for debug//
     //Ignore below, better implementation in shipment filler
-    bool pre_dropoff_check = boxInspector.pre_dropoff_check(place_part,misplaced_model_desired_coords, misplaced_model_actual_coords);
-    while(!pre_dropoff_check) {
+    //bool pre_dropoff_check = boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_model_desired_coords, misplaced_model_actual_coords);
+    //while(!pre_dropoff_check) {
     	inventory_msgs::Part part_wrong_pose, part_desired_pose;
     	part_wrong_pose=place_part;
     	part_desired_pose=place_part;
@@ -129,8 +129,8 @@ int main(int argc, char** argv) {
     	//perturbation function with part_wrong_pose and part_desired_pose as args
       	ROS_INFO_STREAM("part at wrong pose: " <<part_wrong_pose);
       	ROS_INFO_STREAM("part at correct pose: "<<part_desired_pose);
-    	pre_dropoff_check=boxInspector.pre_dropoff_check(place_part,misplaced_model_desired_coords, misplaced_model_actual_coords);
-    }
+    	//pre_dropoff_check=boxInspector.pre_dropoff_check(desired_models_wrt_world,misplaced_model_desired_coords, misplaced_model_actual_coords);
+   
 
     // check box1 camera for part pose; convert to world coords;
     // perform adjustment, as necessary, before placing part
