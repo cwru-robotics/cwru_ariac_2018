@@ -65,3 +65,284 @@ positions: [2.5, 1.6, 0.0, 0, 0, 0.45, 0, 1.2]}, \
 {time_from_start: {secs: 3}, \
 positions: [2.9, 1.6, 0.0, 0, 0, 0.45, 0, 1.9]}, \
 ]}" -1
+
+
+
+NOTE: THE FOLLOWING are all w/ arm "reverse" (flipped, relative to box-filling poses)
+----------focus on bin2--------------
+Part locations: left, center, right of front of bin
+                left, center, right of middle of bin
+                left, center, right of back of bin
+
+-----------part in center, middlerow,  of bin---------
+part w/rt world:
+x = -0.776
+y = 0.3206
+z = 0.7632
+
+good approach pose is:
+0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.400
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.400]}, \
+]}" -1
+
+---------neighboring part (left, middle, ) at--------------
+x= -0.776
+y= 0.146   (new y val, shifted by 0.175)
+z = 0.763
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.575]}, \
+]}" -1
+
+WRIST BUMPS SIDE OF BIN!!!  (maybe requires wrist flip!!)
+
+-----------Part at (right, middle, )--------------
+ y= 0.487 (delta = 0.166--> d8 = -0.234
+following pose looks fine for approach:
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.234]}, \
+]}" -1
+
+
+
+------------part in center, front  --------- 
+x= -0.651
+y= 0.321
+z= 0.739
+
+--- here is a good approach pose for this part: (adjusting only jnt1 turret and jnt8 rail)
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.18]}, \
+]}" -1
+
+---------try part left, front (grasp would be OK)
+x = -0.651
+y= 0.146 (delta-y = 0.175)
+z = 0.739
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.355]}, \
+]}" -1
+
+---try part right, front------------
+x = -0.651
+y= 0.146 (delta-y = 0.175)
+z = 0.739
+The following approach pose looks OK, and probably can grasp without interference:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.025]}, \
+]}" -1
+
+LOWER: BARELY GET CLEARANCE WITH THIS PICKUP POSE:
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.7, -1.415, 0, 0.8, -0.113, -0.807, 2.8085, -0.010]}, \
+]}" -1
+
+FOR  WHICH: rosrun tf tf_echo iiwa_link_0 vacuum_gripper_link
+- Translation: [-0.582, -0.475, 0.052] 
+and:
+rosrun tf tf_echo world vacuum_gripper_link
+- Translation: [-0.632, 0.515, 0.752]
+
+So, max part y-val w/rt world is 0.515 (for  BIN2)
+BIN2 y-val = 0.320
+(example right-size part at y = 0.480)
+say, dy_max_right_side_of_bin = 0.510 - 0.320 = 0.190
+
+-----back row: center, far ----------
+bin2,  hover, far code is:
+0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -0.7
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -0.7]}, \
+]}" -1
+
+---part center, far---
+x= -0.89
+y= 0.311
+z= 0.785
+THIS IS PRETTY MUCH MAX REACH:
+line up sled for head-on approach
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.0, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.7]}, \
+]}" -1
+
+-----part left, far----
+x= -0.89
+y= 0.136  (delta-y = 0.175); move sled from -0.7 to -0.875
+z= 0.785
+line up sled for head-on approach
+WRIST HITS BIN;  NEED WRIST FLIP
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.0, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.875]}, \
+]}" -1
+
+THIS POSE BARELY CLEARS EDGE OF BIN, LEFT, BACKROW
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.0, -1.67, 0.0, 0.1, 0, -1.2, 0, -0.825]}, \
+]}" -1
+
+at this pose (maximally left), 
+rosrun tf tf_echo world vacuum_gripper_link
+- Translation: [-0.883, 0.166, 0.806]
+ALSO,  BIN2 wrt world: (x,y,z) = (-0.775, 0.320, 0.750)
+(BIN1 wrt world: (x,y,z) = -0.775, -0.490, 0.750)
+
+so 0.166 is the min part y-val for bin2, --> y_part - y_bin_center = -0.153
+
+SO: for BIN2, dy_max_left = 0.154
+  for parts further left (more negative y) than this, choose to use y_max_left instead;
+
+
+
+----part right, far----
+x= -0.883
+y= 0.484  (delta-y from center = 0.173--> z-sled goes to -0.7 + 0.173 = -0.527)
+z= 0.784
+
+the following looks good, should be OK approach pose (but at max reach):
+
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.0, -1.65, 0.0, 0.1, 0, -1.2, 0, -0.527]}, \
+]}" -1
+
+SOME CONCLUSIONS:
+for back row, need to fully extend arm, so line up d-sled for head-on approach:
+y = 0.484--> d8 = -0.527
+y = 0.136--> d8 =  -0.875
+formula: d8 = y -1.01
+
+radius of arm at front and at middle rows:
+
+rosrun tf tf_echo iiwa_link_0 vacuum_gripper_link
+- Translation: [-0.596, -0.487, 0.102]
+--> RADIUS = sqrt(x^2+y^2) = 0.77
+ang J1 = 0.7
+
+check: part is at right, front: (x,y,z) = (-0.651, 0.146, 0.739)
+link0 is at; 
+rosrun tf tf_echo world iiwa_link_0 
+- Translation: [-0.050, 0.975, 0.700]
+compare x vals: part at -0.651, robot at x= -0.050 --> dist from robot to part in x-dir = 0.601;
+
+r*sin(1.57-theta_J1) = 0.77*sin(0.7*180/3.14) = 0.5  (should be 0.6 !!)
+0.77*sin((1.57-0.7)*180/3.14) = 0.59   (J1 angle is measured from 0 = head-on for "rvrs" approach to bins)
+r*cos(1.57-theta_J1) = 0.77*cos((1.57-0.7)*180/3.14) = 0.496 =~ -y_part_wrt_link0
+
+SO: for near and mid approaches to front and center rows, 
+ middle row: J1 = 0.386; center: d8 = -0.400 (y = 0.3206) ; right (y= 0.487): d8 = -0.234; dy= delta-d8 = 0.1665
+  d8(y_part) = y_part - 0.7206
+ 0.77*sin((1.57-0.386)*180/3.14) = 0.713
+rosrun tf tf_echo iiwa_link_0 vacuum_gripper_link
+- Translation: [-0.716, -0.281, 0.102]
+ r*cos(1.57-theta_J1) = 0.77*cos((1.57-0.386)*180/3.14) = 0.290 =~ -y_part_wrt_link0
+reasonable match to dx and dy;
+
+so, compute J1 and d8 as follows:
+*****formula for J1 and d8 as a func of part (x,y) in bin****
+given part location (x,y) w/rt world:
+RADIUS*sin(pi/2-J1) = fabs(dx) 
+--> fabs(dx)/RADIUS = sin(pi/2-theta_J1) 
+    theta_J1 = pi/2 - asin(fabs(dx)/RADIUS) 
+
+
+AND: dy_part_wrt_link0 = RADIUS*cos(1.57-theta_J1)
+d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
+
+
+ front row: J1 = 0.7; x= -0.651; x_part_wrt_link0 = 0.601
+ rosrun tf tf_echo world iiwa_link_0 
+ - Translation: [-0.050, 0.975, 0.700]
+
+left front row: part y= 0.146
+positions: [0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.355]}, \
+0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.355
+ front row:  J1 = 0.7, d8 = -0.355 at y = 
+right front: part y= 0.146, 
+
+center front: part y= 0.321
+positions: [0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.18]}, \
+
+right front, y = 0.484
+[0.7, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.025]
+
+
+The following locations are trouble:
+(left, middle), (left,backrow), but leftside, frontrow seems OK
+
+avoid target gripper offsets of y_part-y_bin >  0.190 to right of bin center, or
+   y_part-y_bin < -0.153
+
+//BIN REACHABILITY: (part w/rt bin)
+i.e., require 0.190 > y_part-y_bin >  -0.153
+will need to record bin centers, y-vals:
+ = -0.49, 0.32, 1.13, 1.94, 2.75 (BIN1, BIN2, BIN3, BIN4, BIN5);
+
+note: y_coord_wrt_world is  more positive to the "right", looking at the bins
+
+
+
+----------tweak approaches---------
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.5, -1.35, 0, 0.6, -0.18, -0.82, 3, -0.18]}, \
+]}" -1
+
+
+Q1 box pose: ~ centered--> x,y,z = 0.612, 0.612, 0.588
+choose q = 0,0,0,1
+
+
+

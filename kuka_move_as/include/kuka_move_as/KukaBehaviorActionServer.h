@@ -56,12 +56,12 @@ const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
 const double APPROACH_OFFSET_DIST = 0.02;
-const double DEEP_GRASP_MOVE_DIST = -0.02;
+const double DEEP_GRASP_MOVE_DIST = -0.01;
 
 const double MIN_BIN_GRASP_DY = -0.140; //-0.153;
-const double MAX_BIN_GRASP_DY = 0.180; //0.190;
+const double MAX_BIN_GRASP_DY = 0.175; //0.190;
 const double MAX_BIN_X_VAL = -0.6;
-const double MIN_BIN_X_VAL = -0.89;
+const double MIN_BIN_X_VAL = -0.84; //-0.860;
 const double MID_BIN_X_VAL = -0.745;
 const double BIN_FAR_THRESHOLD = -0.83;
 const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
@@ -280,7 +280,8 @@ private:
 
     Eigen::VectorXd pickup_jspace_pose_, dropoff_jspace_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
-    Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_, current_hover_pose_, current_key_pose_;
+    Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_;
+    Eigen::VectorXd current_hover_pose_, current_key_pose_, current_cruise_pose_;
     Eigen::VectorXd desired_approach_depart_pose_, desired_grasp_dropoff_pose_;
     Eigen::VectorXd computed_jspace_approach_, computed_bin_escape_jspace_pose_;
     Eigen::VectorXd nom_bin_cruise_pose_,q1_cruise_pose_,computed_bin_cruise_jspace_pose_;
@@ -347,6 +348,8 @@ private:
     //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
     bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
+    //fnc to derive forward IK solns from computed rvrs IK solns; useful, e.g.,  for bin5 computations of key poses
+    void fwd_qvec_from_rvrs_qvec(double part_y, Eigen::VectorXd &q_vec);
 
     //use the following functions to refine the IK soln for part dropoff;
     //e.g., hold part in approach pose; take snapshot, get joint angles, compute grasp transform, update dropoff pose IK soln

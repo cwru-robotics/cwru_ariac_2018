@@ -115,7 +115,7 @@ bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory d
     robot_goal_.trajectory = des_trajectory;
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
-    ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
+    //ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
     traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
     int print_count=0;
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout
@@ -598,7 +598,7 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
     //if here, have a single-point trajectory to execute:
     robot_goal_.trajectory = transition_traj;
     //ROS_INFO("sending goal to arm: ");
-    ROS_INFO_STREAM("sending traj: "<<endl<<transition_traj<<endl);
+    //ROS_INFO_STREAM("sending traj: "<<endl<<transition_traj<<endl);
 
     send_traj_goal(transition_traj, pose_code); 
     int print_count=0;
@@ -669,7 +669,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
         return false;
     }
     //if here, then traj is valid:
-    ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
+    //ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
     robot_goal_.trajectory = transition_traj;
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
