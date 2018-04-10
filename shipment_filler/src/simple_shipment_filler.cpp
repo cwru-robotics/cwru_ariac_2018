@@ -191,11 +191,11 @@ int main(int argc, char** argv) {
             ROS_INFO("Unable to post adjust parts");
         }
 
-        robotBehaviorInterface.release_and_retract();
+        
 
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
-                 
+            //SHOULD GET ROBOT OUT OF THE WAY BEFORE MOVING CONVEYOR. IN CASE ANY OF THE RELEASE AND RETRACT FNCS DONT WORK   
             //advance shipment to next inspection  station:
             
             advanced_shipment_on_conveyor= 

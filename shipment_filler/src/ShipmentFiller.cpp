@@ -570,7 +570,6 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             return 1;
     }
     
-    //NEEDS MORE WORK. HAVE TO FIGURE OUT HOW TO CHECK IF OBJECT IS ALREADY GRASPED. OR MAKE A DEFAULT OF GRABBING OBJECT SINCE WE NEED THIS AT TWO LOGICAL CAMERA STATIONS
     bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) { 
         vector<osrf_gear::Model> desired_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
         geometry_msgs::PoseStamped box_pose_wrt_world;
@@ -590,10 +589,11 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             	all_success = false;
             }
             if(go_on) {
-            if(!robotBehaviorInterface.adjust_part_location_with_release(sourcePart,destinationPart,2)) {
+            if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart,2)) {
                 ROS_INFO("cannot adjust, maybe pick first?");
                 all_success=false;
             }
+            robotBehaviorInterface.release_and_retract();
             }
         }
     }
@@ -606,7 +606,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
 			inventory_msgs::Part sourcePart,destinationPart;
 			model_to_part(model_actual_coords,sourcePart);
 			model_to_part(model_desired_coords,destinationPart);
-			if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart)) {
+			if(!robotBehaviorInterface.adjust_part_location_no_release(sourcePart,destinationPart,2)) {
 				ROS_INFO("Failed to adjust part location");
 			}
 			else {

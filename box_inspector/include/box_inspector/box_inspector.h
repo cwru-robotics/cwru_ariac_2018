@@ -40,7 +40,7 @@ class BoxInspector
 public:
    BoxInspector(ros::NodeHandle* nodehandle);
 
-  void get_new_snapshot_from_box_cam();
+  bool get_new_snapshot_from_box_cam();
 
   bool get_box_pose_wrt_world(geometry_msgs::PoseStamped &box_pose_wrt_world);
   
@@ -69,7 +69,7 @@ public:
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 
-
+    int BOX_INSPECTOR_TIMEOUT=2;
     XformUtils xformUtils_;
 
     void box_camera_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);   

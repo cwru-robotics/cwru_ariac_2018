@@ -89,15 +89,23 @@ void BoxInspector::box_camera_callback(const osrf_gear::LogicalCameraImage::Cons
 
 //method to request a new snapshot from logical camera; blocks until snapshot is ready,
 // then result will be in box_inspector_image_
-void BoxInspector::get_new_snapshot_from_box_cam() {
+bool BoxInspector::get_new_snapshot_from_box_cam() {
   got_new_snapshot_= false;
-  ROS_INFO("waiting for snapshot from camera");
-  while (!got_new_snapshot_) {
-    ros::spinOnce();
-    ros::Duration(0.1).sleep();
+  double dt= 0.05;
+  double timer = 0.0;
+  while (!got_new_snapshot_&&(timer<BOX_INSPECTOR_TIMEOUT)) {
+        ros::spinOnce();
+        ros::Duration(dt).sleep();
+        timer+=dt;
+    }
+    if (timer>=BOX_INSPECTOR_TIMEOUT) {
+        ROS_WARN("could not update inventory!");
+        return false;
+    }
+    else {
+      return true;
+    }
   }
-  ROS_INFO("got new snapshot");
-}
 
 
 //here is  the main fnc; provide a list of models, expressed as desired parts w/ poses w/rt box;
@@ -114,12 +122,7 @@ void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world) {
   got_new_snapshot_=false;
-  while(!got_new_snapshot_) {
-     ros::spinOnce(); // refresh camera image
-     ros::Duration(0.5).sleep();
-     ROS_INFO("waiting for logical camera image");
-  }
-  ROS_INFO("got new image");
+  get_new_snapshot_from_box_cam();
   int num_parts_seen =  box_inspector_image_.models.size();
   ROS_INFO("update_inspection: box camera saw %d objects",num_parts_seen);
   int num_parts_desired = desired_models_wrt_world.size();
