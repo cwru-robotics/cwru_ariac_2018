@@ -55,7 +55,7 @@ const bool DOWN = false;
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
-const double APPROACH_OFFSET_DIST = 0.02;
+const double APPROACH_OFFSET_DIST = 0.04;
 const double DEEP_GRASP_MOVE_DIST = -0.01;
 
 const double MIN_BIN_GRASP_DY = -0.140; //-0.153;
