@@ -1058,6 +1058,17 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
     desired_affine_vacuum_gripper_pose_wrt_base_link = desired_affine_part_wrt_base_link * affine_part_wrt_gripper.inverse();            
     bool ret_val=  compute_pickup_dropoff_IK(desired_affine_vacuum_gripper_pose_wrt_base_link,q_vec_joint_angles_8dof,q_vec_soln);
     //ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln<<endl);
+
+    //careful--this call affects member vars approach_dropoff_jspace_pose_ and desired_approach_depart_pose_
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, q_vec_soln, approach_dist_,
+            approach_dropoff_jspace_pose_)) {
+        //ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        ret_val=false;
+    }
+    desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
+    ROS_INFO_STREAM("approach_dropoff_jspace_pose_: " << approach_dropoff_jspace_pose_.transpose());   
+    
     return ret_val;
 }
 

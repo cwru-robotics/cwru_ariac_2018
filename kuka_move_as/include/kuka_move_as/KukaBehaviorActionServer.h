@@ -266,6 +266,7 @@ private:
     unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
     unsigned short int release_and_retract(double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);    
     unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
+    unsigned short int move_part_to_approach_pose(inventory_msgs::Part part);
 
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);

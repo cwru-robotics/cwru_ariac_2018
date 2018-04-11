@@ -132,6 +132,13 @@ bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeo
     return( sendGoal(goal_type,part,timeout));    
 }
 
+bool RobotBehaviorInterface::move_part_to_approach_pose(inventory_msgs::Part part,double timeout) {
+    ROS_INFO("move grasped part to approach pose");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE;   
+    return( sendGoal(goal_type,part,timeout));       
+} 
+
+
 bool RobotBehaviorInterface::place_part_in_box_with_release(Part part,double timeout) {
     ROS_INFO("place_part_in_box_with_release fnc called");
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE;   
