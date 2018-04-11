@@ -10,6 +10,36 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
 
 }
 
+void BoxInspector::model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location) {
+    part.name = model.type;
+    part.pose.pose = model.pose;
+    part.location = location; //by default
+}
+
+bool BoxInspector::get_observed_part_pose(inventory_msgs::Part place_part, inventory_msgs::Part &observed_part) {
+  get_new_snapshot_from_box_cam();
+  int winner=0;
+  int max_ht=0;
+  int debug;
+  geometry_msgs::PoseStamped grasped_pose_wrt_wrld;
+  for(int i=1;i<box_inspector_image_.models.size();i++) {
+    
+    grasped_pose_wrt_wrld=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+    if(grasped_pose_wrt_wrld.pose.position.z>max_ht) {
+      max_ht=grasped_pose_wrt_wrld.pose.position.z;
+      winner=i;
+      ROS_INFO("found something at a height");
+    }
+    ROS_INFO("press 1");
+    cin>>debug;
+  }
+  grasped_pose_wrt_wrld=compute_stPose(box_inspector_image_.pose,box_inspector_image_.models[winner].pose);
+  ROS_INFO_STREAM("winning model is:"<<grasped_pose_wrt_wrld);
+  model_to_part(box_inspector_image_.models[winner],observed_part);
+  observed_part.pose=grasped_pose_wrt_wrld;
+return 1;
+}
+
 bool BoxInspector::post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords) {
   vector<osrf_gear::Model> satisfied_models_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
   update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world,orphan_models_wrt_world);
@@ -99,7 +129,7 @@ bool BoxInspector::get_new_snapshot_from_box_cam() {
         timer+=dt;
     }
     if (timer>=BOX_INSPECTOR_TIMEOUT) {
-        ROS_WARN("could not update inventory!");
+        ROS_WARN("could not update box inspection image!");
         return false;
     }
     else {

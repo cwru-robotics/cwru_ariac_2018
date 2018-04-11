@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a ShipmentFiller");
     ShipmentFiller shipmentFiller(&nh);
 
-    inventory_msgs::Part pick_part,place_part;
+    inventory_msgs::Part pick_part,place_part,observed_part;
     inventory_msgs::Inventory current_inventory;
     osrf_gear::Shipment shipment;
     osrf_gear::Order order;
@@ -167,11 +167,11 @@ int main(int argc, char** argv) {
                 //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
                 // get actual pose of this part from the box camera
                 // DO watch out for timeout; if timeout, just proceed with blind placement
-                //shipmentFiller.get_observed_part_pose(place_part, observed_part);
+                boxInspector.get_observed_part_pose(place_part, observed_part);
                 
                 //when above fnc call is working, call the following
                 ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
-                //go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);
+                go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);
 
                 
                 if (!go_on) {

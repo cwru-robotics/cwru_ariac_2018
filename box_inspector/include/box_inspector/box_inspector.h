@@ -44,7 +44,9 @@ public:
 
   bool get_box_pose_wrt_world(geometry_msgs::PoseStamped &box_pose_wrt_world);
   
+  bool get_observed_part_pose(inventory_msgs::Part place_part,inventory_msgs::Part &observed_part);
 
+  void model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location=inventory_msgs::Part::QUALITY_SENSOR_1);
   void compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment_wrt_box, 
           geometry_msgs::PoseStamped box_pose_wrt_world,
           vector<osrf_gear::Model>  &desired_models_wrt_world);

@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a ShipmentFiller");
     ShipmentFiller shipmentFiller(&nh);
 
-    inventory_msgs::Part pick_part,place_part;
+    inventory_msgs::Part pick_part,place_part, observed_part;
     inventory_msgs::Inventory current_inventory;
     osrf_gear::Shipment shipment;
     osrf_gear::Order order;
@@ -143,14 +143,41 @@ int main(int argc, char** argv) {
             std::string part_name(place_part.name);
             ROS_INFO_STREAM("attempting a placement of "<<place_part<<endl);
 
-            //try, try again to put this part in the  box
-            if (!shipmentFiller.get_part_and_place_in_box(current_inventory,place_part)) {
+           if (!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory,place_part)) {
                   //for some reason, it is not  possible to place this  part, regardless of quality and placement precision
                   //move along to the next part  in the shipment
                   ROS_WARN("unsuccessful with pick/place of model %d",i_model);
                   ROS_WARN("moving on to try the next part in the shipment");
                   go_on=false; //give up on placing this model in the box
                   i_model++; //give up on placing this part; it seems to be impossible
+            }
+            
+            if (go_on) {
+                ROS_INFO("observe pose of grasped part in approach pose");
+                ros::Duration(1.0).sleep(); //let robot stabilize;
+                ROS_WARN("NEED TO GET OBSERVED PART POSE HERE...");
+                ROS_WARN("result should be called observed_part");
+                //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
+                // get actual pose of this part from the box camera
+                // DO watch out for timeout; if timeout, just proceed with blind placement
+                boxInspector.get_observed_part_pose(place_part, observed_part);
+                
+                //when above fnc call is working, call the following
+                ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
+                go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);
+
+                
+                if (!go_on) {
+                    //can't reach corrected poses.  May as well just drop the part
+                    ROS_WARN("dropping part");
+                    robotBehaviorInterface.discard_grasped_part(place_part);
+                    go_on=false;
+                }
+            }
+            //if successful to here, use the newly computed poses:
+            if(go_on) {
+                ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
+                go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
             }
                         
             if (go_on) {
