@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     osrf_gear::Shipment shipment;
     osrf_gear::Order order;
     geometry_msgs::PoseStamped box_pose_wrt_world;  
-    vector<osrf_gear::Model>  desired_models_wrt_world;
+    vector<osrf_gear::Model>  desired_models_wrt_world,missing_parts;
     osrf_gear::Model current_model;
     //inventory_msgs::Part current_part;
     int bin_num,partnum;
@@ -122,9 +122,9 @@ int main(int argc, char** argv) {
         //prep for drone request: set shipment name
         shipmentFiller.set_drone_shipment_name(shipment);       
         boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
-
+        while(!boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){
         //try to fill shipment; do robot moves to fill shipment
-        int num_parts = desired_models_wrt_world.size();
+        int num_parts = missing_parts.size();
         ROS_INFO("trying to fill box with %d products",num_parts);
         int i_model=0;
         int partnum_in_inventory;
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
             if(binInventory.update()) {
                 binInventory.get_inventory(current_inventory);
             }
-            current_model = desired_models_wrt_world[i_model];
+            current_model = missing_parts[i_model];
             //build "part" description for destination
             shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
             std::string part_name(place_part.name);
@@ -187,12 +187,12 @@ int main(int argc, char** argv) {
             ROS_INFO("after qual inspection");
             cin>>ans;
 
-
+/*
             if (go_on) {
                 //adjust part locations in box: 
                 go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
             }
-
+*/
   
         ROS_INFO("done pre adjusting");
             cin>>ans;            
@@ -218,7 +218,11 @@ int main(int argc, char** argv) {
             ROS_INFO("Unable to post adjust parts");
         }
 
-        
+        }
+
+        shipmentFiller.remove_unwanted_parts(desired_models_wrt_world);
+
+
 
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");

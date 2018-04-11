@@ -10,6 +10,27 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
 
 }
 
+
+bool BoxInspector::find_orphan_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &orphan_models) {
+
+  vector<osrf_gear::Model> satisfied_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world,missing_wrt_world;
+  update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models);
+if(orphan_models.size()==0) {
+  return 1;
+}
+return 0;
+}
+
+
+bool BoxInspector::find_missing_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &missing_wrt_world) {
+  vector<osrf_gear::Model> satisfied_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world,orphan_models_wrt_world;
+  update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models_wrt_world);
+if(missing_wrt_world.size()==0) {
+  return 1;
+}
+return 0;
+}
+
 void BoxInspector::model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location) {
     part.name = model.type;
     part.pose.pose = model.pose;

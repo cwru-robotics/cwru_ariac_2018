@@ -145,6 +145,28 @@ bool ShipmentFiller::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qua
     return true;
 }
 
+bool ShipmentFiller::remove_unwanted_parts(vector<osrf_gear::Model> desired_models_wrt_world) {
+	vector<osrf_gear::Model> orphan_parts;
+	if(!boxInspector.find_orphan_parts(desired_models_wrt_world,orphan_parts)) {
+		for(int i=0;i<orphan_parts.size();i++) {
+			inventory_msgs::Part discard_part;
+			bool go_on=true;
+			model_to_part(orphan_parts[i],discard_part);
+			if(!robotBehaviorInterface.pick_part_from_box(discard_part)) {
+				ROS_INFO("unable to pick it up, ignoring");
+				go_on=false;
+			}
+			if(go_on) {
+				if(!robotBehaviorInterface.discard_grasped_part(discard_part)) {
+					ROS_INFO("unable to discard, how do i deal with that");
+				}
+			}
+		}
+	}
+	return 1; //BAD RETURN! EITHER FIND LOGIC OR RETURN VOID
+}
+
+
 bool ShipmentFiller::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
     got_new_Q1_image_ = false;
     bad_part = bad_part_Qsensor1_;

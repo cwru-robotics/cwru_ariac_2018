@@ -32,6 +32,7 @@ class ShipmentFiller
 public:
   ShipmentFiller(ros::NodeHandle* nodehandle);
   //bool fill_shipment(osrf_gear::Shipment shipment);
+  bool remove_unwanted_parts(vector<osrf_gear::Model> desired_models_wrt_world);
   bool replace_faulty_parts_inspec1(osrf_gear::Shipment shipment);
   bool replace_faulty_parts_inspec2(osrf_gear::Shipment shipment);
   bool adjust_shipment_part_locations(osrf_gear::Shipment shipment);
