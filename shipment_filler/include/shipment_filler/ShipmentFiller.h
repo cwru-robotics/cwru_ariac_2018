@@ -49,6 +49,7 @@ public:
   bool current_shipment_has_been_filled();
   void model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location=inventory_msgs::Part::QUALITY_SENSOR_1);
   bool get_part_and_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part);
+  bool get_part_and_prepare_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part);
 
   //bool test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box);
   //unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);

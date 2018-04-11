@@ -228,6 +228,12 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             part = goal->destinationPart;
             errorCode_ = place_part_in_box_no_release(part);
             break;
+        case kuka_move_as::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE:
+            ROS_INFO("MOVE_GRASPED_PART_TO_APPROACH_POSE (place part in box)");
+            part = goal->destinationPart;
+            errorCode_ = move_grasped_part_to_approach_pose(part);
+            break;            
+            //
         case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE:
             ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
             part = goal->destinationPart;
@@ -273,8 +279,20 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             timeout_arg = goal->timeout;
             errorCode_ = pick_part_from_box(part,timeout);
             break;            
-            
-            
+        case kuka_move_as::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES:
+            ROS_INFO("RE_EVALUATE_APPROACH_AND_PLACE_POSES ");
+            place_part= goal->destinationPart;
+            source_part = goal->sourcePart;
+            timeout_arg = goal->timeout;
+            errorCode_ = re_evaluate_approach_and_place_poses(source_part, place_part);
+            break;      
+        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE:
+            ROS_INFO("PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE ");
+            part = goal->destinationPart;
+            timeout_arg = goal->timeout;
+            errorCode_ = place_part_in_box_from_approach_no_release(part,timeout);
+            break;             
+
             
             
             

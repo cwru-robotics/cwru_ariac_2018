@@ -264,13 +264,14 @@ private:
     unsigned short int discard_grasped_part(inventory_msgs::Part part);
 
     unsigned short int place_part_in_box_no_release(inventory_msgs::Part part); 
+    unsigned short int place_part_in_box_from_approach_no_release(inventory_msgs::Part part,double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);
     unsigned short int release_and_retract(double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);    
     unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
-    unsigned short int move_part_to_approach_pose(inventory_msgs::Part part);
+    unsigned short int move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
 
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
-
+    unsigned short int  re_evaluate_approach_and_place_poses(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
     bool move_into_grasp(double arrival_time); //ASSUMES deep-grasp pose

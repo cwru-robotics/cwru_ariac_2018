@@ -309,6 +309,70 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
     }
 }
 
+//for this version, stop at approach pose before part dropoff
+bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part) {
+    //try to find part in inventory;
+    //try to pick this part--and delete it from current inventory
+    //try to place  part in box and release;
+    //perform inspection/correction outside this func
+    //a return of "true" does not confirm success; return of "false" is a known  failure
+    bool go_on=true; 
+    int ans;
+    
+    std::string part_name(place_part.name);
+    ROS_INFO_STREAM("looking for part " << part_name << endl);
+    int partnum_in_inventory;
+    bool part_in_inventory = true; 
+    inventory_msgs::Part pick_part;
+
+    while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
+      bool go_on=true; 
+      part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
+      if (!part_in_inventory) {
+        ROS_WARN("could not find desired  part in inventory; giving up on process_part()");
+        return false; //nothing more can be done     
+      }
+      ROS_INFO_STREAM("found part: " << pick_part << endl);
+      ROS_INFO("attempting pick...");
+        //manually remove this part from inventory, in case cameras are down:
+        //  bool remove_part_from_inventory(int part_id, int partnum);
+        int part_id = name_to_part_id_mappings[part_name];
+        int nparts_in_inventory = binInventory.num_parts(current_inventory,part_id);
+        ROS_INFO("number of parts of part_id= %d = %d",part_id,nparts_in_inventory);
+        binInventory.remove_part_from_inventory(part_id, partnum_in_inventory,current_inventory); //don't  try this part again
+        //int BinInventory::num_parts(inventory_msgs::Inventory inventory, int part_id) {
+        nparts_in_inventory = binInventory.num_parts(current_inventory,part_id);
+        ROS_INFO("after removal, %d parts left ",nparts_in_inventory);
+        ROS_INFO("attempting to pick part");
+        //cout<<"enter 1:";
+        //cin>>ans;
+        if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
+            ROS_INFO("pick failed");
+            go_on = false;
+            //gripperInterface_.release();     
+        }
+        if (go_on) {
+            ROS_INFO("attempting to move part to pre-dropoff pose: ");
+            //cout<<"enter 1: ";
+            //cin>>ans;
+            ROS_INFO_STREAM("part to be placed: " << place_part << endl);
+            //    bool move_part_to_approach_pose(inventory_msgs::Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
+
+            if (!robotBehaviorInterface.move_part_to_approach_pose(place_part)) {
+                ROS_INFO("could not move to approach pose");
+                go_on=false;    
+            }
+        }
+        //loop back to retry with another part;
+        //should do a box inspection, though,  to make sure part is not dropped  in box, occluding desired destination   
+        if (go_on) {
+            ROS_INFO("get_part_and_prepare_place_in_box was successful!");
+            return true;
+        }
+    }
+}
+
+
     /*
     bool ShipmentFiller::fill_shipment(osrf_gear::Shipment shipment) {
         ROS_INFO("attempting to fill shipment");
