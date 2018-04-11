@@ -145,6 +145,17 @@ bool ShipmentFiller::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qua
     return true;
 }
 
+bool ShipmentFiller::check_order_update(osrf_gear::Shipment &shipment) {
+	if(!orderManager.check_order_update(shipment)) {
+		ROS_INFO("chill, no update");
+		return 1;
+	}
+	else {
+		ROS_INFO("UPDATED ORDER!");
+		return 0;	
+	}
+}
+
 bool ShipmentFiller::remove_unwanted_parts(vector<osrf_gear::Model> desired_models_wrt_world) {
 	vector<osrf_gear::Model> orphan_parts;
 	if(!boxInspector.find_orphan_parts(desired_models_wrt_world,orphan_parts)) {
@@ -656,6 +667,9 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             return 1;
     }
     
+
+//RECHECK BELOW FNC
+
     bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) { 
         vector<osrf_gear::Model> desired_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
         geometry_msgs::PoseStamped box_pose_wrt_world;

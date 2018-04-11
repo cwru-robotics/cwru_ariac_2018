@@ -29,7 +29,8 @@ public:
   bool choose_order(osrf_gear::Order &order);
   bool choose_shipment(osrf_gear::Shipment &shipment);
   //bool find_part(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);
-
+  bool is_updated(osrf_gear::Order order);
+  bool check_order_update(osrf_gear::Shipment &shipment) ;
   bool current_order_has_been_filled(); //delete order from its vector
   bool current_shipment_has_been_filled();
   void print_inventory(inventory_msgs::Inventory inventory_msg); 
@@ -43,6 +44,7 @@ private:
   std::vector<osrf_gear::Order> pending_orders_;
   std::vector<osrf_gear::Order> priority_orders_;
   std::vector<osrf_gear::Order> unfillable_orders_;
+  std::vector<osrf_gear::Order> updated_orders_;
   osrf_gear::Order current_order_in_process_;
   int current_order_vector_code_;
   int current_order_index_;
@@ -50,6 +52,7 @@ private:
   bool order_is_in_process_;
   bool shipment_is_in_process_;
   ros::Subscriber order_subscriber_;
+  bool order_is_updated_;
   void order_callback(const osrf_gear::Order::ConstPtr & order_msg);
   geometry_msgs::PoseStamped target_pose_to_world_coords(geometry_msgs::Pose part_pose_wrt_box, 
      geometry_msgs::PoseStamped box_pose_wrt_world);

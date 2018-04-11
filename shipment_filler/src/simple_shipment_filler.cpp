@@ -118,6 +118,9 @@ int main(int argc, char** argv) {
           ros::Duration(0.5).sleep();
         }
         //now have a shipment; start  processing it
+        
+
+
         ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
         //prep for drone request: set shipment name
         shipmentFiller.set_drone_shipment_name(shipment);       
@@ -213,11 +216,11 @@ int main(int argc, char** argv) {
 
 
         }
-
+/*
         if(!shipmentFiller.adjust_shipment_part_locations(shipment)) {
             ROS_INFO("Unable to post adjust parts");
         }
-
+*/
         }
 
         shipmentFiller.remove_unwanted_parts(desired_models_wrt_world);

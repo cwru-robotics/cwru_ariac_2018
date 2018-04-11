@@ -45,7 +45,7 @@ public:
   bool get_bad_part_Q2(inventory_msgs::Part &bad_part);
   void update_inventory();
   bool choose_shipment(osrf_gear::Shipment &shipment);
-
+  bool check_order_update(osrf_gear::Shipment &shipment);
   bool current_order_has_been_filled(); //delete order from its vector
   bool current_shipment_has_been_filled();
   void model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location=inventory_msgs::Part::QUALITY_SENSOR_1);

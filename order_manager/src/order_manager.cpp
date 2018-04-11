@@ -23,6 +23,9 @@ void OrderManager::order_callback(const osrf_gear::Order::ConstPtr & order_msg) 
     else if (!order_is_fillable(order)) {
      unfillable_orders_.push_back(order);
     }
+    else if (is_updated(order)) {
+      updated_orders_.push_back(order);
+    }
     //else, is fillable and is not priority:
     else {
        pending_orders_.push_back(order);
@@ -45,6 +48,29 @@ void OrderManager::mark_shipments_unfilled(osrf_gear::Order &order) {
         }
     }
 }
+
+//ONLY WORKS IF THERE IS A SINGLE ORDER. WHICH SHOULD WORK FOR THE QUALIFIER. EASILY EXTENDABLE TO MULTI ORDER SITUATION
+bool OrderManager::is_updated(osrf_gear::Order order) {
+
+  string update_string("update");
+  string order_id(order.order_id);
+  size_t found = order_id.find(update_string);
+  if (found!=string::npos) {
+    order_is_updated_=true;
+    return 1;
+  }
+return 0;
+}
+
+bool OrderManager::check_order_update(osrf_gear::Shipment &shipment) {
+  
+  if(order_is_updated_) {
+    shipment=updated_orders_[0].shipments[0];
+    return 1;
+    }
+    return 0;
+}
+
 
 
 //check inventory to see if order is fillable
