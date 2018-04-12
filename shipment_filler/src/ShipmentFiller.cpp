@@ -292,15 +292,16 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
     //a return of "true" does not confirm success; return of "false" is a known  failure
     bool go_on=true; 
     int ans;
-    
+    ROS_INFO("THIS FUNCTION DOES GET CALLED");
+    cin>>ans;
     std::string part_name(place_part.name);
     ROS_INFO_STREAM("looking for part " << part_name << endl);
     int partnum_in_inventory;
     bool part_in_inventory = true; 
     inventory_msgs::Part pick_part;
 
-    while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
-      bool go_on=true; 
+    //while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
+      //bool go_on=true; 
       part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
       if (!part_in_inventory) {
         ROS_WARN("could not find desired  part in inventory; giving up on process_part()");
@@ -323,6 +324,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
             ROS_INFO("pick failed");
             go_on = false;
+            return false;
             //gripperInterface_.release();     
         }
         if (go_on) {
@@ -333,6 +335,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             if (!robotBehaviorInterface.place_part_in_box_no_release(place_part)) {
                 ROS_INFO("placement failed");
                 go_on=false;    
+                return false;
             }
         }
         //loop back to retry with another part;
@@ -342,7 +345,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
             return true;
         }
     }
-}
+//}
 
 //for this version, stop at approach pose before part dropoff
 bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part) {
@@ -384,6 +387,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
         if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
             ROS_INFO("pick failed");
             go_on = false;
+            return false;
             //gripperInterface_.release();     
         }
         if (go_on) {
@@ -395,7 +399,8 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
 
             if (!robotBehaviorInterface.move_part_to_approach_pose(place_part)) {
                 ROS_INFO("could not move to approach pose");
-                go_on=false;    
+                go_on=false; 
+                return false;   
             }
         }
         //loop back to retry with another part;
@@ -675,7 +680,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
     bool ShipmentFiller::adjust_shipment_part_locations(vector<osrf_gear::Model> desired_models_wrt_world) { 
         vector<osrf_gear::Model> misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
         bool all_success=true;
-        if(boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
+        if(boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){ //COULD USE WHILE INSTEAD! OR MAYBE A FOR LOOP TO CHECK TWICE MAX!
         for(int i=0;i<misplaced_models_actual_coords_wrt_world.size();i++) {
             bool go_on=true;
             inventory_msgs::Part sourcePart,destinationPart;
@@ -696,7 +701,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             }
         }
     }
-        else{return 0;}
+        else{return 0;}  //TO USE WITH IF ON LINE 683
     
     return all_success;
 }
