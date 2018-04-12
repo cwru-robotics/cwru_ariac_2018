@@ -40,7 +40,7 @@ void BoxInspector::model_to_part(osrf_gear::Model model, inventory_msgs::Part &p
 bool BoxInspector::get_observed_part_pose(inventory_msgs::Part place_part, inventory_msgs::Part &observed_part) {
   get_new_snapshot_from_box_cam();
   int winner=0;
-  int max_ht=0;
+  float max_ht=0;
   int debug;
   geometry_msgs::PoseStamped grasped_pose_wrt_wrld;
   for(int i=1;i<box_inspector_image_.models.size();i++) {
