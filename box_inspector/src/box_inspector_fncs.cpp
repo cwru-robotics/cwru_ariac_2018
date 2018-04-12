@@ -89,7 +89,7 @@ void BoxInspector::compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment
 	//desired_models_wrt_world.clear(); // why not?
 	//Fixed, recheck logic later
 	osrf_gear::Product product_wrt_box;
-    
+    desired_models_wrt_world.clear();
 	for(int i=0;i<shipment_wrt_box.products.size();i++) {
 	product_wrt_box.type = shipment_wrt_box.products[i].type;
 	product_wrt_box.pose = shipment_wrt_box.products[i].pose;

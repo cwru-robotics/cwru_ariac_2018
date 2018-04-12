@@ -158,7 +158,8 @@ bool ShipmentFiller::check_order_update(osrf_gear::Shipment &shipment) {
 
 bool ShipmentFiller::remove_unwanted_parts(vector<osrf_gear::Model> desired_models_wrt_world) {
 	vector<osrf_gear::Model> orphan_parts;
-	if(!boxInspector.find_orphan_parts(desired_models_wrt_world,orphan_parts)) {
+	if(boxInspector.find_orphan_parts(desired_models_wrt_world,orphan_parts)) {
+		ROS_INFO("Found unwanted parts");
 		for(int i=0;i<orphan_parts.size();i++) {
 			inventory_msgs::Part discard_part;
 			bool go_on=true;
@@ -166,6 +167,7 @@ bool ShipmentFiller::remove_unwanted_parts(vector<osrf_gear::Model> desired_mode
 			if(!robotBehaviorInterface.pick_part_from_box(discard_part)) {
 				ROS_INFO("unable to pick it up, ignoring");
 				go_on=false;
+				return 0;
 			}
 			if(go_on) {
 				if(!robotBehaviorInterface.discard_grasped_part(discard_part)) {
@@ -173,10 +175,10 @@ bool ShipmentFiller::remove_unwanted_parts(vector<osrf_gear::Model> desired_mode
 				}
 			}
 		}
-	}
 	return 1; //BAD RETURN! EITHER FIND LOGIC OR RETURN VOID
 }
-
+return 0;
+}
 
 bool ShipmentFiller::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
     got_new_Q1_image_ = false;
@@ -673,7 +675,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
     bool ShipmentFiller::adjust_shipment_part_locations(vector<osrf_gear::Model> desired_models_wrt_world) { 
         vector<osrf_gear::Model> misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
         bool all_success=true;
-        if(!boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
+        if(boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
         for(int i=0;i<misplaced_models_actual_coords_wrt_world.size();i++) {
             bool go_on=true;
             inventory_msgs::Part sourcePart,destinationPart;
@@ -694,12 +696,14 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             }
         }
     }
+        else{return 0;}
+    
     return all_success;
 }
 
 	bool ShipmentFiller::adjust_part_location_before_dropoff(inventory_msgs::Part part) {
 		osrf_gear::Model model_actual_coords, model_desired_coords;
-		if(!boxInspector.pre_dropoff_check(part, model_actual_coords,model_desired_coords)) {
+		if(boxInspector.pre_dropoff_check(part, model_actual_coords,model_desired_coords)) {
 			inventory_msgs::Part sourcePart,destinationPart;
 			model_to_part(model_actual_coords,sourcePart);
 			model_to_part(model_desired_coords,destinationPart);
@@ -724,7 +728,9 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
     bool ShipmentFiller::correct_dropped_part(osrf_gear::Shipment shipment) {
         vector<osrf_gear::Model> desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
         boxInspector.compute_shipment_poses_wrt_world(shipment,box_1_stamped_pose_,desired_models_wrt_world);
-        boxInspector.update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world);
+        if(!boxInspector.update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplace_models_desired_coords_wrt_world,missing_models_wrt_world,orphan_models_wrt_world)) {
+        	return 0;
+        }
         bool success;
         if(misplaced_models_actual_coords_wrt_world.size()==0){
             ROS_INFO("cant find dropped part");

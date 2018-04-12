@@ -80,7 +80,8 @@ int main(int argc, char** argv) {
     bool advanced_shipment_on_conveyor=false;
     bool go_on= true;
     bool order_fulfilled=false;
-
+    bool checked_for_order_update=false;
+    bool order_updated;
     ROS_INFO("attempting to get an inventory update; pretty much screwed until this is possible");
     while (!binInventory.update()) {
         ros::spinOnce();
@@ -110,82 +111,89 @@ int main(int argc, char** argv) {
 
     //first box is at Q1 inspection station; get a shipment:
     //got_shipment = orderManager.choose_shipment(shipment);
-    successfully_filled_order = false;
+    
     //can't go any further until receive new shipment request, or until near competition expiration
      while(ros::ok()) { //check for conditions where we might have to stop otherwise
-
+        ROS_INFO("ROSISOK!");
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
           ros::Duration(0.5).sleep();
         }
         //now have a shipment; start  processing it
-        
+        successfully_filled_order = false;    
         while(!successfully_filled_order) {
 
 
-        ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
-        //prep for drone request: set shipment name
-        shipmentFiller.set_drone_shipment_name(shipment);       
-        boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
-        while(!boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
+        
+            // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
+            ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
+            //prep for drone request: set shipment name
+            shipmentFiller.set_drone_shipment_name(shipment);       
+            boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
+            ROS_INFO("checking for unwanted parts");
+            if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
+                ROS_INFO("either no unwanted parts or couldnt remove");
+            }
+            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
         //try to fill shipment; do robot moves to fill shipment
-            int num_parts = missing_parts.size();
-            ROS_INFO("trying to fill box with %d products",num_parts);
-            int i_model=0;
-            int partnum_in_inventory;
+            
+                int num_parts = missing_parts.size();
+                ROS_INFO("trying to fill box with %d products",num_parts);
+                int i_model=0;
+                int partnum_in_inventory;
         
         
         //-----------------HERE IS THE MAIN LOOP FOR FILLING A BOX------------------
-            while(i_model<num_parts)  { //persist with each model until success or impossible
-                go_on=true;
+                while(i_model<num_parts)  { //persist with each model until success or impossible
+                    go_on=true;
             //attempt to update inventory.  if not successful, keep using current memory of inventory
-                if(binInventory.update()) {
+                    if(binInventory.update()) {
                     binInventory.get_inventory(current_inventory);
-                }
-                current_model = missing_parts[i_model];
+                    }
+                    current_model = missing_parts[i_model];
                 //build "part" description for destination
-                shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
-            std::string part_name(place_part.name);
-            ROS_INFO_STREAM("attempting a placement of "<<place_part<<endl);
+                    shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
+                    std::string part_name(place_part.name);
+                    ROS_INFO_STREAM("attempting a placement of "<<place_part<<endl);
 
-           if (!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory,place_part)) {
+                    if (!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory,place_part)) {
                   //for some reason, it is not  possible to place this  part, regardless of quality and placement precision
                   //move along to the next part  in the shipment
-                  ROS_WARN("unsuccessful with pick/place of model %d",i_model);
-                  ROS_WARN("moving on to try the next part in the shipment");
-                  go_on=false; //give up on placing this model in the box
-                  i_model++; //give up on placing this part; it seems to be impossible
-            }
+                        ROS_WARN("unsuccessful with pick/place of model %d",i_model);
+                        ROS_WARN("moving on to try the next part in the shipment");
+                        go_on=false; //give up on placing this model in the box
+                        i_model++; //give up on placing this part; it seems to be impossible
+                    }
             
-            if (go_on) {
-                ROS_INFO("observe pose of grasped part in approach pose");
-                ros::Duration(1.0).sleep(); //let robot stabilize;
-                ROS_WARN("NEED TO GET OBSERVED PART POSE HERE...");
-                ROS_WARN("result should be called observed_part");
-                //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
+                    if (go_on) {
+                        ROS_INFO("observe pose of grasped part in approach pose");
+                        ros::Duration(1.0).sleep(); //let robot stabilize;
+                        ROS_WARN("NEED TO GET OBSERVED PART POSE HERE...");
+                        ROS_WARN("result should be called observed_part");
+                    //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
                 // get actual pose of this part from the box camera
                 // DO watch out for timeout; if timeout, just proceed with blind placement
-                boxInspector.get_observed_part_pose(place_part, observed_part);
+                        boxInspector.get_observed_part_pose(place_part, observed_part);
                 
                 //when above fnc call is working, call the following
-                ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
-                if(!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part)) {
+                        ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
+                        if(!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part)) {
                     //can't reach corrected poses.  May as well just drop the part
-                    ROS_WARN("dropping part");
-                    robotBehaviorInterface.discard_grasped_part(place_part);
-                    go_on=false;
-                }
-            }
+                            ROS_WARN("dropping part");
+                            robotBehaviorInterface.discard_grasped_part(place_part);
+                            go_on=false;
+                        }
+                    }
             //if successful to here, use the newly computed poses:
-            if(go_on) {
-                ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
-                go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
-            }
+                    if(go_on) {
+                    ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
+                    go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
+                    }
                         
-            if (go_on) {
-                ROS_INFO("successful part placement; should inspect before release");
-                go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
-            }
+                    if (go_on) {
+                    ROS_INFO("successful part placement; should inspect before release");
+                    go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
+                    }
            
 
 /*
@@ -196,36 +204,47 @@ int main(int argc, char** argv) {
 */
   
         
-            if (go_on) {
-                ROS_INFO("attempting part release; enter 1: ");
-                
-                go_on = robotBehaviorInterface.release_and_retract(); //release the part
+                    if (go_on) {
+                        ROS_INFO("attempting part release; enter 1: ");
+                        go_on = robotBehaviorInterface.release_and_retract(); //release the part
+                    }
+
+                    if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
+                        ROS_INFO("either no unwanted parts or couldnt remove");
+                    }
+                    
+        
+                    if (go_on) { //if here, 
+                        ROS_INFO("declaring success, and moving on to the  next product");
+                        i_model++;
+                    }
+           
+
+                }
+   
             }
             
-        
-            if (go_on) { //if here, 
-                ROS_INFO("declaring success, and moving on to the  next product");
-              i_model++;
+/*
+            if(go_on) {
+                if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
+                    ROS_INFO("Unable to post adjust parts");
+                }
             }
-
-
-        }
-    }
-
-        if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
-            ROS_INFO("Unable to post adjust parts");
-        }
-
      
-
-        shipmentFiller.remove_unwanted_parts(desired_models_wrt_world);
-        if(shipmentFiller.check_order_update(shipment)) {
-            successfully_filled_order=false;
+*/
+        
+        
+        if(!checked_for_order_update) {
+                if(shipmentFiller.check_order_update(shipment)) {
+                    successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED
+                    checked_for_order_update=true;
+                    order_updated=true;
+                    
+                }
+                else {successfully_filled_order=true;}
+            }
         }
-        else {successfully_filled_order=true;}
-
-}
-}
+    
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
             //SHOULD GET ROBOT OUT OF THE WAY BEFORE MOVING CONVEYOR. IN CASE ANY OF THE RELEASE AND RETRACT FNCS DONT WORK   
@@ -257,4 +276,5 @@ int main(int argc, char** argv) {
             
             ROS_WARN("stopping after single shipment...FIX ME!");
             return 0;
+    }
 }

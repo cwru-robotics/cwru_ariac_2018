@@ -14,21 +14,25 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
 bool BoxInspector::find_orphan_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &orphan_models) {
 
   vector<osrf_gear::Model> satisfied_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world,missing_wrt_world;
-  update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models);
+  if(!update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models)) {
+    return 0;
+  }
 if(orphan_models.size()==0) {
-  return 1;
+  return 0;
 }
-return 0;
+return 1;
 }
 
 
 bool BoxInspector::find_missing_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &missing_wrt_world) {
   vector<osrf_gear::Model> satisfied_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world,orphan_models_wrt_world;
-  update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models_wrt_world);
+ if(!update_inspection(desired_models_wrt_world,satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world,missing_wrt_world,orphan_models_wrt_world)) {
+  return 0;
+ }
 if(missing_wrt_world.size()==0) {
-  return 1;
+  return 0;
 }
-return 0;
+return 1;
 }
 
 void BoxInspector::model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location) {
@@ -55,6 +59,7 @@ bool BoxInspector::get_observed_part_pose(inventory_msgs::Part place_part, inven
   }
   grasped_pose_wrt_wrld=compute_stPose(box_inspector_image_.pose,box_inspector_image_.models[winner].pose);
   ROS_INFO_STREAM("winning model is:"<<grasped_pose_wrt_wrld);
+ 
   model_to_part(box_inspector_image_.models[winner],observed_part);
   observed_part.pose=grasped_pose_wrt_wrld;
 return 1;
@@ -62,16 +67,18 @@ return 1;
 
 bool BoxInspector::post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords) {
   vector<osrf_gear::Model> satisfied_models_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
-  update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world,orphan_models_wrt_world);
+  if(!update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world,orphan_models_wrt_world)) {
+    return 0;
+  }
   
   if (misplaced_models_desired_coords.size()==0 || misplaced_models_actual_coords.size()==0) {
-    return 1;
+    return 0;
     
   }
 
   else {
       
-    return 0;
+    return 1;
   }
 }
 
@@ -83,15 +90,17 @@ bool BoxInspector::pre_dropoff_check(inventory_msgs::Part part,osrf_gear::Model 
   model.pose=part.pose.pose;
   desired.clear();
   desired.push_back(model);
-  update_inspection(desired,satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world, orphan_models_wrt_world);
+  if(!update_inspection(desired,satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world, orphan_models_wrt_world)) {
+    return 0;
+  }
   if(misplaced_models_desired_coords.size()==0) {
     ROS_INFO("pre drop off check good");
-    return 1;
+    return 0;
   }
   else{
     misplaced_model_desired_coords=misplaced_models_desired_coords[0];
     misplaced_model_actual_coords=misplaced_models_actual_coords[0];
-    return 0;
+    return 1;
   }
 
 }
@@ -165,14 +174,14 @@ bool BoxInspector::get_new_snapshot_from_box_cam() {
 // misplaced_models_wrt_world: vector of models that belong in the shipment, but are imprecisely located in box
 // missing_models_wrt_world:  vector of models that are requested in the shipment, but not yet present in the box
 // orphan_models_wrt_world: vector of models that are seen in the box, but DO NOT belong in the box
-void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world) {
   got_new_snapshot_=false;
-  get_new_snapshot_from_box_cam();
+  if(get_new_snapshot_from_box_cam()) {
   int num_parts_seen =  box_inspector_image_.models.size();
   ROS_INFO("update_inspection: box camera saw %d objects",num_parts_seen);
   int num_parts_desired = desired_models_wrt_world.size();
@@ -349,7 +358,11 @@ void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
     }
 
   }
-
+  return 1;
+}
+else {
+  return 0;
+}
 
 }
 

@@ -54,7 +54,7 @@ public:
           vector<osrf_gear::Model>  &desired_models_wrt_world);
   
 
-  void update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+  bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
