@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
 
         }
 
-        if(!shipmentFiller.adjust_shipment_part_locations(shipment)) {
+        if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
             ROS_INFO("Unable to post adjust parts");
         }
 

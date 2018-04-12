@@ -148,11 +148,11 @@ bool ShipmentFiller::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qua
 bool ShipmentFiller::check_order_update(osrf_gear::Shipment &shipment) {
 	if(!orderManager.check_order_update(shipment)) {
 		ROS_INFO("chill, no update");
-		return 1;
+		return 0;
 	}
 	else {
 		ROS_INFO("UPDATED ORDER!");
-		return 0;	
+		return 1;	
 	}
 }
 
@@ -670,11 +670,8 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
 
 //RECHECK BELOW FNC
 
-    bool ShipmentFiller::adjust_shipment_part_locations(osrf_gear::Shipment shipment) { 
-        vector<osrf_gear::Model> desired_models_wrt_world,misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
-        geometry_msgs::PoseStamped box_pose_wrt_world;
-        boxInspector.get_box_pose_wrt_world(box_pose_wrt_world); 
-        boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
+    bool ShipmentFiller::adjust_shipment_part_locations(vector<osrf_gear::Model> desired_models_wrt_world) { 
+        vector<osrf_gear::Model> misplaced_models_actual_coords_wrt_world,misplaced_models_desired_coords_wrt_world;    
         bool all_success=true;
         if(!boxInspector.post_dropoff_check(desired_models_wrt_world,misplaced_models_desired_coords_wrt_world,misplaced_models_actual_coords_wrt_world)){
         for(int i=0;i<misplaced_models_actual_coords_wrt_world.size();i++) {

@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
     bool reported_shipment_to_drone=false;
     bool advanced_shipment_on_conveyor=false;
     bool go_on= true;
+    bool order_fulfilled=false;
 
     ROS_INFO("attempting to get an inventory update; pretty much screwed until this is possible");
     while (!binInventory.update()) {
@@ -119,30 +120,31 @@ int main(int argc, char** argv) {
         }
         //now have a shipment; start  processing it
         
+        while(!successfully_filled_order) {
 
 
         ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
         //prep for drone request: set shipment name
         shipmentFiller.set_drone_shipment_name(shipment);       
         boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
-        while(!boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){
+        while(!boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
         //try to fill shipment; do robot moves to fill shipment
-        int num_parts = missing_parts.size();
-        ROS_INFO("trying to fill box with %d products",num_parts);
-        int i_model=0;
-        int partnum_in_inventory;
+            int num_parts = missing_parts.size();
+            ROS_INFO("trying to fill box with %d products",num_parts);
+            int i_model=0;
+            int partnum_in_inventory;
         
         
         //-----------------HERE IS THE MAIN LOOP FOR FILLING A BOX------------------
-        while(i_model<num_parts)  { //persist with each model until success or impossible
-            go_on=true;
+            while(i_model<num_parts)  { //persist with each model until success or impossible
+                go_on=true;
             //attempt to update inventory.  if not successful, keep using current memory of inventory
-            if(binInventory.update()) {
-                binInventory.get_inventory(current_inventory);
-            }
-            current_model = missing_parts[i_model];
-            //build "part" description for destination
-            shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
+                if(binInventory.update()) {
+                    binInventory.get_inventory(current_inventory);
+                }
+                current_model = missing_parts[i_model];
+                //build "part" description for destination
+                shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
             std::string part_name(place_part.name);
             ROS_INFO_STREAM("attempting a placement of "<<place_part<<endl);
 
@@ -167,10 +169,7 @@ int main(int argc, char** argv) {
                 
                 //when above fnc call is working, call the following
                 ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
-                go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);
-
-                
-                if (!go_on) {
+                if(!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part)) {
                     //can't reach corrected poses.  May as well just drop the part
                     ROS_WARN("dropping part");
                     robotBehaviorInterface.discard_grasped_part(place_part);
@@ -187,8 +186,7 @@ int main(int argc, char** argv) {
                 ROS_INFO("successful part placement; should inspect before release");
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
-            ROS_INFO("after qual inspection");
-            cin>>ans;
+           
 
 /*
             if (go_on) {
@@ -197,18 +195,14 @@ int main(int argc, char** argv) {
             }
 */
   
-        ROS_INFO("done pre adjusting");
-            cin>>ans;            
-
+        
             if (go_on) {
                 ROS_INFO("attempting part release; enter 1: ");
-                cin>>ans;
+                
                 go_on = robotBehaviorInterface.release_and_retract(); //release the part
             }
             
-           ROS_INFO("waiting for 1");
-            cin>>ans;
-
+        
             if (go_on) { //if here, 
                 ROS_INFO("declaring success, and moving on to the  next product");
               i_model++;
@@ -216,17 +210,22 @@ int main(int argc, char** argv) {
 
 
         }
-/*
-        if(!shipmentFiller.adjust_shipment_part_locations(shipment)) {
+    }
+
+        if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
             ROS_INFO("Unable to post adjust parts");
         }
-*/
-        }
+
+     
 
         shipmentFiller.remove_unwanted_parts(desired_models_wrt_world);
+        if(shipmentFiller.check_order_update(shipment)) {
+            successfully_filled_order=false;
+        }
+        else {successfully_filled_order=true;}
 
-
-
+}
+}
         ROS_INFO("done processing shipment; advancing box");
         ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
             //SHOULD GET ROBOT OUT OF THE WAY BEFORE MOVING CONVEYOR. IN CASE ANY OF THE RELEASE AND RETRACT FNCS DONT WORK   
@@ -255,7 +254,7 @@ int main(int argc, char** argv) {
                 binInventory.get_inventory(current_inventory);
             }            
             
-            }
+            
             ROS_WARN("stopping after single shipment...FIX ME!");
             return 0;
 }

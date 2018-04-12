@@ -35,7 +35,7 @@ public:
   bool remove_unwanted_parts(vector<osrf_gear::Model> desired_models_wrt_world);
   bool replace_faulty_parts_inspec1(osrf_gear::Shipment shipment);
   bool replace_faulty_parts_inspec2(osrf_gear::Shipment shipment);
-  bool adjust_shipment_part_locations(osrf_gear::Shipment shipment);
+  bool adjust_shipment_part_locations(vector<osrf_gear::Model> desired_models_wrt_world);
   bool adjust_part_location_before_dropoff(inventory_msgs::Part part);
   bool correct_dropped_part(osrf_gear::Shipment shipment);
   bool report_shipment_to_drone();

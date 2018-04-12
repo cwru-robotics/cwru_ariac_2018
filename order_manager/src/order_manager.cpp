@@ -9,6 +9,7 @@ OrderManager::OrderManager(ros::NodeHandle* nodehandle): nh_(*nodehandle) {
     p_binInventory_ = new BinInventory(&nh_);
     order_is_in_process_=false;
     shipment_is_in_process_=false;
+    order_is_updated_=false;
 }
 
 void OrderManager::order_callback(const osrf_gear::Order::ConstPtr & order_msg) {
@@ -49,7 +50,7 @@ void OrderManager::mark_shipments_unfilled(osrf_gear::Order &order) {
     }
 }
 
-//ONLY WORKS IF THERE IS A SINGLE ORDER. WHICH SHOULD WORK FOR THE QUALIFIER. EASILY EXTENDABLE TO MULTI ORDER SITUATION
+//ONLY WORKS IF THERE IS A SINGLE ORDER. WHICH SHOULD WORK FOR THE QUALIFIER. EASILY EXTENDABLE TO MULTI ORDER SITUATION. BUT WHEN
 bool OrderManager::is_updated(osrf_gear::Order order) {
 
   string update_string("update");

@@ -49,10 +49,9 @@ bool BoxInspector::get_observed_part_pose(inventory_msgs::Part place_part, inven
     if(grasped_pose_wrt_wrld.pose.position.z>max_ht) {
       max_ht=grasped_pose_wrt_wrld.pose.position.z;
       winner=i;
-      ROS_INFO("found something at a height");
+      
     }
-    ROS_INFO("press 1");
-    cin>>debug;
+    
   }
   grasped_pose_wrt_wrld=compute_stPose(box_inspector_image_.pose,box_inspector_image_.models[winner].pose);
   ROS_INFO_STREAM("winning model is:"<<grasped_pose_wrt_wrld);
@@ -65,7 +64,7 @@ bool BoxInspector::post_dropoff_check(vector<osrf_gear::Model> desired_models_wr
   vector<osrf_gear::Model> satisfied_models_wrt_world,missing_models_wrt_world,orphan_models_wrt_world;
   update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,misplaced_models_actual_coords,misplaced_models_desired_coords,missing_models_wrt_world,orphan_models_wrt_world);
   
-  if (misplaced_models_desired_coords.size()==0) {
+  if (misplaced_models_desired_coords.size()==0 || misplaced_models_actual_coords.size()==0) {
     return 1;
     
   }

@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
             
             if (go_on) {
                 //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_shipment_part_locations(shipment);
+                go_on = shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world);
             }
             
 
