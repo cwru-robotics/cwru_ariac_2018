@@ -79,7 +79,7 @@ bool KukaBehaviorActionServer::find_nearest_key_pose(int &pose_code, Eigen::Vect
 unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part) {
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
 
-
+//int current_bin_cruise_pose_code_, current_bin_hover_pose_code_; 
     /*
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
@@ -87,6 +87,24 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
         return errorCode_;
     }
      * */
+    
+    current_bin_hover_pose_code_ = location_to_pose_code_map[part.location];
+    current_bin_cruise_pose_code_ = location_to_cruise_code_map[part.location];
+    //bool TransitionTrajectories::get_cruise_pose(unsigned short int location_code, Eigen::VectorXd &q_vec, int &pose_code) {
+    current_bin_cruise_pose_.resize(NDOF);
+    current_bin_hover_pose_.resize(NDOF);
+    if (!transitionTrajectories_.get_cruise_pose(part.location,current_bin_cruise_pose_,current_bin_cruise_pose_code_)) {
+        ROS_WARN("get_cruise_pose(): bad location code!!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
+    }
+    current_cruise_pose_ = current_bin_cruise_pose_; //synonym
+    //int current_bin_cruise_pose_code_=current_cruise_code;  
+    
+    transitionTrajectories_.get_hover_pose(part.location,current_hover_pose_,current_bin_hover_pose_code_);
+    
+    current_bin_hover_pose_ = current_hover_pose_; //synonym
+    
     //current_hover_pose_
 
     //pickup_hover_pose_ = approx_jspace_pose; //remember this pose
@@ -245,13 +263,50 @@ void KukaBehaviorActionServer::fwd_qvec_from_rvrs_qvec(double part_y, Eigen::Vec
 //
 unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inventory_msgs::Part part) {
     //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+//  new...set these:
+     //   Eigen::VectorXd  box_dropoff_hover_pose_, box_dropoff_cruise_pose_;
 
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
         errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }
+    
+    box_dropoff_hover_pose_.resize(NDOF);
+    box_dropoff_hover_pose_ = current_hover_pose_;
+    box_dropoff_cruise_pose_.resize(NDOF);
+    /*
+             case Q1_HOVER_CODE:
+            copy_array_to_qvec(Q1_HOVER_array,q_vec);
+            return true;
+      case Q2_HOVER_CODE:
+            copy_array_to_qvec(Q2_HOVER_array,q_vec);
+            return true;     */
+    box_dropoff_cruise_pose_.resize(NDOF);
+    
+    if (Part::QUALITY_SENSOR_1==part.location) { 
+        box_dropoff_cruise_pose_code_= Q1_CRUISE_CODE;
+        copy_array_to_qvec(Q1_CRUISE_array,box_dropoff_cruise_pose_);
+        ROS_INFO_STREAM("assigning cruise pose for Q1 to: "<<box_dropoff_cruise_pose_.transpose()<<endl);
+    }
+    else if (Part::QUALITY_SENSOR_2==part.location) {
+        copy_array_to_qvec(Q2_CRUISE_array,box_dropoff_cruise_pose_);
+        ROS_INFO_STREAM("assigning cruise pose for Q2 to: "<<box_dropoff_cruise_pose_.transpose()<<endl);
+        box_dropoff_cruise_pose_code_= Q2_CRUISE_CODE;
 
+    }
+    else {
+        ROS_WARN("error--location should be a box location code to assign cruise pose");
+        ROS_INFO("enter 1");
+        int ans;
+        cin>>ans;
+    }
+
+    
+    //box_dropoff_cruise_pose_ = xxx
+    
+    
+    
     //pickup_hover_pose_ = approx_jspace_pose; //remember this pose
     //current_hover_pose_ = pickup_hover_pose_;
     //ROS_INFO_STREAM("current_hover_pose_: "<<current_hover_pose_.transpose()<<endl);
@@ -268,6 +323,13 @@ unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inven
     //Eigen::Affine3d RobotMoveActionServer::affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail)
     affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,
             current_hover_pose_[7]);
+    
+    //add a dropoff clearance tolerance to z value:
+    Eigen::Vector3d O_dropoff_wrt_base_link = affine_vacuum_pickup_pose_wrt_base_link_.translation();
+    adjust_box_place_limits(O_dropoff_wrt_base_link);
+    affine_vacuum_pickup_pose_wrt_base_link_.translation() = O_dropoff_wrt_base_link;
+            
+
     //provide desired gripper pose w/rt base_link, and choose soln closest to some reference jspace pose, e.g. hover pose
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, current_hover_pose_, desired_grasp_dropoff_pose_)) {
@@ -1002,6 +1064,29 @@ bool KukaBehaviorActionServer::compute_pickup_dropoff_IK(Eigen::Affine3d affine_
     return success;
 }
 
+void KukaBehaviorActionServer::adjust_box_place_limits(Eigen::Vector3d &O_dropoff_wrt_base_link) {
+    O_dropoff_wrt_base_link[2]+= DROPOFF_CLEARANCE; //add a dropoff clearance
+    double y = O_dropoff_wrt_base_link[1];
+    double x = O_dropoff_wrt_base_link[0];
+
+    if (y>MAX_BOX_Y_VAL) {
+        O_dropoff_wrt_base_link[1]=MAX_BOX_Y_VAL;
+        ROS_WARN("limiting dropoff coords to MAX_BOX_Y_VAL");
+    }
+    if (y<MIN_BOX_Y_VAL) {
+        O_dropoff_wrt_base_link[1]=MIN_BOX_Y_VAL;
+        ROS_WARN("limiting dropoff coords to MIN_BOX_Y_VAL");
+    }
+    if (x>MAX_BOX_X_VAL) {
+        O_dropoff_wrt_base_link[0]=MAX_BOX_X_VAL;
+        ROS_WARN("limiting dropoff coords to MAX_BOX_X_VAL");
+    }
+    if (x<MIN_BOX_X_VAL) {
+        O_dropoff_wrt_base_link[0]=MIN_BOX_X_VAL;
+        ROS_WARN("limiting dropoff coords to MIN_BOX_X_VAL");
+    }
+}
+
 //use this function to get grasp transform from camera view
 //inputs: robot joint angles, grasped part pose w/rt world (presumably from camera snapshot)
 //output: A_part/gripper (grasp transform)
@@ -1055,7 +1140,12 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
 
     //compute desired gripper pose from part pose and appropriate grasp transform
     // A_gripper/base_link = A_part/base_link * inverse(A_part/gripper)
-    desired_affine_vacuum_gripper_pose_wrt_base_link = desired_affine_part_wrt_base_link * affine_part_wrt_gripper.inverse();            
+    desired_affine_vacuum_gripper_pose_wrt_base_link = desired_affine_part_wrt_base_link * affine_part_wrt_gripper.inverse();   
+    
+        //add a dropoff clearance tolerance to z value:
+    Eigen::Vector3d O_dropoff_wrt_base_link = desired_affine_vacuum_gripper_pose_wrt_base_link.translation();
+    adjust_box_place_limits(O_dropoff_wrt_base_link);
+    desired_affine_vacuum_gripper_pose_wrt_base_link.translation() = O_dropoff_wrt_base_link;
     bool ret_val=  compute_pickup_dropoff_IK(desired_affine_vacuum_gripper_pose_wrt_base_link,q_vec_joint_angles_8dof,q_vec_soln);
     //ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln<<endl);
 

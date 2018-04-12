@@ -64,6 +64,13 @@ const double MAX_BIN_X_VAL = -0.6;
 const double MIN_BIN_X_VAL = -0.84; //-0.860;
 const double MID_BIN_X_VAL = -0.745;
 const double BIN_FAR_THRESHOLD = -0.83;
+
+const double MIN_BOX_Y_VAL = -0.259; //-0.153;
+const double MAX_BOX_Y_VAL = 0.26; //0.190;
+const double MAX_BOX_X_VAL = 0.70;
+const double MIN_BOX_X_VAL = 0.43; //-0.860;
+const double DROPOFF_CLEARANCE = 0.005; //leave small  gap for dropoff
+
 const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
 const double X_BASE_WRT_WORLD = -0.050;
 
@@ -272,7 +279,8 @@ private:
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int  re_evaluate_approach_and_place_poses(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
-    
+    void adjust_box_place_limits(Eigen::Vector3d &O_dropoff_wrt_base_link);
+
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
     bool move_into_grasp(double arrival_time); //ASSUMES deep-grasp pose
     bool move_into_grasp(Eigen::VectorXd pickup_jspace_pose, double arrival_time); //provide target pose
@@ -288,6 +296,12 @@ private:
     Eigen::VectorXd computed_jspace_approach_, computed_bin_escape_jspace_pose_;
     Eigen::VectorXd nom_bin_cruise_pose_,q1_cruise_pose_,computed_bin_cruise_jspace_pose_;
     Eigen::VectorXd  q1_hover_pose_,q2_hover_pose_, q_temp_pose_;
+    Eigen::VectorXd  box_dropoff_hover_pose_, box_dropoff_cruise_pose_;
+    Eigen::VectorXd current_bin_cruise_pose_,current_bin_hover_pose_;
+    int current_bin_cruise_pose_code_, current_bin_hover_pose_code_;
+       
+    int box_dropoff_cruise_pose_code_; //would be Q1_CRUISE or Q2_CRUISE
+
     double approach_dist_;
     double deep_grasp_dist_;
     
