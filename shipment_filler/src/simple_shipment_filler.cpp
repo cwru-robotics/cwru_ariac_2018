@@ -115,11 +115,8 @@ int main(int argc, char** argv) {
     //got_shipment = orderManager.choose_shipment(shipment);
     
     //can't go any further until receive new shipment request, or until near competition expiration
-<<<<<<< HEAD
-        //ROS_INFO("ROSISOK!");
-=======
+
         ROS_INFO("ROSISOK!");
->>>>>>> a02c8fb1917d2bc000ce8808b8cce23178489b61
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
           ros::Duration(0.5).sleep();
