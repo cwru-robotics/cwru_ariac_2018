@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
                         }
                         else {
                             ROS_INFO("YAY No order update!");
-                            //successfully_filled_order=true;
+                            successfully_filled_order=true;
                         }
                     }
             else {successfully_filled_order=true;}
