@@ -136,7 +136,7 @@ int KukaFwdSolver::prune_solns_by_jnt_limits(vector<Eigen::VectorXd> &q_ik_solns
       untrimmed_solns = q_ik_solns;
       q_ik_solns.clear();
       int nsolns = untrimmed_solns.size();   
-      ROS_INFO("there are %d untrimmed solns",nsolns);
+      //ROS_INFO("there are %d untrimmed solns",nsolns);
       Eigen::VectorXd q_test;      
       for (int i=0;i<nsolns;i++) {
           q_test= untrimmed_solns[i];
@@ -146,7 +146,7 @@ int KukaFwdSolver::prune_solns_by_jnt_limits(vector<Eigen::VectorXd> &q_ik_solns
           }
       }
       nsolns = q_ik_solns.size();
-      ROS_INFO("and there are %d trimmed solns",nsolns);
+      //ROS_INFO("and there are %d trimmed solns",nsolns);
       return nsolns;
 }    
 
@@ -166,13 +166,13 @@ Eigen::VectorXd KukaFwdSolver::select_soln_near_qnom(vector<Eigen::VectorXd> q_i
     q_trial = q_ik_solns[0];
     q_soln_selected = q_trial;
     jspace_dist_min = jspace_dist_from_nom(q_nom,q_soln_selected);
-    ROS_INFO_STREAM("soln 0: "<<q_trial.transpose()<<endl);
-    ROS_INFO_STREAM("dist = "<<jspace_dist_min<<endl);
+    //ROS_INFO_STREAM("soln 0: "<<q_trial.transpose()<<endl);
+    //ROS_INFO_STREAM("dist = "<<jspace_dist_min<<endl);
     for (int i=1;i<num_solns;i++) {
         q_trial = q_ik_solns[i]; 
         jspace_dist = jspace_dist_from_nom(q_nom,q_trial);
-        ROS_INFO_STREAM("soln "<<i<<": "<<q_trial.transpose()<<endl);
-        ROS_INFO_STREAM("dist = "<<jspace_dist<<endl);        
+        //ROS_INFO_STREAM("soln "<<i<<": "<<q_trial.transpose()<<endl);
+        //ROS_INFO_STREAM("dist = "<<jspace_dist<<endl);        
         if (jspace_dist<jspace_dist_min) {
             jspace_dist_min=jspace_dist;
             q_soln_selected=q_trial;
@@ -297,7 +297,7 @@ bool KukaFwdSolver::solve_K_eq_Acos_plus_Bsin(double K, double A, double B, std:
     }
     //beta == q_soln - phi 
     gamma = acos(K / r);
-    ROS_INFO("K, A, B, phi, gamma = %f, %f, %f, %f, %f",K,A,B,phi,gamma);
+    //ROS_INFO("K, A, B, phi, gamma = %f, %f, %f, %f, %f",K,A,B,phi,gamma);
     //solns: q = 2npi+/- gamma + phi
     double soln1 = phi + gamma;  //forward soln
     q_solns.push_back(soln1);
@@ -350,7 +350,7 @@ Eigen::Affine3d KukaFwdSolver::fwd_kin_solve(const Eigen::VectorXd& q_vec_UR) {
     q_vec_DH.resize(6);
     q_Kuka_to_q_DH(q_vec_UR,q_vec_DH);
     M = fwd_kin_solve_(q_vec_DH);
-    ROS_INFO_STREAM("ee frame w/rt link0: "<<endl<<M<<endl);
+    //ROS_INFO_STREAM("ee frame w/rt link0: "<<endl<<M<<endl);
     //add transforms to get to vacuum-gripper frame:
     //M = M*A_tool_wrt_flange_*g_A_vacuum_wrt_tool0_;
     M = M*g_A_vacuum_wrt_tool0_;
@@ -444,7 +444,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     }
     
     double q1 = q1_solns[0];
-    ROS_INFO("q1 = %f",q1);
+    //ROS_INFO("q1 = %f",q1);
            
 
     //expect a single q1 soln; use it...soln near q1=0
@@ -462,7 +462,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     Eigen::Vector3d O7_wrt_1= T71.block<3, 1>(0, 3);
     //wrist pose, w/rt frame 1; expect z-val = 0
     Eigen::Vector3d w_wrt_1 = O7_wrt_1 - b7_wrt_1*Lwrist;
-    ROS_INFO_STREAM("w_wrt_1: "<<w_wrt_1.transpose());
+    //ROS_INFO_STREAM("w_wrt_1: "<<w_wrt_1.transpose());
     
     //now, solve a 2-link planar arm for w_wrt_1[0],w_wrt_1[1]
     double L1 = DH_d_params[2];// 2 and 4
@@ -480,7 +480,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     if (w_wrt_1[0]<0) { 
           is_fwd=false; 
           q_elbow = q_elbow_solns[0];    //positive  elbow soln      
-          ROS_INFO("seeking rvrs soln, using q_elbow = %f",q_elbow);
+          //ROS_INFO("seeking rvrs soln, using q_elbow = %f",q_elbow);
           if (!compute_shoulder_ang(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow, q_shoulder)) {
               ROS_WARN("problem computing q_shoulder!");
               return 0;
@@ -488,9 +488,9 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
           
     }
     else {
-        ROS_INFO("seeking fwd soln");
+        //ROS_INFO("seeking fwd soln");
           q_elbow = q_elbow_solns[1];     //negative  elbow soln     
-          ROS_INFO("seeking fwd soln, using q_elbow = %f",q_elbow);
+          //ROS_INFO("seeking fwd soln, using q_elbow = %f",q_elbow);
           if (!compute_shoulder_ang(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow, q_shoulder)) {
               ROS_WARN("problem computing q_shoulder!");
               return 0;  
@@ -501,7 +501,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
         q_ik_soln[1] = q_shoulder;
         q_ik_soln[2] = 0.0; //arbitrarily freeze this joint
         q_ik_soln[3] = q_elbow;
-        ROS_INFO_STREAM("partial soln: "<<q_ik_soln.transpose()<<endl);
+        //ROS_INFO_STREAM("partial soln: "<<q_ik_soln.transpose()<<endl);
         //now fill in wrist angles in locations 4,5,6
     
     q_ik_solns.clear();
@@ -524,7 +524,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
 // should always have a reachable soln, unless out of reach
 bool KukaIkSolver::compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &q1_solns) {
     q1_solns.clear();
-    ROS_WARN("compute_q1_solns:  ");
+    //ROS_WARN("compute_q1_solns:  ");
 
     //-s1*w_x + c1*w_y = -d4
     //solve the eqn K = A*cos(q) + B*sin(q) for q; return "true" if at least one soln is valid
@@ -533,7 +533,7 @@ bool KukaIkSolver::compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &
     //if (!solve_K_eq_Acos_plus_Bsin(DH_d_params[3], w_des[1], -w_des[0], q1_solns)) {
     double r =sqrt(w_des[0]*w_des[0]+w_des[1]*w_des[1]);
     double phi = atan2(w_des[1],w_des[0]);  
-    ROS_INFO("y,x,phi = %f, %f, %f",w_des[1],w_des[0],phi);
+    //ROS_INFO("y,x,phi = %f, %f, %f",w_des[1],w_des[0],phi);
     double q1_near_0 = phi;
     while (q1_near_0<-M_PI/2.0) q1_near_0+=M_PI;
     while (q1_near_0>M_PI/2.0) q1_near_0-=M_PI;
@@ -555,7 +555,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     A23 = compute_A_of_DH(2, q_in[2]);
     A34 = compute_A_of_DH(3, q_in[3]);
     A04 = A01*A12*A23*A34;   
-    ROS_INFO_STREAM("R_des: "<<endl<<R_des<<endl);
+    //ROS_INFO_STREAM("R_des: "<<endl<<R_des<<endl);
 
     Eigen::Vector3d n4,t4,b4; // axes of frame4
     Eigen::Vector3d n5,t5,b5; // axes of frame5; 
@@ -590,7 +590,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
         qw1+= M_PI;
     }
     double qw1b = qw1 -M_PI;
-    ROS_INFO("qw1 options: %f, %f",qw1,qw1b);
+    //ROS_INFO("qw1 options: %f, %f",qw1,qw1b);
            
     //    A34 = compute_A_of_DH(3, q_in[3]);
     // use the + qw1 soln to find qw2, qw3
@@ -601,7 +601,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     double cqw2 = b_des.dot(-t5);
     double sqw2 = b_des.dot(n5);
     qw2 = atan2(sqw2,cqw2);
-    ROS_INFO("for qw1 = %f, --> qw2 = %f",qw1b,qw2);
+    //ROS_INFO("for qw1 = %f, --> qw2 = %f",qw1b,qw2);
     //std::cout<<"wrist bend = "<<q5<<std::endl;
 
     //solve for q6
@@ -613,7 +613,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     double cqw3 =n_des.dot(n6);
     double sqw3 =n_des.dot(t6);
     qw3 =atan2(sqw3, cqw3);
-    ROS_INFO("qw1,qw2,qw3 = %f, %f, %f",qw1,qw2,qw3);
+    //ROS_INFO("qw1,qw2,qw3 = %f, %f, %f",qw1,qw2,qw3);
     q_soln = q_in;
     q_soln[4] = qw1;
     q_soln[5] = qw2;
@@ -629,7 +629,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     while (q_soln[6]>DH_q_max7) q_soln[6]-= 2.0*M_PI;
     while (q_soln[6]<DH_q_min7) q_soln[6]+= 2.0*M_PI;
     
-    ROS_INFO("alt qw1,qw2,qw3 = %f, %f, %f",q_soln[4],q_soln[5],q_soln[6]);
+    //ROS_INFO("alt qw1,qw2,qw3 = %f, %f, %f",q_soln[4],q_soln[5],q_soln[6]);
     q_solns.push_back(q_soln);        
     return is_singular;
 }
@@ -649,26 +649,26 @@ bool KukaIkSolver::compute_shoulder_ang(double x_des,double y_des,  double L1,  
         return false;
     }
     //if here, have shoulder-ang candidates
-    ROS_INFO("shoulder ang candidates: %f, %f",q_solns[0],q_solns[1]);
+    //ROS_INFO("shoulder ang candidates: %f, %f",q_solns[0],q_solns[1]);
     //test which soln is correct:
     q_shoulder = q_solns[0]; // FIX ME!
     double x = L1*sin(q_shoulder) + L2*sin(q_shoulder-q_elbow);
     double y = -L1*cos(q_shoulder) -L2*cos(q_shoulder-q_elbow);
-    ROS_INFO("y_des, y = %f, %f",y_des,y);
-    ROS_INFO("x_des, x = %f, %f",x_des,x);
+    //ROS_INFO("y_des, y = %f, %f",y_des,y);
+    //ROS_INFO("x_des, x = %f, %f",x_des,x);
     if (fabs(x-x_des)< 0.0001) {
-        ROS_INFO("found soln within tolerance");
+        //ROS_INFO("found soln within tolerance");
         return true;
     }
     //try alternative  soln:
-    ROS_INFO("alternative shoulder soln");
+    //ROS_INFO("alternative shoulder soln");
     q_shoulder = q_solns[1]; // 
      x = L1*sin(q_shoulder) + L2*sin(q_shoulder-q_elbow);
      y = -L1*cos(q_shoulder) -L2*cos(q_shoulder-q_elbow);
-    ROS_INFO("y_des, y = %f, %f",y_des,y);
-    ROS_INFO("x_des, x = %f, %f",x_des,x);
+    //ROS_INFO("y_des, y = %f, %f",y_des,y);
+    //ROS_INFO("x_des, x = %f, %f",x_des,x);
     if (fabs(x-x_des)< 0.0001) {
-        ROS_INFO("found soln within tolerance");
+        //ROS_INFO("found soln within tolerance");
         return true;
     }    
     
@@ -707,7 +707,7 @@ bool KukaIkSolver::solve_2R_planar_arm_elbow_angs(double x_des, double y_des, do
     
     double q_elbow_b = -q_elbow_a; //atan2(-s_ang, c_ang);
     q_elbow_solns.push_back(q_elbow_b);
-    ROS_INFO("elbow ang solns: %f, %f ",q_elbow_solns[0],q_elbow_solns[1]);
+    //ROS_INFO("elbow ang solns: %f, %f ",q_elbow_solns[0],q_elbow_solns[1]);
     return true;
 }
 
@@ -758,7 +758,7 @@ bool KukaIkSolver::solve_2R_planar_arm_shoulder_ang(double x_des,double y_des, d
     
     double soln1 = q_solns[0]; //have 2 of these,  but only 1 is right
     double soln2 = q_solns[1];
-    ROS_INFO("q1 options: %f, %f",soln1,soln2);
+    //ROS_INFO("q1 options: %f, %f",soln1,soln2);
  
     //test which solution is correct:
     
@@ -766,13 +766,13 @@ bool KukaIkSolver::solve_2R_planar_arm_shoulder_ang(double x_des,double y_des, d
     double x= L1*cos(q_shoulder) + L2*cos(q_shoulder+q_elbow);
     double y= L1*sin(q_shoulder) + L2*sin(q_shoulder+q_elbow);
     //double xtest = A*cos(q_shoulder) + B*sin(q_shoulder);
-    ROS_INFO("solve_2R_planar_arm_shoulder_ang; x_des,y_des = %f, %f",x_des,y_des);
-    ROS_INFO("x,y = %f, %f ",x,y);
+    //ROS_INFO("solve_2R_planar_arm_shoulder_ang; x_des,y_des = %f, %f",x_des,y_des);
+    //ROS_INFO("x,y = %f, %f ",x,y);
     double fit_err = (x_des-x)*(x_des-x)+(y_des-y)*(y_des-y);
     //ROS_INFO("shoulder soln= %f;  fit err 1: %f",q_shoulder,fit_err);
     if (fit_err< R2_fit_err_tol) {
         //q_shoulder+= M_PI/2;
-         ROS_INFO("q1,q2 = %f, %f fits within tolerance",q_shoulder,q_elbow);
+        // ROS_INFO("q1,q2 = %f, %f fits within tolerance",q_shoulder,q_elbow);
         //q_shoulder = q_solns[0];
         return true; }
       q_shoulder = soln2; //try the alternative(s)
@@ -786,7 +786,7 @@ bool KukaIkSolver::solve_2R_planar_arm_shoulder_ang(double x_des,double y_des, d
       //ROS_INFO("shoulder soln1; fit err: %f",fit_err);
       if (fit_err< R2_fit_err_tol) {
           //q_shoulder+= M_PI/2;
-         ROS_INFO("q1,q2 = %f, %f fits within tolerance",q_shoulder,q_elbow);
+         //ROS_INFO("q1,q2 = %f, %f fits within tolerance",q_shoulder,q_elbow);
 
          return true; }  
     

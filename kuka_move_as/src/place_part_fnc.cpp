@@ -109,12 +109,12 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
         for (int i = 4; i < 6; i++) {
             q_temp_pose_[i] = approach_dropoff_jspace_pose_[i];
         }
-        move_to_jspace_pose(q_temp_pose_, 1.5);
+        move_to_jspace_pose(q_temp_pose_, 1);
     }
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.0); //make a joint-space move
 
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
@@ -141,11 +141,11 @@ unsigned short int  KukaBehaviorActionServer::re_evaluate_approach_and_place_pos
 
 unsigned short int KukaBehaviorActionServer::place_part_in_box_from_approach_no_release(inventory_msgs::Part part,double timeout_arg) {
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.0); //make a joint-space move
 
     //now move to desired_grasp_dropoff_pose_:
     ROS_INFO_STREAM("moving to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
-    move_to_jspace_pose(desired_grasp_dropoff_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(desired_grasp_dropoff_pose_, 2.0); //try it this way instead
 
     //check if part is still attached
     is_attached_ = gripperInterface_.isGripperAttached();
@@ -178,8 +178,14 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inve
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
 
-    if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
+    //having trouble with abort; break this up into two steps; optimize later
+    if (!move_posecode1_to_posecode2(current_pose_code_, current_cruise_code)) {
 
+        ROS_WARN("error with move between pose codes");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        return errorCode_;
+    }
+        if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
         ROS_WARN("error with move between pose codes");
         errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
@@ -235,16 +241,24 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
     if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return errorCode_;
 
     ROS_INFO("moving to previously computed approach pose: ");
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move  
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.5); //make a joint-space move  
 
     ROS_INFO("moving to hover pose");
+    /*
     int move_to_pose_code;
     if (find_nearest_key_pose(move_to_pose_code, current_key_pose_)) {
-        move_to_jspace_pose(current_key_pose_, 1);
+        move_to_jspace_pose(current_key_pose_, 2);
         current_pose_code_ = move_to_pose_code;
         ROS_INFO("current_pose_code_ = %d", current_pose_code_);
-    }
+    }*/
 
+        //try adding move to cruise pose: box_dropoff_cruise_pose_
+    move_to_jspace_pose(box_dropoff_hover_pose_, 3.0); //make a joint-space move 
+    
+    //try adding move to cruise pose: box_dropoff_cruise_pose_
+    ROS_INFO("moving to cruise pose");
+    move_to_jspace_pose(box_dropoff_cruise_pose_, 3.5); //make a joint-space move  
+    current_pose_code_ = box_dropoff_cruise_pose_code_;
     //ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
     //move_to_jspace_pose(current_hover_pose_, 1.0);     
     //current_pose_code_=current_hover_code; //set establish code for recognized, key pose
@@ -278,10 +292,10 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     }
      */
     ROS_INFO("moving to previously computed approach pose: ");
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //make a joint-space move    
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 2.0); //make a joint-space move    
 
     ROS_INFO("moving to current_hover_pose_ "); //pickup_hover_pose_
-    move_to_jspace_pose(current_hover_pose_, 1.0);
+    move_to_jspace_pose(current_hover_pose_, 2.0);
     current_pose_code_ = current_hover_code; //set establish code for recognized, key pose
 
     if (!move_posecode1_to_posecode2(current_pose_code_, Q1_DISCARD_CODE)) {
@@ -343,11 +357,11 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ "); //same approach as previously computed
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.0); //try it this way instead
 
     //now move to desired_grasp_dropoff_pose_:
     ROS_INFO_STREAM("moving to recomputed desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
-    move_to_jspace_pose(desired_grasp_dropoff_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(desired_grasp_dropoff_pose_, 2.0); //try it this way instead
 
     //check if part is still attached
     is_attached_ = gripperInterface_.isGripperAttached();
@@ -387,15 +401,15 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(i
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ "); //same approach as previously computed
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 2.0); //try it this way instead
 
     //now move to desired_grasp_dropoff_pose_:
     ROS_INFO_STREAM("moving to recomputed desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
-    move_to_jspace_pose(desired_grasp_dropoff_pose_, 1.0); //try it this way instead
-    errorCode_ = gripperInterface_.release_fnc(1.0);
+    move_to_jspace_pose(desired_grasp_dropoff_pose_, 2.0); //try it this way instead
+    errorCode_ = gripperInterface_.release_fnc(5.0);
 
     //move  back to approach/depart pose:
-    move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //try it this way instead
+    move_to_jspace_pose(approach_dropoff_jspace_pose_, 2.0); //try it this way instead
 
 
     //check if part is still attached

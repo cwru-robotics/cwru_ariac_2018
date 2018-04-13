@@ -15,9 +15,12 @@ using namespace std;
 //key poses, hard coded:
 //convenient for initializing data: C-style array 
 const int NDOF = 8;
-const double Q1_HOVER_array[NDOF] = { 0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35}; 
-const double Q1_CRUISE_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35}; 
-const double CRUISE_FLIP_MID_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.35};  
+//const double Q1_HOVER_array[NDOF] = {0.0, 0.9, 0.0, -1.6, 0, 0.45, 0, -0.385}; 
+const double Q1_HOVER_array[NDOF] = {0.3, 1.3, 0.0, -1.0, 0, 0.45, 0, -0.385}; 
+
+//0.3, 1.3, 0.0, -1.0, 0, 0.45, 0, -0.385
+const double Q1_CRUISE_array[NDOF] = {1.57, 0.9, 0.0, -1.6, 0, 0.45, 0, -0.385}; 
+const double CRUISE_FLIP_MID_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.385};  
 const double Q1_DISCARD_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, 1.75};  
 
 //FIX ME!

@@ -159,16 +159,20 @@ int main(int argc, char** argv) {
                   i_model++; //give up on placing this part; it seems to be impossible
             }
             
+                //cout<<"enter 1: ";
+                //cin>>ans;            
+            
             if (go_on) {
                 ROS_INFO("observe pose of grasped part in approach pose");
-                ros::Duration(1.0).sleep(); //let robot stabilize;
+                ros::Duration(2.0).sleep(); //let robot stabilize;
                 ROS_WARN("NEED TO GET OBSERVED PART POSE HERE...");
                 ROS_WARN("result should be called observed_part");
                 //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
                 // get actual pose of this part from the box camera
                 // DO watch out for timeout; if timeout, just proceed with blind placement
                 boxInspector.get_observed_part_pose(place_part, observed_part);
-                
+                //cout<<"enter 1: ";
+                //cin>>ans;
                 //when above fnc call is working, call the following
                 ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
                 go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);
@@ -192,7 +196,7 @@ int main(int argc, char** argv) {
                 go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
             }
             ROS_INFO("after qual inspection; enter 1:");
-            cin>>ans;
+            //cin>>ans;
 
 
             if (go_on) {
@@ -202,16 +206,16 @@ int main(int argc, char** argv) {
 
   
         ROS_INFO("done pre adjusting");
-            cin>>ans;            
+            //cin>>ans;            
 
             if (go_on) {
                 ROS_INFO("attempting part release; enter 1: ");
-                cin>>ans;
+                //cin>>ans;
                 go_on = robotBehaviorInterface.release_and_retract(); //release the part
             }
             
            ROS_INFO("waiting for 1");
-            cin>>ans;
+            //cin>>ans;
 
             if (go_on) { //if here, 
                 ROS_INFO("declaring success, and moving on to the  next product");
@@ -221,9 +225,9 @@ int main(int argc, char** argv) {
 
         }
 
-        if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
-            ROS_INFO("Unable to post adjust parts");
-        }
+        //if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
+        //    ROS_INFO("Unable to post adjust parts");
+        //}
 
         
 

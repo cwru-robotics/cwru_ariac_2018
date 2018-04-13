@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
      part.pose = part_pose;
      part.name = part_name.c_str();*/
     //start from 2--skip the gear parts
-    for (int i_part_type=2;i_part_type<=NUM_PART_TYPES;i_part_type++) {
+    for (int i_part_type=1;i_part_type<=NUM_PART_TYPES;i_part_type++) {
         std::string part_name = part_id_to_name_mappings[i_part_type];
         ROS_INFO_STREAM("attempting to remove parts  of  type "<<part_name<<endl);
         int nparts = binInventory.num_parts(i_part_type);

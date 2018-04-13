@@ -293,6 +293,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
     bool go_on=true; 
     int ans;
     ROS_INFO("THIS FUNCTION DOES GET CALLED");
+    
     std::string part_name(place_part.name);
     ROS_INFO_STREAM("looking for part " << part_name << endl);
     int partnum_in_inventory;

@@ -99,6 +99,7 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
     jointstate_subscriber_  =  nh.subscribe("/ariac/joint_states", 1, &KukaBehaviorActionServer::jointstateCB,this); 
     
     //set_key_poses();
+    bad_state_ = string("ABORTED");
 
     robot_behavior_as.start();
     ROS_INFO("Start Robot Behavior Action Server");
@@ -108,6 +109,18 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
 void KukaBehaviorActionServer::trajDoneCb_(const actionlib::SimpleClientGoalState& state,
         const control_msgs::FollowJointTrajectoryResultConstPtr& result) {
     ROS_INFO(" trajDoneCb: server responded with state [%s]", state.toString().c_str());
+    
+    string succeeded("SUCCEEDED");
+    rtn_state_ = state.toString();
+    if (bad_state_==rtn_state_) {
+        ROS_WARN("enter 1 to continue");
+        int ans;
+        //cin>>ans;
+    }
+    if (succeeded==rtn_state_) {
+        ROS_INFO("wsn: traj returned succeeded");
+    }
+
     traj_goal_complete_ = true;
 }
 
@@ -687,7 +700,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
         return false;
     }
     //if here, then traj is valid:
-    //ROS_INFO_STREAM("moving with traj = " << endl << transition_traj << endl);
+    ROS_INFO_STREAM("transition array traj = " << endl << transition_traj << endl);
     robot_goal_.trajectory = transition_traj;
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
