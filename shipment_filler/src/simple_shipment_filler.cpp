@@ -115,8 +115,7 @@ int main(int argc, char** argv) {
     //got_shipment = orderManager.choose_shipment(shipment);
     
     //can't go any further until receive new shipment request, or until near competition expiration
-
-        ROS_INFO("ROSISOK!");
+        //ROS_INFO("ROSISOK!");
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
           ros::Duration(0.5).sleep();
@@ -125,7 +124,8 @@ int main(int argc, char** argv) {
         successfully_filled_order = false;    
         while(!successfully_filled_order) {
         current_time=ros::Time::now().toSec();
-        if(current_time - competition_start_time > 480 ) {
+        if(current_time - competition_start_time > 450 ) {
+            ROS_WARN("TIMES UP!");
             break;
         }
         
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
                 ROS_INFO("either no unwanted parts or couldnt remove");
             }
             int iter=0;
-            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)  && iter<3){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
+            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)  && iter<6){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
         //try to fill shipment; do robot moves to fill shipment
                 iter++;
                 int num_parts = missing_parts.size();
@@ -225,6 +225,20 @@ int main(int argc, char** argv) {
                     }
            
 
+                    if(!checked_for_order_update) {
+                        if(shipmentFiller.check_order_update(shipment)) {
+                            successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED. NO IT WONT
+                            checked_for_order_update=true;
+                            order_updated=true;
+                            break;
+                            break;
+                        }
+                        else {
+                            ROS_INFO("YAY No order update!");
+                            //successfully_filled_order=true;
+                        }
+                    }
+
                 }
    
             }
@@ -235,23 +249,7 @@ int main(int argc, char** argv) {
                     ROS_INFO("Unable to post adjust parts");
                 }
             }
-     
-
-        
-        
-            if(!checked_for_order_update) {
-                if(shipmentFiller.check_order_update(shipment)) {
-                    successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED
-                    checked_for_order_update=true;
-                    order_updated=true;
-                    
-                }
-                else {
-                    ROS_INFO("YAY No order update!");
-                    successfully_filled_order=true;
-                }
-            }
-            else{successfully_filled_order=true;}
+            successfully_filled_order=true;
         }
     
         //ROS_INFO("done processing shipment; advancing box");
