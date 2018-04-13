@@ -297,13 +297,17 @@ bool BinInventory::find_part(std::string part_name,inventory_msgs::Part &pick_pa
    */           
 bool BinInventory::find_part(inventory_msgs::Inventory current_inventory,std::string part_name,inventory_msgs::Part &pick_part, int &partnum) {
   int part_id = name_to_part_id_mappings[part_name];
+  ROS_INFO("debug: part id: %d", part_id );
   int num_parts_avail = num_parts(part_id);
+  ROS_INFO("debug: num parts available: %d", num_parts_avail);
   if (num_parts_avail<1) return false;
 
   //select a part at random, to avoid re-trying the same part repeatedly
   partnum = 0;
   if (num_parts_avail>1) partnum = rand() % (num_parts_avail-1);
+  ROS_INFO("debug: partnum: %d", partnum);
   int bin_num =   current_inventory.inventory[part_id].bins[partnum];
+  ROS_INFO("DEBUG: bin_num: %d", bin_num);
   geometry_msgs::PoseStamped part_pose = current_inventory.inventory[part_id].part_stamped_poses[partnum];
   ROS_INFO_STREAM("found part "<<part_name<<" in bin "<<bin_num<<" at pose "<<part_pose<<endl);
     //populate a Part  object:

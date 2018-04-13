@@ -385,7 +385,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
         if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
             ROS_INFO("pick failed");
             go_on = false;
-            return false;
+            return false; //REMOVE THIS IF NEEDED
             //gripperInterface_.release();     
         }
         if (go_on) {
@@ -398,7 +398,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             if (!robotBehaviorInterface.move_part_to_approach_pose(place_part)) {
                 ROS_INFO("could not move to approach pose");
                 go_on=false; 
-                return false;   
+                //return false;  // REMOVE THIS IF NEEDED
             }
         }
         //loop back to retry with another part;

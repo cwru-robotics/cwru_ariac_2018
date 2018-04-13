@@ -123,11 +123,11 @@ int main(int argc, char** argv) {
         //now have a shipment; start  processing it
         successfully_filled_order = false;    
         while(!successfully_filled_order) {
-        current_time=ros::Time::now().toSec();
-        if(current_time - competition_start_time > 450 ) {
-            ROS_WARN("TIMES UP!");
-            break;
-        }
+        //current_time=ros::Time::now().toSec();
+        //if(current_time - competition_start_time > 450 ) {
+        //    ROS_WARN("TIMES UP!");
+        //    break;
+        //}
         
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
                 //adjust part locations in box: 
                 go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
             }
-*/
+*/                  
   
         
                     if (go_on) {
@@ -223,7 +223,8 @@ int main(int argc, char** argv) {
                         ROS_INFO("declaring success, and moving on to the  next product");
                         i_model++;
                     }
-           
+                    
+
 
                     
 
@@ -263,7 +264,7 @@ int main(int argc, char** argv) {
             //dummy fnc for now
             
 
-            replaced_faulty_parts = shipmentFiller.replace_faulty_parts_inspec2(shipment);
+            //replaced_faulty_parts = shipmentFiller.replace_faulty_parts_inspec2(shipment);
         	
             //report shipment has been filled:
             
