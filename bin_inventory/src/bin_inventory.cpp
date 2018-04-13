@@ -193,6 +193,7 @@ bool BinInventory::update() {
             geometry_msgs::Pose cam_pose = image_data.pose;
             geometry_msgs::Pose part_pose;
             int bin_num = camera_to_bin_mapping_[cam_num];
+            
             for (int imodel = 0; imodel < num_models; imodel++) {
                 std::string name(image_data.models[imodel].type);
                 // cout << "model name: " << name << endl;

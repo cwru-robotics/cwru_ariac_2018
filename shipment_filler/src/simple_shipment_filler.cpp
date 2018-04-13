@@ -277,14 +277,18 @@ int main(int argc, char** argv) {
             //send notice to drone:
             //HOW TO PREVENT DUMMY REPORT?
             reported_shipment_to_drone= shipmentFiller.report_shipment_to_drone();
-
+            current_time=ros::Time::now().toSec();
+            while(current_time - competition_start_time >460) {
+                ROS_INFO("Im done, good night");
+                ros::Duration(0.5).sleep();   //Can I just make you sleep for 40 seconds?
+            }
             //send robot to waiting pose; update inventory
 			if(binInventory.update()) {
                 binInventory.get_inventory(current_inventory);
             }            
             
             
-            ROS_WARN("stopping after single shipment...FIX ME!");
+            //ROS_WARN("stopping after single shipment...FIX ME!");
             
     }
 }
