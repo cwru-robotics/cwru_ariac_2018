@@ -1224,12 +1224,12 @@ void TransitionTrajectories::fill_transition_traj_map() {
     transition_traj.points.push_back(trajectory_point);
 
     copy_point(CRUISE_FLIP_MID_array,trajectory_point);
-    trajectory_point.time_from_start = ros::Duration(2.5);
+    trajectory_point.time_from_start = ros::Duration(4);
     transition_traj.points.push_back(trajectory_point);
 
     //BIN5_CRUISE_array
     copy_point(BIN5_CRUISE_array,trajectory_point);
-    trajectory_point.time_from_start = ros::Duration(3.5);
+    trajectory_point.time_from_start = ros::Duration(8);
     transition_traj.points.push_back(trajectory_point);
     transition_traj_map_[INIT_POSE_CODE][BIN5_CRUISE_CODE] = transition_traj; 
 
