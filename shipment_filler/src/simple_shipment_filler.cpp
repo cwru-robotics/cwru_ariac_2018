@@ -225,19 +225,7 @@ int main(int argc, char** argv) {
                     }
            
 
-                    if(!checked_for_order_update) {
-                        if(shipmentFiller.check_order_update(shipment)) {
-                            successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED. NO IT WONT
-                            checked_for_order_update=true;
-                            order_updated=true;
-                            break;
-                            break;
-                        }
-                        else {
-                            ROS_INFO("YAY No order update!");
-                            //successfully_filled_order=true;
-                        }
-                    }
+                    
 
                 }
    
@@ -249,7 +237,19 @@ int main(int argc, char** argv) {
                     ROS_INFO("Unable to post adjust parts");
                 }
             }
-            successfully_filled_order=true;
+            if(!checked_for_order_update) {
+                        if(shipmentFiller.check_order_update(shipment)) {
+                            successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED. NO IT WONT
+                            checked_for_order_update=true;
+                            order_updated=true;
+                            
+                        }
+                        else {
+                            ROS_INFO("YAY No order update!");
+                            //successfully_filled_order=true;
+                        }
+                    }
+            else {successfully_filled_order=true;}
         }
     
         //ROS_INFO("done processing shipment; advancing box");
