@@ -73,7 +73,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     if (bad_state_ ==rtn_state_) {
         ROS_WARN("TRYING TO RECOVER FROM ABORT");
         ros::Duration(1.0).sleep();
-        move_to_jspace_pose(current_bin_cruise_pose_code_, 5.0);     
+        move_to_jspace_pose(current_bin_cruise_pose_, 8.0);     
     }    
     ROS_WARN("moving to respective hover pose");
     move_to_jspace_pose(current_hover_pose_, 3.5); 
