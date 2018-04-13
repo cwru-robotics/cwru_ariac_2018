@@ -130,7 +130,6 @@ int main(int argc, char** argv) {
         
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
-            cin>>ans;
             //prep for drone request: set shipment name
             shipmentFiller.set_drone_shipment_name(shipment);       
             boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
