@@ -190,7 +190,10 @@ bool OrderManager::choose_order(osrf_gear::Order &order) {
 
 bool OrderManager::choose_shipment(osrf_gear::Shipment &shipment) {
     osrf_gear::Order temp_order;
-
+    if(order_is_updated_) {
+      shipment=updated_orders_[0].shipments[1];
+      return true;
+    }
     ROS_INFO("choose_shipment: start by choosing an order");
     if (!choose_order(temp_order))  return false;
     //choose a shipment within this order:

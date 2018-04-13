@@ -95,9 +95,11 @@ int main(int argc, char** argv) {
     start_competition(nh); //start the competition
     
     double competition_start_time = ros::Time::now().toSec(); //check the clock= start time
-        
+    double current_time;    
         
     //MAKE BOX CONTROL AN ACTION SERVER for multi-tasking
+    while(ros::ok()) { //check for conditions where we might have to stop otherwise
+    ROS_INFO("starting round");
     ROS_INFO("getting a box into position: ");
     advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION1_LOCATION_CODE);
@@ -113,8 +115,7 @@ int main(int argc, char** argv) {
     //got_shipment = orderManager.choose_shipment(shipment);
     
     //can't go any further until receive new shipment request, or until near competition expiration
-     while(ros::ok()) { //check for conditions where we might have to stop otherwise
-        ROS_INFO("ROSISOK!");
+        //ROS_INFO("ROSISOK!");
         while (!orderManager.choose_shipment(shipment)) {
           ROS_INFO("waiting for shipment");
           ros::Duration(0.5).sleep();
@@ -122,8 +123,10 @@ int main(int argc, char** argv) {
         //now have a shipment; start  processing it
         successfully_filled_order = false;    
         while(!successfully_filled_order) {
-
-
+        current_time=ros::Time::now().toSec();
+        if(current_time - competition_start_time > 480 ) {
+            break;
+        }
         
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
@@ -134,9 +137,10 @@ int main(int argc, char** argv) {
             if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
                 ROS_INFO("either no unwanted parts or couldnt remove");
             }
-            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
+            int iter=0;
+            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)  && iter<3){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
         //try to fill shipment; do robot moves to fill shipment
-            
+                iter++;
                 int num_parts = missing_parts.size();
                 ROS_INFO("trying to fill box with %d products",num_parts);
                 int i_model=0;
@@ -224,29 +228,33 @@ int main(int argc, char** argv) {
    
             }
             
-/*
+
             if(go_on) {
                 if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
                     ROS_INFO("Unable to post adjust parts");
                 }
             }
      
-*/
+
         
         
-        if(!checked_for_order_update) {
+            if(!checked_for_order_update) {
                 if(shipmentFiller.check_order_update(shipment)) {
                     successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED
                     checked_for_order_update=true;
                     order_updated=true;
                     
                 }
-                else {successfully_filled_order=true;}
+                else {
+                    ROS_INFO("YAY No order update!");
+                    successfully_filled_order=true;
+                }
             }
+            else{successfully_filled_order=true;}
         }
     
-        ROS_INFO("done processing shipment; advancing box");
-        ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
+        //ROS_INFO("done processing shipment; advancing box");
+        //ROS_WARN("SHOULD HAVE A  LOOP HERE  TO PROCESS MORE SHIPMENTS");
             //SHOULD GET ROBOT OUT OF THE WAY BEFORE MOVING CONVEYOR. IN CASE ANY OF THE RELEASE AND RETRACT FNCS DONT WORK   
             //advance shipment to next inspection  station:
             
@@ -266,8 +274,9 @@ int main(int argc, char** argv) {
             advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(DRONE_DOCK_LOCATION_CODE);
             //send notice to drone:
-            
+            //HOW TO PREVENT DUMMY REPORT?
             reported_shipment_to_drone= shipmentFiller.report_shipment_to_drone();
+
             //send robot to waiting pose; update inventory
 			if(binInventory.update()) {
                 binInventory.get_inventory(current_inventory);
@@ -275,6 +284,6 @@ int main(int argc, char** argv) {
             
             
             ROS_WARN("stopping after single shipment...FIX ME!");
-            return 0;
+            
     }
 }
