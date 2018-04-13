@@ -215,6 +215,10 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     temp_pose = current_bin_cruise_pose_; //move here in 2 steps
     //keep toolflange the same
     for (int i=4;i<6;i++) temp_pose[i] = approach_pickup_jspace_pose_[6];
+    //watch out for bent wrist:
+    if (temp_pose[5]<-1.57) temp_pose[5]=-1.57;
+    if (temp_pose[5]>1.57) temp_pose[5]=1.57;
+    
     ROS_INFO("moving to temp pose");
     move_to_jspace_pose(temp_pose, 6.0);   
     if (bad_state_ ==rtn_state_) {

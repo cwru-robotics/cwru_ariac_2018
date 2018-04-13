@@ -58,7 +58,7 @@ const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
 const double APPROACH_OFFSET_DIST = 0.05;
 const double DEEP_GRASP_MOVE_DIST = -0.01;
 
-const double MIN_BIN_GRASP_DY = -0.135; //-0.153;
+const double MIN_BIN_GRASP_DY = -0.104; //-0.153; //xxx yikes!
 const double MAX_BIN_GRASP_DY = 0.175; //0.190;
 const double MAX_BIN_X_VAL = -0.6;
 const double MIN_BIN_X_VAL = -0.84; //-0.860;
