@@ -177,9 +177,25 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     ROS_INFO("moving to current_bin_cruise_pose_ cruise pose; enter 1");
     //cin>>ans;   
     //riskier--freeze toolflange
-    current_bin_cruise_pose_[6] = approach_pickup_jspace_pose_[6];
+    Eigen::VectorXd temp_pose;
+    temp_pose.resize(8);
+    temp_pose = current_bin_cruise_pose_;
+    for (int i=4;i<6;i++) temp_pose[i] = approach_pickup_jspace_pose_[6];
+    ROS_INFO("moving to temp pose");
+    move_to_jspace_pose(temp_pose, 6.0);   
+    if (bad_state_ ==rtn_state_) {
+        ROS_WARN("TRYING TO RECOVER FROM ABORT");
+        ros::Duration(1.0).sleep();
+        move_to_jspace_pose(temp_pose, 10.0);   
+    }
+    if (bad_state_ ==rtn_state_) {
+        ROS_WARN("TRYING TO RECOVER FROM ABORT");
+        move_to_jspace_pose(temp_pose, 10.0);   
+    }    
+
+    //current_bin_cruise_pose_[6] = approach_pickup_jspace_pose_[6];
     
-    move_to_jspace_pose(current_bin_cruise_pose_, 6.0);     
+    move_to_jspace_pose(current_bin_cruise_pose_, 3.0);     
     current_pose_code_ = current_bin_cruise_pose_code_; //keep track of where we are, in terms of pose codes
     
     

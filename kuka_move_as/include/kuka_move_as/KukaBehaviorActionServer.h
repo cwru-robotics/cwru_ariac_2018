@@ -222,6 +222,7 @@ private:
     kuka_move_as::RobotBehaviorGoal goal_;
     kuka_move_as::RobotBehaviorFeedback feedback_;
     kuka_move_as::RobotBehaviorResult result_;
+    std::string rtn_state_,bad_state_;
     bool isPreempt_;
     //bool goalComplete_;
     //RobotState robotState;
