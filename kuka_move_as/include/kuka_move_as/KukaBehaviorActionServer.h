@@ -303,7 +303,7 @@ private:
     Eigen::VectorXd current_bin_cruise_pose_,current_bin_hover_pose_;
     int current_bin_cruise_pose_code_, current_bin_hover_pose_code_;
        
-    int box_dropoff_cruise_pose_code_; //would be Q1_CRUISE or Q2_CRUISE
+    int box_dropoff_cruise_pose_code_, box_dropoff_hover_pose_code_; //would be Q1_CRUISE or Q2_CRUISE
 
     double approach_dist_;
     double deep_grasp_dist_;

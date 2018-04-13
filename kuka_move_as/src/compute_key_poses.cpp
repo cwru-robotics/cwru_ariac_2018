@@ -265,7 +265,8 @@ unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inven
     //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
 //  new...set these:
      //   Eigen::VectorXd  box_dropoff_hover_pose_, box_dropoff_cruise_pose_;
-
+    //XXX COERCE THIS TO BOX Q1---FIX ME!!!
+    part.location = Part::QUALITY_SENSOR_1;
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
         errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
@@ -286,11 +287,18 @@ unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inven
     
     if (Part::QUALITY_SENSOR_1==part.location) { 
         box_dropoff_cruise_pose_code_= Q1_CRUISE_CODE;
+        box_dropoff_hover_pose_code_ = Q1_HOVER_CODE;
         copy_array_to_qvec(Q1_CRUISE_array,box_dropoff_cruise_pose_);
+        copy_array_to_qvec(Q1_HOVER_array,box_dropoff_hover_pose_);
+        
         ROS_INFO_STREAM("assigning cruise pose for Q1 to: "<<box_dropoff_cruise_pose_.transpose()<<endl);
+        
     }
     else if (Part::QUALITY_SENSOR_2==part.location) {
         copy_array_to_qvec(Q2_CRUISE_array,box_dropoff_cruise_pose_);
+        copy_array_to_qvec(Q2_HOVER_array,box_dropoff_hover_pose_);        
+        box_dropoff_hover_pose_code_ = Q2_HOVER_CODE;
+
         ROS_INFO_STREAM("assigning cruise pose for Q2 to: "<<box_dropoff_cruise_pose_.transpose()<<endl);
         box_dropoff_cruise_pose_code_= Q2_CRUISE_CODE;
 

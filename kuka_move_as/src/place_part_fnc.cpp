@@ -87,34 +87,62 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
         return errorCode_;
     }
     //extract box location codes from Part:
-    int current_hover_code = location_to_pose_code_map[part.location];
-    int current_cruise_code = location_to_cruise_code_map[part.location];
+    
+    //int current_hover_code = location_to_pose_code_map[part.location];
+    //int current_cruise_code = location_to_cruise_code_map[part.location];
+    //ASSUME part is to be placed  in Q1!!
+    //FIX  ME!!!
+    //xxx
+    //current_cruise_code =box_dropoff_cruise_pose_code_;
+    //current_hover_code = box_dropoff_hover_pose_code_;
 
-    if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
+    if (!move_posecode1_to_posecode2(box_dropoff_cruise_pose_code_, box_dropoff_hover_pose_code_)) {
 
         ROS_WARN("error with move between pose codes");
         errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
     }
     is_attached_ = gripperInterface_.isGripperAttached();
+    if (bad_state_ ==rtn_state_) {
+                ROS_WARN("TRYING TO RECOVER FROM ABORT");
+                ros::Duration(1.0).sleep();
+                move_to_jspace_pose(box_dropoff_hover_pose_, 5.0);     
+            }                
+    current_pose_code_ = box_dropoff_hover_pose_code_; //keep track of where we are, in terms of pose codes
+
+
     if (!is_attached_) {
         errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }
+    
+
 
     ROS_WARN(" DO DROPOFF STEPS HERE...");
     //get the wrist pose ready:
     ROS_INFO("position wrist at hover pose");
-    if (hover_jspace_pose_from_pose_code(current_hover_code, q_temp_pose_)) {
+    if (hover_jspace_pose_from_pose_code(box_dropoff_hover_pose_code_, q_temp_pose_)) {
         for (int i = 4; i < 6; i++) {
             q_temp_pose_[i] = approach_dropoff_jspace_pose_[i];
         }
         move_to_jspace_pose(q_temp_pose_, 1);
     }
+    if (bad_state_ ==rtn_state_) {
+                ROS_WARN("TRYING TO RECOVER FROM ABORT");
+                ros::Duration(1.0).sleep();
+                move_to_jspace_pose(q_temp_pose_, 5.0);     
+            }     
+    
 
     //now move to approach_dropoff_jspace_pose_:
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.0); //make a joint-space move
+    if (bad_state_ ==rtn_state_) {
+                ROS_WARN("TRYING TO RECOVER FROM ABORT");
+                ros::Duration(1.0).sleep();
+                move_to_jspace_pose(approach_dropoff_jspace_pose_, 5.0);     
+            }         
+    
 
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;

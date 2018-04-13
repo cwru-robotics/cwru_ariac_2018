@@ -228,7 +228,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     }    
 
     //current_bin_cruise_pose_[6] = approach_pickup_jspace_pose_[6];
-    
+    ROS_INFO("finishing move to current_bin_cruise_pose_");
     move_to_jspace_pose(current_bin_cruise_pose_, 3.0);     
     current_pose_code_ = current_bin_cruise_pose_code_; //keep track of where we are, in terms of pose codes
     if (bad_state_ ==rtn_state_) {
@@ -246,8 +246,12 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
         ROS_WARN("TRYING TO RECOVER FROM ABORT");
         ros::Duration(1.0).sleep();
         move_to_jspace_pose(q1_cruise_pose_, 5.0);     
-    }        
-
+    }        //try again, if necessary
+    if (bad_state_ ==rtn_state_) {
+        ROS_WARN("TRYING TO RECOVER FROM ABORT");
+        ros::Duration(1.0).sleep();
+        move_to_jspace_pose(q1_cruise_pose_, 5.0);     
+    } 
     //check if part is still attached
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {

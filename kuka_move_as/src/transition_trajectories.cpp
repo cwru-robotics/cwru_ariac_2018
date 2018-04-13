@@ -465,11 +465,11 @@ void TransitionTrajectories::fill_transition_traj_map() {
 
     //extra...keep going: flip over and go to Q1 HOVER via Q1 CRUISE
     copy_point(CRUISE_FLIP_MID_array,trajectory_point);
-    trajectory_point.time_from_start = ros::Duration(3.0);
+    trajectory_point.time_from_start = ros::Duration(5.0);
     transition_traj.points.push_back(trajectory_point);
 
     copy_point(Q1_CRUISE_array,trajectory_point);
-    trajectory_point.time_from_start = ros::Duration(3.5);
+    trajectory_point.time_from_start = ros::Duration(7.5);
     transition_traj.points.push_back(trajectory_point);
     transition_traj_map_[BIN1_CRUISE_CODE][Q1_CRUISE_CODE] = transition_traj; 
 
