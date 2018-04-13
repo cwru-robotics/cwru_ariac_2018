@@ -788,8 +788,13 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
         //$ rosservice call /ariac/conveyor/control "power: 100"
         ROS_INFO("advancing conveyor to location code %d", location_code);
         bool conveyor_ok = false;
+        double time=0;
+        double dt = 0.5;
+        double CONVEYOR_ADVANCE_MAX_TIME = 40.0;
+        double CONVEYOR_ADVANCE_BOX_Q1 = 20.0;
         switch (location_code) {
             case BOX_INSPECTION1_LOCATION_CODE:
+                time=0;
                 while (!conveyor_ok) {
                     conveyor_client_.call(conveyor_svc_msg_GO_);
                     conveyor_ok = conveyor_svc_msg_GO_.response.success;
@@ -797,11 +802,12 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
                 }
                 ROS_INFO("conveyor commanded to move");
                 if (!box_cam1_sees_box_) ROS_INFO("box not yet seen at cam1 station");
-                while (!box_cam1_sees_box_) {
+                while ((!box_cam1_sees_box_) && (time<CONVEYOR_ADVANCE_BOX_Q1)) {
                     ROS_INFO("box not yet seen at cam1 station");
                     conveyor_client_.call(conveyor_svc_msg_GO_);
                     ros::spinOnce();
-                    ros::Duration(0.5).sleep();
+                    ros::Duration(dt).sleep();
+                    time+=dt;
                 }
                 ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
                 while (box_cam_1_dist_to_go_ > 0) {
@@ -837,8 +843,10 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             case DRONE_DOCK_LOCATION_CODE:
                 ROS_INFO("advancing box to drone depot");
                 conveyor_client_.call(conveyor_svc_msg_GO_);
-                while (!drone_depot_sensor_sees_box_) {
-                    ros::Duration(0.5).sleep();
+                time=0;
+                while ((!drone_depot_sensor_sees_box_)&&(time<CONVEYOR_ADVANCE_MAX_TIME)) {
+                    ros::Duration(dt).sleep();
+                    time+=dt;
                     ros::spinOnce();
                     ROS_INFO("scanner does  not see box at drone depot");
                 }
