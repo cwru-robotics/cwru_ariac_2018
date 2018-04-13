@@ -1108,7 +1108,7 @@ void TransitionTrajectories::fill_transition_traj_map() {
 
     //BIN5_CRUISE
     copy_point(BIN5_CRUISE_array,trajectory_point);
-    trajectory_point.time_from_start = ros::Duration(1.0);
+    trajectory_point.time_from_start = ros::Duration(3.0);
     transition_traj.points.push_back(trajectory_point);
     transition_traj_map_[Q1_CRUISE_CODE][BIN5_CRUISE_CODE] = transition_traj; 
 

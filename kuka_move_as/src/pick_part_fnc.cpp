@@ -212,7 +212,8 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //riskier--freeze toolflange
     Eigen::VectorXd temp_pose;
     temp_pose.resize(8);
-    temp_pose = current_bin_cruise_pose_;
+    temp_pose = current_bin_cruise_pose_; //move here in 2 steps
+    //keep toolflange the same
     for (int i=4;i<6;i++) temp_pose[i] = approach_pickup_jspace_pose_[6];
     ROS_INFO("moving to temp pose");
     move_to_jspace_pose(temp_pose, 6.0);   
@@ -236,6 +237,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
         move_to_jspace_pose(current_bin_cruise_pose_, 5.0);     
  
     }    
+    current_pose_code_ = current_bin_cruise_pose_code_;
     
     if (!move_posecode1_to_posecode2(current_pose_code_, Q1_CRUISE_CODE)) {
         ROS_WARN("error with move between pose codes");
