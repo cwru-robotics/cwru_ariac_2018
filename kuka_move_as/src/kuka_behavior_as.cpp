@@ -108,12 +108,16 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
 void KukaBehaviorActionServer::trajDoneCb_(const actionlib::SimpleClientGoalState& state,
         const control_msgs::FollowJointTrajectoryResultConstPtr& result) {
     ROS_INFO(" trajDoneCb: server responded with state [%s]", state.toString().c_str());
-    string bad_state("[ABORTED]");
-    string rtn_state(state.toString().c_str());
+    string bad_state("ABORTED");
+    string succeeded("SUCCEEDED");
+    string rtn_state = state.toString();
     if (bad_state==rtn_state) {
         ROS_WARN("enter 1 to continue");
         int ans;
-        cin>>ans;
+        //cin>>ans;
+    }
+    if (succeeded==rtn_state) {
+        ROS_INFO("wsn: traj returned succeeded");
     }
 
     traj_goal_complete_ = true;

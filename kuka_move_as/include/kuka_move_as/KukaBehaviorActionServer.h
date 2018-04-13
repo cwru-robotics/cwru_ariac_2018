@@ -55,10 +55,10 @@ const bool DOWN = false;
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
-const double APPROACH_OFFSET_DIST = 0.04;
+const double APPROACH_OFFSET_DIST = 0.05;
 const double DEEP_GRASP_MOVE_DIST = -0.01;
 
-const double MIN_BIN_GRASP_DY = -0.140; //-0.153;
+const double MIN_BIN_GRASP_DY = -0.135; //-0.153;
 const double MAX_BIN_GRASP_DY = 0.175; //0.190;
 const double MAX_BIN_X_VAL = -0.6;
 const double MIN_BIN_X_VAL = -0.84; //-0.860;
@@ -73,6 +73,8 @@ const double DROPOFF_CLEARANCE = 0.005; //leave small  gap for dropoff
 
 const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
 const double X_BASE_WRT_WORLD = -0.050;
+
+const double MOVE_INTO_GRASP_TIME = 7.0;//spend this long retrying grasp
 
 
 //int ans; //poor-man's debug response
