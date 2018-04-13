@@ -123,16 +123,15 @@ int main(int argc, char** argv) {
         //now have a shipment; start  processing it
         successfully_filled_order = false;    
         while(!successfully_filled_order) {
-        //current_time=ros::Time::now().toSec();
-        //if(current_time - competition_start_time > 450 ) {
-        //    ROS_WARN("TIMES UP!");
-        //    break;
-        //}
+        current_time=ros::Time::now().toSec();
+        if(current_time - competition_start_time > 460 ) {
+            ROS_WARN("TIMES UP!");
+            break;
+        }
         
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
             //prep for drone request: set shipment name
-            shipmentFiller.set_drone_shipment_name(shipment);       
             boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
             ROS_INFO("checking for unwanted parts");
             if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
@@ -258,8 +257,8 @@ int main(int argc, char** argv) {
             //SHOULD GET ROBOT OUT OF THE WAY BEFORE MOVING CONVEYOR. IN CASE ANY OF THE RELEASE AND RETRACT FNCS DONT WORK   
             //advance shipment to next inspection  station:
             
-            advanced_shipment_on_conveyor= 
-                shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION2_LOCATION_CODE);
+            //advanced_shipment_on_conveyor= 
+             //   shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION2_LOCATION_CODE);
             //fix any faulty parts at inspection station Q2
             //dummy fnc for now
             
@@ -273,6 +272,8 @@ int main(int argc, char** argv) {
             //advance order to drone dock:
             advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(DRONE_DOCK_LOCATION_CODE);
+            shipmentFiller.set_drone_shipment_name(shipment);       
+
             //send notice to drone:
             //HOW TO PREVENT DUMMY REPORT?
             reported_shipment_to_drone= shipmentFiller.report_shipment_to_drone();
