@@ -293,7 +293,7 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
     bool go_on=true; 
     int ans;
     ROS_INFO("THIS FUNCTION DOES GET CALLED");
-    cin>>ans;
+    
     std::string part_name(place_part.name);
     ROS_INFO_STREAM("looking for part " << part_name << endl);
     int partnum_in_inventory;
@@ -320,7 +320,6 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         ROS_INFO("after removal, %d parts left ",nparts_in_inventory);
         ROS_INFO("attempting to pick part");
         cout<<"enter 1:";
-        cin>>ans;
         if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
             ROS_INFO("pick failed");
             go_on = false;
@@ -330,7 +329,6 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
         if (go_on) {
             ROS_INFO("attempting to place part: ");
             cout<<"enter 1: ";
-            cin>>ans;
             ROS_INFO_STREAM("part to be placed: " << place_part << endl);
             if (!robotBehaviorInterface.place_part_in_box_no_release(place_part)) {
                 ROS_INFO("placement failed");
