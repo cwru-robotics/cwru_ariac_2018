@@ -44,7 +44,7 @@ void depthCamCB(const sensor_msgs::PointCloudConstPtr& cloud) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "depthcam_snapshot_main"); //node name
     ros::NodeHandle nh;
-    ros::Subscriber pointcloud_subscriber = nh.subscribe("/ariac/depth_camera_1", 1, depthCamCB);
+    ros::Subscriber pointcloud_subscriber = nh.subscribe("/ariac/depth_camera_4", 1, depthCamCB);
 
     //spin until obtain a snapshot
     ROS_INFO("waiting for depthcam data");

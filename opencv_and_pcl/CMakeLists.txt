@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ariac_depth_camera)
+project(opencv_and_pcl)
 
 find_package(catkin_simple REQUIRED)
 
@@ -7,7 +7,7 @@ find_package(catkin_simple REQUIRED)
 find_package(OpenCV REQUIRED)
 
 #uncomment the next 2 lines to use the point-cloud library
-find_package(PCL 1.7 REQUIRED)
+#find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 
 
@@ -24,17 +24,15 @@ catkin_simple()
 
 # C++0x support - not quite the same as final C++11!
 # use carefully;  can interfere with point-cloud library
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+# SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
 # cs_add_library(my_lib src/my_lib.cpp)   
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-cs_add_executable(pcd_snapshot_ariac src/pcd_snapshot_ariac.cpp)
-cs_add_executable(interpret_pcd_file src/interpret_pcd_file.cpp)
+cs_add_executable(pt_cloud_to_image src/pt_cloud_to_image.cpp)
 
-#cs_add_executable(display_pcd_file src/display_pcd_file.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 # target_link_libraries(example my_lib)

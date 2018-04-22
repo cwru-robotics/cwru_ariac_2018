@@ -1,0 +1,5 @@
+opencv attempts:
+
+sudo apt install libopencv-dev
+
+CMakeLists.txt  
