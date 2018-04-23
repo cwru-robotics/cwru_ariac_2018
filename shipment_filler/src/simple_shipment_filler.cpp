@@ -116,18 +116,19 @@ int main(int argc, char** argv) {
     
     //can't go any further until receive new shipment request, or until near competition expiration
         //ROS_INFO("ROSISOK!");
-        while (!orderManager.choose_shipment(shipment)) {
-          ROS_INFO("waiting for shipment");
-          ros::Duration(0.5).sleep();
-        }
+       
         //now have a shipment; start  processing it
         successfully_filled_order = false;    
         while(!successfully_filled_order) {
-        current_time=ros::Time::now().toSec();
-        if(current_time - competition_start_time > 460 ) {
-            ROS_WARN("TIMES UP!");
-            break;
-        }
+        	while (!orderManager.choose_shipment(shipment)) {
+          		ROS_INFO("waiting for shipment");
+          		ros::Duration(0.5).sleep();
+        		}	
+        	current_time=ros::Time::now().toSec();
+        	if(current_time - competition_start_time > 460 ) {
+            	ROS_WARN("TIMES UP!");
+            	break;
+        	}
         
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
@@ -138,7 +139,7 @@ int main(int argc, char** argv) {
                 ROS_INFO("either no unwanted parts or couldnt remove");
             }
             int iter=0;
-            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)  && iter<6){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
+            while(boxInspector.find_missing_parts(desired_models_wrt_world,missing_parts)  && iter<8){ //PUT CONDITION TO SEND BOX ON TIME SHORTAGE HERE
         //try to fill shipment; do robot moves to fill shipment
                 iter++;
                 int num_parts = missing_parts.size();
@@ -190,22 +191,22 @@ int main(int argc, char** argv) {
                     }
             //if successful to here, use the newly computed poses:
                     if(go_on) {
-                    ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
-                    go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
+                    	ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
+                    	go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
                     }
                         
                     if (go_on) {
-                    ROS_INFO("successful part placement; should inspect before release");
-                    go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
+                    	ROS_INFO("successful part placement; should inspect before release");
+                    	go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
                     }
            
 
-/*
-            if (go_on) {
-                //adjust part locations in box: 
-                go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
-            }
-*/                  
+
+            		if (go_on) {
+                		//adjust part locations in box: 
+                		go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
+            		}
+                  
   
         
                     if (go_on) {
@@ -223,7 +224,20 @@ int main(int argc, char** argv) {
                         i_model++;
                     }
                     
-
+                    if(!checked_for_order_update) {
+                        if(shipmentFiller.check_order_update(shipment)) {
+                            successfully_filled_order=false; 
+                            checked_for_order_update=true;
+                            order_updated=true;
+                            break;
+                            break;
+                        }
+                        else {
+                            ROS_INFO("YAY No order update!");
+                            successfully_filled_order=true;
+                        }
+                    }
+                    else {successfully_filled_order=true;}
 
                     
 
@@ -237,19 +251,7 @@ int main(int argc, char** argv) {
                     ROS_INFO("Unable to post adjust parts");
                 }
             }
-            if(!checked_for_order_update) {
-                        if(shipmentFiller.check_order_update(shipment)) {
-                            successfully_filled_order=false;  // WILL BE STUCK IN LOOP IF ORDER IS UPDATED. NO IT WONT
-                            checked_for_order_update=true;
-                            order_updated=true;
-                            
-                        }
-                        else {
-                            ROS_INFO("YAY No order update!");
-                            successfully_filled_order=true;
-                        }
-                    }
-            else {successfully_filled_order=true;}
+            
         }
     
         //ROS_INFO("done processing shipment; advancing box");
@@ -280,7 +282,7 @@ int main(int argc, char** argv) {
             current_time=ros::Time::now().toSec();
             while(current_time - competition_start_time >460) {
                 ROS_INFO("Im done, good night");
-                ros::Duration(0.5).sleep();   //Can I just make you sleep for 40 seconds?
+                ros::Duration(0.5).sleep();   //Can I just make you sleep for 40 seconds? CHECK IF THIS WORKS
             }
             //send robot to waiting pose; update inventory
 			if(binInventory.update()) {

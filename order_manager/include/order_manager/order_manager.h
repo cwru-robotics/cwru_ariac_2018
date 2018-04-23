@@ -16,6 +16,7 @@ using namespace std;
 const int ORDER_VECTOR_PENDING = 0;
 const int ORDER_VECTOR_PRIORITY= 1;
 const int ORDER_VECTOR_UNFILLABLE=2;
+const int ORDER_VECTOR_UPDATED = 3;
 const string SHIPMENT_FILLED("shipment_filled");
 
 class OrderManager
