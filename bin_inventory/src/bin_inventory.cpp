@@ -260,7 +260,7 @@ int BinInventory::num_parts(inventory_msgs::Inventory inventory, std::string nam
 void BinInventory::counts_all_part_types(std::vector<int> &parts_counts) {
     parts_counts.resize(NUM_PART_TYPES+1,0);
     for (int part_id=1;part_id<NUM_PART_TYPES+1;part_id++) {
-        parts_counts[part_id]= inventory_msg_.inventory[part_id].bins.size(); //same as part_stamped_poses.size()
+        parts_counts[part_id]= inventory_msg_.inventory[part_id].bins.size();  //bins.size(); //same as
     }
 }
 

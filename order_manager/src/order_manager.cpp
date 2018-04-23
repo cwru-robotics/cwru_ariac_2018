@@ -9,7 +9,6 @@ OrderManager::OrderManager(ros::NodeHandle* nodehandle): nh_(*nodehandle) {
     p_binInventory_ = new BinInventory(&nh_);
     order_is_in_process_=false;
     shipment_is_in_process_=false;
-    order_is_updated_=false;
 }
 
 void OrderManager::order_callback(const osrf_gear::Order::ConstPtr & order_msg) {
@@ -18,15 +17,15 @@ void OrderManager::order_callback(const osrf_gear::Order::ConstPtr & order_msg) 
     osrf_gear::Order order;
     order = *order_msg;
     mark_shipments_unfilled(order); //make sure all shipments are initially labelled as unfilled
-    if (is_priority(order)) {
-         priority_orders_.push_back(order);
-     }   
+    if (is_updated(order)) {
+      updated_orders_.push_back(order);
+    }
     else if (!order_is_fillable(order)) {
      unfillable_orders_.push_back(order);
     }
-    else if (is_updated(order)) {
-      updated_orders_.push_back(order);
-    }
+    else if (is_priority(order)) {
+      priority_orders_.push_back(order);
+    } 
     //else, is fillable and is not priority:
     else {
        pending_orders_.push_back(order);
@@ -57,22 +56,20 @@ bool OrderManager::is_updated(osrf_gear::Order order) {
   string order_id(order.order_id);
   size_t found = order_id.find(update_string);
   if (found!=string::npos) {
-    order_is_updated_=true;
     return 1;
   }
 return 0;
 }
 
 bool OrderManager::check_order_update(osrf_gear::Shipment &shipment) {
-  
-  if(order_is_updated_) {
-    shipment=updated_orders_[0].shipments[0];
+  if(updated_orders_.size()>0) {
     return 1;
-    }
+  }
+  else {
     return 0;
+  }
 }
-
-
+  
 
 //check inventory to see if order is fillable
 bool OrderManager::order_is_fillable(osrf_gear::Order order) {
@@ -108,9 +105,34 @@ bool OrderManager::choose_order(osrf_gear::Order &order) {
     int n_unfillable = unfillable_orders_.size();
     int n_priority = priority_orders_.size();
     int n_regular = pending_orders_.size();
+    int n_updated = updated_orders_.size();
     ROS_INFO("order queue status: n_unfillable = %d, n_priority= %d, n_pending = %d",n_unfillable,n_priority,n_regular);    
-    //examine priority order vector first:
+    
+    if (n_updated>0) {
+      ROS_INFO("returning an updated order");
+      current_order_vector_code_ = ORDER_VECTOR_UPDATED;
+      current_order_in_process_ = updated_orders_[0];
+      order = current_order_in_process_;
+      current_order_index_ = 0;
+      order_is_in_process_ = true;
+      if(order_is_fillable(current_order_in_process_)) {
+        return true;
+      }
+      for(int i = 1; i<n_updated;i++) {
+        temp_order = priority_orders_[i];
+        if(order_is_fillable(temp_order)) {
+          current_order_vector_code_ = ORDER_VECTOR_UPDATED;
+          current_order_in_process_ = temp_order;
+          order = current_order_in_process_;
+          current_order_index_ = i;
+          return true;
+        }
+      }
+    }
+
+    //examine priority order vector:
     int num_priority_orders = priority_orders_.size();
+
     if (num_priority_orders>0) {
         ROS_INFO("returning a priority order");
         //default: choose first priority order:
@@ -190,8 +212,8 @@ bool OrderManager::choose_order(osrf_gear::Order &order) {
 
 bool OrderManager::choose_shipment(osrf_gear::Shipment &shipment) {
     osrf_gear::Order temp_order;
-    if(order_is_updated_) {
-      shipment=updated_orders_[0].shipments[1];
+    if(updated_orders_.size()>0) {
+      shipment=updated_orders_[0].shipments[0];
       return true;
     }
     ROS_INFO("choose_shipment: start by choosing an order");
@@ -220,7 +242,11 @@ bool OrderManager::current_order_has_been_filled() {
     ROS_WARN("deleting filled order");
     switch (current_order_vector_code_) {
 
-       case ORDER_VECTOR_PENDING:            // Note the colon, not a semicolon
+        case ORDER_VECTOR_UPDATED:
+            delete_from_order_queue(current_order_index_, updated_orders_);
+            order_is_in_process_=false;
+            break;
+        case ORDER_VECTOR_PENDING:            // Note the colon, not a semicolon
            //delete entry current_order_index_ from vector pending_orders_
            delete_from_order_queue(current_order_index_, pending_orders_);
            order_is_in_process_ = false;
@@ -248,8 +274,11 @@ bool OrderManager::current_order_has_been_filled() {
 bool OrderManager::current_shipment_has_been_filled() {
     ROS_WARN("marking current shipment filled");
     switch (current_order_vector_code_) {
-
-       case ORDER_VECTOR_PENDING:            
+        case ORDER_VECTOR_UPDATED:
+            mark_shipment_filled(current_order_index_, current_shipment_index_,priority_orders_);
+            test_order_complete(current_order_index_, current_shipment_index_, priority_orders_);
+            shipment_is_in_process_ = false;
+        case ORDER_VECTOR_PENDING:            
            mark_shipment_filled(current_order_index_, current_shipment_index_, pending_orders_);
            test_order_complete(current_order_index_, current_shipment_index_, pending_orders_);
            shipment_is_in_process_ = false;
@@ -335,7 +364,12 @@ void OrderManager::print_parts_list(std::vector<int> parts_list) {
 
 bool OrderManager::is_priority(osrf_gear::Order order) {
   //if order is currently in process, and new order is received, then new order is priority
-  return  order_is_in_process_;
+  if(order_is_in_process_ && !is_updated(order)) {
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 void OrderManager::move_order_to_unfillable(int order_num,std::vector<osrf_gear::Order> order_vec) {
