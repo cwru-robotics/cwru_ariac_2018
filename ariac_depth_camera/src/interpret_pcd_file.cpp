@@ -22,6 +22,7 @@
 //for opencv
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core/core.hpp>
 
 
 using namespace std;
@@ -161,8 +162,147 @@ int main(int argc, char** argv) {
             << depthmap_image.size().width << std::endl; //initially, 0x0
     //save the synthesized  image to  disk
     cv::imwrite("output.bmp", depthmap_image);
+    
+    //interpret image w/rt template:
+    //see OpenCV: void matchTemplate(InputArray image, InputArray templ, OutputArray result, int method)
+	//cv::Mat src_img, template_img;
+	//cv::Mat result_mat;
+    int Ntu = 23; //define template 10x10 (arbitrary)
+    int Ntv = 23; 
+    int tu_c = 11; //(7,7) is central pixel of template 15x15 template
+    int tv_c = 11;
+    int template_u_halfwidth = 11; //template is +/-5 pixels about center
+    int template_v_halfwidth = 11;
+    
+    //here is the pattern of interest: a circle of diameter Ntu = Ntv pixels
+    //this template is for the "disk" part
+    cv::Mat template_img(Ntu, Ntv, CV_8U, cv::Scalar(0)); //create image, set encoding and size, init pixels to default val
+    int Rpix = 7; //make a template of a circle of radius 7 pixels
+    double r,theta;
+    for (r=0;r<=Rpix;r+=0.2) {
+        for (theta=0;theta<6.28;theta+=0.01) {
+            u= round(r*sin(theta))+tu_c;
+            v= round(r*cos(theta))+tv_c;
+            cout<<"tu= "<<u<<", tv = "<<v<<endl;
+            template_img.at<uchar>(u, v) = 255;
+        }
+    }
+    /*
+    for (u=2;u<2+hu;u++) {
+        for (v=2;v<2+wv;v++) {
+            template_img.at<uchar>(u, v) = 255;
+        }
+    }    
+    */
+    cout<<"created template"<<endl;
+    cv::imwrite("template_img.bmp", template_img);    
+    
+    //THE FOLLOWING IS FOR CREATING A  SYNTHETIC IMAGE, FOR TESTING ONLY
+    //REPLACE THIS WITH REAL IMAGE, i.e. depthmap_image, as computed above 
+    int hu= 5; //define dimensions of a rectangle; height corresponds to u axis
+    int half_hu = hu/2;
+    int wv= 7; //width of rectangle, corresonds to v-axis
+    int half_wv = wv/2;
+    int u_center = 11; //choose to center the pattern of interest at these coordinates in image
+    int v_center = 14;
+    //synthesize an image (instead of reading image)
+    cv::Mat embedded_img(Nu,Nv, CV_8U, cv::Scalar(0)); //image, actual size;
+    //put a rectangle in the src_img: hu x wv, centered at u_center,v_center
+    for (u=u_center-half_hu;u<=u_center+half_hu;u++) {
+        for (v=v_center-half_wv;v<=v_center+half_wv;v++) {
+            cout<<"u="<<u<<"; v="<<v<<endl;
+            embedded_img.at<uchar>(u, v) = 255;
+        }
+    }   
+    cout<<"created false image"<<endl;
+    cv::imwrite("embedded_img.bmp", embedded_img);    
+    //END OF SYNTHESIZING TEST IMAGE
+    
+    //create a larger image with room for padding around the edges
+    cv::Mat padded_img(Nu+2*Ntu-1, Nv+2*Ntv-2, CV_8U, cv::Scalar(0)); //create image, set encoding and size, init pixels to default val
+    //make a checkerboard background; want to pad the image w/ unbiased background
+    //start by making this entire image a checkerboard
+    /* try w/o checkerboard
+    for (u=0;u<Nu+2*Ntu-1;u+=2) {
+        for (v=0;v<Nv+2*Ntv-1;v+=2) {
+            padded_img.at<uchar>(u, v) = 255;
+        }
+    }
+    */
+    //now copy over the image to be embedded (centered) in checkerboard; edges will still be unbiased
+    for (u=0;u<Nu;u++) {
+        for (v=0;v<Nv;v++) {
+            //leaves edges of halfwidth of template with unbiased (checkerboard) padding
+            //padded_img.at<uchar>(u+Ntu-1, v+Ntv-1) = embedded_img.at<uchar>(u, v);
+            padded_img.at<uchar>(u+Ntu-1, v+Ntv-1) = depthmap_image.at<uchar>(u, v); //use real image    
+        }
+    }    
+    cout<<"padded image with checkerboard"<<endl;
+    cv::imwrite("padded_img.bmp", padded_img);
+    
+    //now compute distance between template and snippets of image, and put results into another image
+    cv::Mat result_mat;  //put result of template matching in this output matrix; 
+    /*		// method: CV_TM_SQDIFF, CV_TM_SQDIFF_NORMED, CV_TM _CCORR, CV_TM_CCORR_NORMED, CV_TM_CCOEFF, CV_TM_CCOEFF_NORMED
+		int match_method = CV_TM_CCORR_NORMED;
+		cv::matchTemplate(src_img, template_img, result_mat, match_method);
+		cv::normalize(result_mat, result_mat, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());*/
+    int match_method = CV_TM_SQDIFF_NORMED; //CV_TM_SQDIFF
+    cv::matchTemplate(padded_img, template_img, result_mat, match_method);
+    //take sqrt of all match values:
+    /*
+    for (u=0;u<Nu+2*Ntu-2;u++) {
+        for (v=0;v<Nv+2*Ntv-2;v++) {
+            result_mat.at<uchar>(u, v) = sqrt(result_mat.at<uchar>(u, v));
+        }
+    }    
+    */
+    cout<<"result_mat: "<<endl<<result_mat<<endl;
+    //cv::normalize(result_mat, result_mat); //, 0, 255); //, cv::NORM_MINMAX, -1, cv::Mat());
+    cv::normalize(result_mat, result_mat, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
 
+    cout<<"normalized result mat: "<<endl<<result_mat<<endl;
+    cv::imwrite("result_mat.bmp", result_mat);
+    
+    //find location(s) of best template fits:
+    double minVal, maxVal; 
+    cv::Point minLoc, maxLoc, matchLoc;
+    cv::minMaxLoc(result_mat, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );    
+    cout<<"best match at: "<<minLoc<<endl;
+    int x_fit = minLoc.x;
+    int y_fit = minLoc.y;
+    cout<<"x_fit = "<<x_fit<<"; y_fit = "<<y_fit<<endl;
+    //erase this match and try again:
+    for (int i=x_fit-Rpix+tu_c;i<=x_fit+Rpix+tu_c;i++) {
+        for (int j=y_fit-Rpix+tv_c;j<=y_fit+Rpix+tv_c;j++) {
+            padded_img.at<uchar>(i,j) = 0;
+        }
+    }
+    cv::imwrite("padded_img2.bmp", padded_img);
+    cv::Mat result_mat2;
+    match_method = CV_TM_SQDIFF;
+    
+    cv::matchTemplate(padded_img, template_img, result_mat2, match_method);
+    cout<<endl<<endl<<endl;
+    cout<<"result_mat2: "<<endl<<result_mat2<<endl;    
+    cv::minMaxLoc(result_mat2, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );    
+    cout<<"2nd pass: best match at: "<<minLoc<<endl;      
+    for (int i=minLoc.y-5;i<minLoc.y+7;i++) {
+        cout<<"i: "<<i<<";  result(i,u_fit): "<<result_mat2.at<float>(i,minLoc.x)<<endl;
+    }
+    for (int i=minLoc.y-5;i<minLoc.y+7;i++) {
+        cout<<"i: "<<i<<";  result(i,u_fit+1): "<<result_mat2.at<float>(i,minLoc.x+1)<<endl;
+    }    
+    cv::normalize(result_mat2, result_mat2, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
 
+    //cout<<"normalized result mat: "<<endl<<result_mat<<endl;
+    cv::imwrite("result_mat2.bmp", result_mat2);    
+    cv::minMaxLoc(result_mat2, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat() );    
+    //cout<<"2nd pass: best match at: "<<minLoc<<endl;    
+    
+    //cv::namedWindow( "Display_window" );// Create a window for display.
+    //cv::imshow( "Display window", src_img );                   // Show our image inside it.
+
+    //cv::waitKey(0);      
     //publish the point cloud in a ROS-compatible message; here's a publisher:
     ros::Publisher pubCloud = nh.advertise<sensor_msgs::PointCloud2> ("/pcd", 1);
     sensor_msgs::PointCloud2 ros_cloud; //here is the ROS-compatible message
