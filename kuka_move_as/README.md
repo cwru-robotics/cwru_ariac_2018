@@ -12,17 +12,28 @@ to specified goal location code.  E.g., Q1 station hover to Bin3 hover;
 ## Running tests/demos
 test pgm for transition trajectories:
 `rosrun kuka_move_as transition_trajectories_test_main`
+start up ariac simu, e.g.:
+`rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2b.yaml ~/ariac_ws/src/cwru_ariac_2018/copy_of_team_config/depthcam_config.yaml`
 
-Start of kuka_move_as:
-start up ariac simu, then:
+
+Start up behavior server, kuka_move_as:
+
 `rosrun kuka_move_as kuka_behavior_as`
 
-does robot init move; need to build out all behaviors in this action server, as well as complementary RobotBehaviorInterface 
+can test pick_part_from_bin operations with this node:
+`rosrun shipment_filler test_pick_from_inventory`
 
-Example main using RobotBehaviorInterface:
-`rosrun kuka_move_as robot_behavior_test_main`
+this will attempt to remove ALL parts from ALL bins, as observed by inventory manager.  
+Use this test node to debug bin picking exhaustively.
 
+To find better joint-space poses, edit the values below, then copy/paste into a terminal.  This will send a trajectory
+command directly to the robot.  Approach taken here is to freeze iiwa_joint_3 at 0.
 
-TODO:  add more trajectories to transitionTrajectories.  
-extend test fnc to run/eval trajectories in simu
+rostopic pub /ariac/arm/command trajectory_msgs/JointTrajectory \
+"{joint_names: ['iiwa_joint_1', 'iiwa_joint_2', 'iiwa_joint_3', 'iiwa_joint_4', 'iiwa_joint_5', 'iiwa_joint_6',
+  'iiwa_joint_7', 'linear_arm_actuator_joint'], \
+points: [ \
+{time_from_start: {secs: 3}, \
+positions: [0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.400]}, \
+]}" -1
     

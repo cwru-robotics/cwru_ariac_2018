@@ -27,9 +27,15 @@ const double Q1_DISCARD_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, 1.75};
 const double Q2_HOVER_array[NDOF] = { 0.0, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.8}; 
 const double Q2_CRUISE_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.8}; 
 
-const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.81}; 
-const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -1.21}; 
-const double BIN1_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -1.51}; 
+////1.57, -1.35, 0.0, 0.5, 3, 0.8, 0, -0.81
+//const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.81}; 
+const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 3, 0.8, 0, -0.81}; 
+
+//const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -1.21}; 
+const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 3, 0.8, 0, -1.21}; 
+//const double BIN1_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, -1.51}; 
+const double BIN1_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 3, 0.8, 0, -1.51}; 
+
   
 const double BIN2_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, 0}; 
 const double BIN2_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.4}; 

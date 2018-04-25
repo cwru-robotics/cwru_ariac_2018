@@ -227,7 +227,30 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
 
          
     }
-    
+    //extend to BIN4 as well:
+    /*
+    if (part.location==Part::BIN4 ) {
+         fwd_qvec_from_rvrs_qvec(part_y, computed_jspace_approach_);
+         fwd_qvec_from_rvrs_qvec(part_y, computed_bin_cruise_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, pickup_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, approach_pickup_jspace_pose_);
+         fwd_qvec_from_rvrs_qvec(part_y, pickup_deeper_jspace_pose_);
+         //try hard coding the bin5 escape pose:
+         transitionTrajectories_.c_array_to_qvec(BIN4_ESCAPE_array,computed_bin_escape_jspace_pose_);
+
+         computed_bin_cruise_jspace_pose_= computed_bin_escape_jspace_pose_;
+         //computed_bin_escape_jspace_pose_[7]+=0.1; //fix??         
+         
+         computed_bin_cruise_jspace_pose_[0] = 1.5707; //just rotate J1
+         computed_bin_cruise_jspace_pose_[7] -=0.3; //move rail together with arm swing
+         //coerce the wrist to agree w/ IK poses
+         for (int i=4;i<7;i++) { current_hover_pose_[i] = approach_pickup_jspace_pose_[i];
+                            computed_jspace_approach_[i] = approach_pickup_jspace_pose_[i];
+                            computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i]; }  
+
+
+         
+    }    */
     
     ROS_INFO("SUCCESSFUL COMPUTATION OF KEY POSES FOR BIN PICKUP");
     return errorCode_;
@@ -767,7 +790,8 @@ bool KukaBehaviorActionServer::get_grasp_transform(Part part, Eigen::Affine3d &g
       if(part_is_up) {
         O_part_wrt_gripper[2] = -(GEAR_PART_THICKNESS);
         O_part_wrt_gripper[1] = GEAR_PART_GRASP_Y_OFFSET; // offset to avoid touching dowell
-        grasp_transform.translation() = O_part_wrt_gripper;
+        grasp_transform.translation() = O_part_wrt_gripper; 
+        ROS_INFO_STREAM("gear part: O_part_wrt_gripper = "<<O_part_wrt_gripper.transpose()<<endl);
         return true;
        }
       else {
@@ -958,7 +982,10 @@ Eigen::Affine3d KukaBehaviorActionServer::affine_vacuum_pickup_pose_wrt_base_lin
     Eigen::Affine3d affine_part_wrt_world, affine_base_link_wrt_world;
     
     affine_base_link_wrt_world = affine_base_link(q_rail);
+    ROS_INFO("affine_vacuum_pickup_pose_wrt_base_link:");
+    ROS_INFO_STREAM("using q_rail = "<<q_rail<<" origin of affine_base_link_wrt_world = "<<affine_base_link_wrt_world.translation().transpose()<<endl);
     affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
+    ROS_INFO_STREAM("origin of part w/rt world: "<<affine_part_wrt_world.translation().transpose()<<endl);
 
     //manual repair of pickup height:
     //Eigen::Vector3d Oe;

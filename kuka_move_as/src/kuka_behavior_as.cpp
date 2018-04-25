@@ -108,17 +108,17 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
 
 void KukaBehaviorActionServer::trajDoneCb_(const actionlib::SimpleClientGoalState& state,
         const control_msgs::FollowJointTrajectoryResultConstPtr& result) {
-    ROS_INFO(" trajDoneCb: server responded with state [%s]", state.toString().c_str());
+    //ROS_INFO(" trajDoneCb: server responded with state [%s]", state.toString().c_str());
     
     string succeeded("SUCCEEDED");
     rtn_state_ = state.toString();
     if (bad_state_==rtn_state_) {
-        ROS_WARN("enter 1 to continue");
+        ROS_WARN("TRAJ RETURNED ABORTED!!");
         int ans;
         //cin>>ans;
     }
     if (succeeded==rtn_state_) {
-        ROS_INFO("wsn: traj returned succeeded");
+        ROS_INFO("traj returned succeeded");
     }
 
     traj_goal_complete_ = true;
@@ -128,7 +128,7 @@ bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory d
     robot_goal_.trajectory = des_trajectory;
     //ROS_INFO("sending goal to arm: ");
     traj_goal_complete_ = false;
-    //ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
+    ROS_INFO_STREAM("sending traj goal: "<<endl<<robot_goal_<<endl);
     traj_ctl_ac_.sendGoal(robot_goal_, boost::bind(&KukaBehaviorActionServer::trajDoneCb_, this, _1, _2));
     int print_count=0;
     while (!traj_goal_complete_) { //write a fnc for this: wait_for_goal_w_timeout

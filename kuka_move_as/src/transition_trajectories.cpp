@@ -144,8 +144,7 @@ trajectory_msgs::JointTrajectory TransitionTrajectories::concat_trajs(trajectory
    ros::Duration traj1_arrival_time = trajectory_point.time_from_start;
    ros::Duration next_arrival_time;
    int npts2 = traj2.points.size();
-   //NOTE: ASSUME endpoint of traj1 = startpoint of traj2, so skip repeating first point of traj2
-   for (int i=1;i<npts2;i++) {
+   for (int i=0;i<npts2;i++) {
      trajectory_point = traj2.points[i];
      trajectory_point.time_from_start+=traj1_arrival_time;
      traj3.points.push_back(trajectory_point);
