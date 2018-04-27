@@ -2,6 +2,7 @@
 #include <box_inspector/box_inspector.h>
 //#include "box_inspector_fncs.cpp" //more code, outside this file
 #include "box_inspector_fncs.cpp" //more code, outside this file
+#include <math.h>
 
 BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //constructor
   //set up camera subscriber:
@@ -180,10 +181,70 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
        vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world) {
+	int ans; // FOR DEBUG
   got_new_snapshot_=false;
+  vector<geometry_msgs::Pose> sum_pose /* BAD VARIABLE NAME. FIX IT*/, average_pose;
+  osrf_gear::LogicalCameraImage filtered_box_camera_image;
+  filtered_box_camera_image = box_inspector_image_;
+  ROS_INFO("Success 0"); 
   if(get_new_snapshot_from_box_cam()) {
   int num_parts_seen =  box_inspector_image_.models.size();
   ROS_INFO("update_inspection: box camera saw %d objects",num_parts_seen);
+  sum_pose.resize(num_parts_seen);
+  average_pose.resize(num_parts_seen);
+  for (int i=0; i<num_parts_seen;i++) {
+  	sum_pose[i].position.x = 0;
+  	sum_pose[i].position.y = 0;
+  	sum_pose[i].position.z = 0;
+  	sum_pose[i].orientation.x = 0;
+  	sum_pose[i].orientation.y = 0;
+  	sum_pose[i].orientation.z = 0;
+  	sum_pose[i].orientation.w = 0;
+  	ROS_INFO("Success 1");
+  }
+  for (int i = 0; i < 3; i++) { // Should remove hard coded numbers and use while
+  if(get_new_snapshot_from_box_cam()) {	
+  	filtered_box_camera_image = box_inspector_image_;
+  	if(box_inspector_image_.models.size() != num_parts_seen) {
+  		break;
+  		ROS_INFO("FAIl 1");
+  	}
+  	for(int j = 0; j < num_parts_seen; j++) {
+  		sum_pose[j].position.x += box_inspector_image_.models[j].pose.position.x;
+  		sum_pose[j].position.y += box_inspector_image_.models[j].pose.position.y;
+  		sum_pose[j].position.z += box_inspector_image_.models[j].pose.position.z;
+  		sum_pose[j].orientation.x += box_inspector_image_.models[j].pose.orientation.x;
+  		sum_pose[j].orientation.y += box_inspector_image_.models[j].pose.orientation.y;
+  		sum_pose[j].orientation.z += box_inspector_image_.models[j].pose.orientation.z;
+  		sum_pose[j].orientation.w += box_inspector_image_.models[j].pose.orientation.w;
+  		ROS_INFO("Success 2");
+  	}
+  }
+}
+  for (int j = 0; j < num_parts_seen; j++) {
+	average_pose[j].position.x  = sum_pose[j].position.x/3;
+	average_pose[j].position.y  = sum_pose[j].position.y/3;
+	average_pose[j].position.z  = sum_pose[j].position.z/3;	
+  	average_pose[j].orientation.x = sum_pose[j].orientation.x/3;
+  	average_pose[j].orientation.y = sum_pose[j].orientation.y/3;
+  	average_pose[j].orientation.z = sum_pose[j].orientation.z/3;
+  	average_pose[j].orientation.w = sum_pose[j].orientation.w/3;
+  	double n = sqrt(pow(average_pose[j].orientation.x,2.0) + pow(average_pose[j].orientation.y,2.0) + pow(average_pose[j].orientation.z,2.0) + pow(average_pose[j].orientation.w,2.0)); //SHOULD AVOID PERFORMANCE OVERHEAD OF MULTIPLE FNC CALL; change to x*x instead
+  	average_pose[j].orientation.x /= n;
+  	average_pose[j].orientation.y /= n;
+  	average_pose[j].orientation.z /= n;
+  	average_pose[j].orientation.w /= n;
+  	ROS_INFO("Success 3");
+  }
+
+  for (int i = 0; i < num_parts_seen; i++) {
+  	//filtered_box_camera_image.models[i].pose = average_pose[i];
+  	ROS_INFO("Success 4");
+  }
+
+  ROS_INFO_STREAM("filtered box camera image"<< filtered_box_camera_image);
+  cin>>ans;
+
   int num_parts_desired = desired_models_wrt_world.size();
   orphan_models_wrt_world.clear(); //this will be empty, unless something very odd happens
   satisfied_models_wrt_world.clear();  //shipment will be complete when this matches parts/poses specified in shipment
