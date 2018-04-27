@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>shipment_filler</name>
+  <name>conveyor_as</name>
   <version>0.0.0</version>
-  <description>The shipment_filler package</description>
+  <description>The conveyor_as package</description>
   
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -31,40 +31,32 @@
   <!-- Dependencies can be catkin packages or system dependencies -->
   <!-- Examples: -->
   <!-- Use build_depend for packages you need at compile time: -->
-  <!--   <build_depend>message_generation</build_depend> -->
+  <build_depend>message_generation</build_depend>
   <!-- Use buildtool_depend for build tool packages: -->
   <!--   <buildtool_depend>catkin</buildtool_depend> -->
   <!-- Use run_depend for packages you need at runtime: -->
-  <!--   <run_depend>message_runtime</run_depend> -->
+  <run_depend>message_runtime</run_depend>
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>catkin_simple</buildtool_depend>
   <build_depend>roscpp</build_depend>
-<build_depend>geometry_msgs</build_depend>
-<build_depend>std_srvs</build_depend>
-<build_depend>actionlib</build_depend>
-<build_depend>ariac_transform_utils</build_depend>
+<build_depend>std_msgs</build_depend>
 <build_depend>osrf_gear</build_depend>
-<build_depend>kuka_move_as</build_depend>
-<build_depend>ariac_ur_fk_ik</build_depend>
-<build_depend>order_manager</build_depend>
-<build_depend>bin_inventory</build_depend>
-<build_depend>box_inspector</build_depend>
-<build_depend>conveyor_as</build_depend>
+<build_depend>sensor_msgs</build_depend>
+<build_depend>geometry_msgs</build_depend>
+<build_depend>xform_utils</build_depend>
+<build_depend>actionlib</build_depend>
+<build_depend>simple_action_client</build_depend>
   <run_depend>roscpp</run_depend>
-<run_depend>geometry_msgs</run_depend>
-<run_depend>std_srvs</run_depend>
-<run_depend>actionlib</run_depend>
-<run_depend>ariac_transform_utils</run_depend>
+<run_depend>std_msgs</run_depend>
 <run_depend>osrf_gear</run_depend>
-<run_depend>kuka_move_as</run_depend>
-<run_depend>ariac_ur_fk_ik</run_depend>
-<run_depend>order_manager</run_depend>
-<run_depend>bin_inventory</run_depend>
-<run_depend>box_inspector</run_depend>
-<run_depend>conveyor_as</run_depend>
-  <!-- The export tag contains other, unspecified, tags --> 
+<run_depend>sensor_msgs</run_depend>
+<run_depend>geometry_msgs</run_depend>
+<run_depend>xform_utils</run_depend>
+<run_depend>actionlib</run_depend>
+<run_depend>simple_action_client</run_depend>
+  <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- You can specify that this package is a metapackage here: -->
     <!-- <metapackage/> -->

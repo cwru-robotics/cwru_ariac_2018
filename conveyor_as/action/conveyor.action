@@ -1,0 +1,33 @@
+#goal definition
+
+int8 MOVE_NEW_BOX_TO_Q1_STATION = 1
+int8 MOVE_BOX_Q1_TO_Q2_STATION = 2
+int8 MOVE_BOX_Q2_TO_DRONE_DEPOT = 3
+int8 MOVE_BOX_Q1_TO_DRONE_DEPOT = 4
+
+int8 MOVE_LEAD_BOX_TO_DRONE_DEPOT = 5
+
+int8 conveyor_task_code
+---
+#result definition
+int8 CONVEYOR_IN_MOTION = 0
+int8 BOX_SEEN_AT_Q1 = 1
+int8 BOX_SEEN_AT_Q2 = 2
+int8 BOX_SENSED_AT_DRONE_DEPOT = 3
+int8 BOX_ESTIMATED_AT_Q1 = 11
+int8 BOX_ESTIMATED_AT_Q2 = 12
+int8 BOX_ESTIMATED_AT_DRONE_DEPOT = 13
+int8 BOX_STATUS_UNKNOWN = 20
+int8 BAD_ACTION_CODE = 30
+int8 CONVEYOR_CONGESTED_DISABLED = 40
+
+int8 box_status
+---
+#feedback
+float64 estimated_seconds_to_goal
+float64 box1_distance
+float64 box2_distance
+float64 box3_distance
+bool sensors_are_active
+bool drone_depot_sensor_sees_box
+bool conveyor_enabled
