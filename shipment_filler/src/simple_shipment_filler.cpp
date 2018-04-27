@@ -13,6 +13,7 @@
 #include <kuka_move_as/RobotBehaviorInterface.h>
 #include<bin_inventory/bin_inventory.h>
 #include<box_inspector/box_inspector.h>
+#include<conveyor_as/ConveyorInterface.h>
 
 const double COMPETITION_TIMEOUT=500.0; // need to  know what this is for the finals;
 // want to ship out partial credit before time runs out!
@@ -58,6 +59,8 @@ int main(int argc, char** argv) {
     BoxInspector boxInspector(&nh);
     ROS_INFO("instantiating a ShipmentFiller");
     ShipmentFiller shipmentFiller(&nh);
+    ROS_INFO("instantiating a ConveyorInterface");
+    ConveyorInterface conveyorInterface(&nh);    
 
     inventory_msgs::Part pick_part,place_part, observed_part;
     inventory_msgs::Inventory current_inventory;
@@ -101,8 +104,16 @@ int main(int argc, char** argv) {
     while(ros::ok()) { //check for conditions where we might have to stop otherwise
     ROS_INFO("starting round");
     ROS_INFO("getting a box into position: ");
+    /* THE FOLLOWING IS BLOCKING; REPLACE IT */
     advanced_shipment_on_conveyor= 
                 shipmentFiller.advance_shipment_on_conveyor(BOX_INSPECTION1_LOCATION_CODE);
+    
+    //FIND HOW TO INSERT THIS INSTEAD
+    //the following starts the conveyor action server moving the first box into position at inspection station Q1
+    //conveyorInterface.move_new_box_to_Q1();
+    // the above is not a blocking function.  Can fetch a part, but don't try to deposit it in box until
+    // box is in position
+
     while(!boxInspector.get_box_pose_wrt_world(box_pose_wrt_world)) {
         ROS_INFO("trying to see box pose w/rt world...");
         ros::spinOnce();

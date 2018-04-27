@@ -78,8 +78,8 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     }    
     
     //try combining moves: current_hover_pose_, approach_pickup_jspace_pose_
-    traj_head = jspace_pose_to_traj(current_hover_pose_,2.5);
-    traj_tail = jspace_pose_to_traj(approach_pickup_jspace_pose_,1.5);
+    traj_head = jspace_pose_to_traj(current_hover_pose_,1.5);
+    traj_tail = jspace_pose_to_traj(approach_pickup_jspace_pose_,1.0);
     
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories
     ROS_INFO("sending multi-point concatenated traj: ");
@@ -179,7 +179,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     ROS_INFO("moving to hover_jspace_pose_ ");
     //freeze wrist:
     for (int i=4;i<6;i++) current_hover_pose_[i] = approach_pickup_jspace_pose_[i];
-    traj_tail = jspace_pose_to_traj(current_hover_pose_,2.0);    
+    traj_tail = jspace_pose_to_traj(current_hover_pose_,1.0);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories
     /*
     move_to_jspace_pose(current_hover_pose_, 2); 
@@ -197,7 +197,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //cin>>ans;
     //freeze wrist
     for (int i=4;i<6;i++) computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i];
-    traj_tail = jspace_pose_to_traj(computed_bin_escape_jspace_pose_,2.0);    
+    traj_tail = jspace_pose_to_traj(computed_bin_escape_jspace_pose_,1.0);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
     /*
     move_to_jspace_pose(computed_bin_escape_jspace_pose_, 2.0);  
@@ -223,7 +223,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     temp_pose = current_bin_cruise_pose_; //move here in 2 steps
     //keep toolflange the same
     for (int i=4;i<6;i++) temp_pose[i] = approach_pickup_jspace_pose_[i];
-    traj_tail = jspace_pose_to_traj(temp_pose,2.5);    
+    traj_tail = jspace_pose_to_traj(temp_pose,1.5);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
     /*
     //watch out for bent wrist:
