@@ -34,6 +34,7 @@ start up ariac simu, e.g.:
 
 enable the conveyor by starting the competition:
 `rosservice call /ariac/start_competition`
+(note: can test conveyor OK with: rosservice call /ariac/conveyor/control "power: 100")
 
 `rosrun conveyor_as conveyor_as`
 Then run a node that contains an object of type ConveyorInterface.
