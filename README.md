@@ -1,6 +1,21 @@
 # cwru_ariac_2018
 for NIST ARIAC competition
 
+Installation:
+Install Ros:  http://www.ros.org/install/
+Install Ariac2 http://wiki.ros.org/ariac/2018/Tutorials/SystemSetup
+
+Run these commands:
+cd
+mkdir ros_ws
+cd ros_ws
+mkdir src
+cd src 
+git clone https://github.com/cwru-robotics/cwru_ariac_2018.git
+git clone https://github.com/wsnewman/learning_ros_external_packages.git
+cd ~/ros_ws
+catkin_make
+
 example:
 Start up demo simulation:
 `roslaunch osrf_gear sample_environment.launch`
