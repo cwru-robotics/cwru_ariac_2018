@@ -51,6 +51,8 @@ public:
     };
     //bool pick(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool test_pick_part_from_bin(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+
     bool place_part_in_box_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool place_part_in_box_with_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
     bool release_and_retract(double timeout= MAX_ACTION_SERVER_WAIT_TIME);
