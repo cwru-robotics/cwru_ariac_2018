@@ -342,6 +342,8 @@ void KukaBehaviorActionServer::goto_cruise_pose(Eigen::VectorXd desired_cruise_p
         q_old = q_via; 
         move_time_est = estimate_move_time(q_old,desired_cruise_pose)+1.0;     
         traj_tail = jspace_pose_to_traj(desired_cruise_pose,move_time_est);    
+        traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); 
+        
     }
     else if ((J1_goal-J1_start)> 2.0) { //require move from J1=-1.57 to J1 = +1.57
         ROS_WARN("flip J1 from -pi/2 to  +pi/2");
@@ -371,7 +373,9 @@ void KukaBehaviorActionServer::goto_cruise_pose(Eigen::VectorXd desired_cruise_p
         //bring arm back down:
         q_old = q_via; 
         move_time_est = estimate_move_time(q_old,desired_cruise_pose)+1.0;     
-        traj_tail = jspace_pose_to_traj(desired_cruise_pose,move_time_est);    
+        traj_tail = jspace_pose_to_traj(desired_cruise_pose,move_time_est);  
+        traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); 
+        
     }
     else {
         ROS_WARN("no flip required to get to cruise pose");
