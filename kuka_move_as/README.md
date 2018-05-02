@@ -15,6 +15,9 @@ test pgm for transition trajectories:
 start up ariac simu, e.g.:
 `rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2b.yaml ~/ariac_ws/src/cwru_ariac_2018/copy_of_team_config/depthcam_config.yaml`
 
+OR:
+rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2b.yaml ~/ariac_ws/ariac-docker/team_config/team_case_config/qual2_config.yaml
+
 
 Start up behavior server, kuka_move_as:
 
@@ -36,4 +39,16 @@ points: [ \
 {time_from_start: {secs: 3}, \
 positions: [0.386, -1.35, 0, 0.8, -0.113, -0.807, 2.8085, -0.400]}, \
 ]}" -1
+
+update 5/2/2018:
+Working on new version of robot behavior action server: kuka_move_as2
+Test bin-picking as follows.
+Start up a simu, e.g.:
+rosrun osrf_gear gear.py -f `catkin_find --share --first-only osrf_gear`/config/quals/qual2b.yaml ~/ariac_ws/src/cwru_ariac_2018/copy_of_team_config/depthcam_config.yaml
+
+Start the  new action server:
+`rosrun kuka_move_as kuka_behavior_as2`
+
+Start the bin-picking test node:
+`rosrun shipment_filler test_pick_from_inventory`
     
