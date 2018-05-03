@@ -182,11 +182,13 @@ Eigen::VectorXd KukaFwdSolver::select_soln_near_qnom(vector<Eigen::VectorXd> q_i
 }
 
 //compute distance between 6-DOF  solns, using elbow, shoulder pan and 2nd wrist ang
+//alt: consider shoulder pan, shoulder elevation, elbow ang, and smaller influence of wrist bend
 double KukaFwdSolver::jspace_dist_from_nom(Eigen::VectorXd q_nom, Eigen::VectorXd q_soln) {
-    //double dist = (q_nom[0]-q_soln[0])*(q_nom[0]-q_soln[0]);
-    //dist += (q_nom[2]-q_soln[2])*(q_nom[2]-q_soln[2]);
-    //dist += (q_nom[4]-q_soln[4])*(q_nom[4]-q_soln[4]);
-    double dist = (q_nom-q_soln).norm();
+    double dist = (q_nom[0]-q_soln[0])*(q_nom[0]-q_soln[0]); //base jnt
+    dist += (q_nom[1]-q_soln[1])*(q_nom[1]-q_soln[1]); //shoulder   
+    dist += (q_nom[2]-q_soln[2])*(q_nom[2]-q_soln[2]); //elbow
+    dist += 0.01*(q_nom[4]-q_soln[4])*(q_nom[4]-q_soln[4]); // care less about wrist soln
+    //double dist = (q_nom-q_soln).norm();
     return dist;   
 }
 
@@ -442,12 +444,14 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
         ROS_WARN("ik_solve could not find any q1 solns--something is wrong");
         return 0; // no solns
     }
-    
+    int n_q1_solns = q1_solns.size();
+    for (int i=0;i<n_q1_solns;i++) {
+        ROS_INFO("q1 soln %d = %f",i,q1_solns[i]);
+    }
+    bool go_on = true;    
     double q1 = q1_solns[0];
     //ROS_INFO("q1 = %f",q1);
            
-
-    //expect a single q1 soln; use it...soln near q1=0
     // transforms to express IK w/rt frames 1_fwd, 1_rvrs
     Eigen::Matrix3d target_R71;// 
     Eigen::Matrix4d A10; //4x4 transforms, frames 1 w/rt frame 0
@@ -470,7 +474,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     double q_shoulder,q_elbow;
     std::vector<double> q_elbow_solns;
     if (!solve_2R_planar_arm_elbow_angs(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow_solns)) {
-        return 0; //zero solutions if can't solver for elbow
+        return 0; //zero solutions if can't solve for elbow
     }    
     
     
@@ -511,6 +515,72 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     //A43 = compute_A_of_DH(3, q_elbow);
     //T40 = A10*A21*A32*A43;
     bool is_singular = solve_spherical_wrist(q_ik_soln,R_des_70, q_ik_solns);
+    
+    //repeat for alternative  q1: 
+    //--------------------
+    q1 = q1_solns[1]; //180-deg rot of base joint
+    A10 = compute_A_of_DH(0, q1); //compute_A_of_DH(DH_a_params[0],DH_d_params[0],DH_alpha_params[0], q1a+ DH_q_offsets[0] );
+    T71 = A10.inverse() * T70;   
+    
+    target_R71 = T71.block<3, 3>(0, 0);
+    b7_wrt_1 = target_R71.col(2);
+    //ROS_INFO_STREAM("b7_wrt_1 = "<<b7_wrt_1.transpose()<<endl);
+    O7_wrt_1= T71.block<3, 1>(0, 3);
+    //wrist pose, w/rt frame 1; expect z-val = 0
+    w_wrt_1 = O7_wrt_1 - b7_wrt_1*Lwrist;
+    //ROS_INFO_STREAM("w_wrt_1: "<<w_wrt_1.transpose());
+    
+    //now, solve a 2-link planar arm for w_wrt_1[0],w_wrt_1[1]
+    // these should be redundant with above
+    if (!solve_2R_planar_arm_elbow_angs(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow_solns)) {
+        return 0; //zero solutions if can't solve for elbow
+    }    
+    
+    
+    is_fwd = true;  //is goal fwd or rvrs?  --> sign of elbow
+    //elbow rotation is negative for forward solns; positive for rvrs solns;
+    //  first elbow soln is positive, 2nd is negative
+    if (w_wrt_1[0]<0) { 
+          is_fwd=false; 
+          q_elbow = q_elbow_solns[0];    //positive  elbow soln      
+          //ROS_INFO("seeking rvrs soln, using q_elbow = %f",q_elbow);
+          if (!compute_shoulder_ang(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow, q_shoulder)) {
+              ROS_WARN("problem computing q_shoulder!");
+              return 0;
+          }
+          
+    }
+    else {
+        //ROS_INFO("seeking fwd soln");
+          q_elbow = q_elbow_solns[1];     //negative  elbow soln     
+          //ROS_INFO("seeking fwd soln, using q_elbow = %f",q_elbow);
+          if (!compute_shoulder_ang(w_wrt_1[0],w_wrt_1[1],  L1,  L2, q_elbow, q_shoulder)) {
+              ROS_WARN("problem computing q_shoulder!");
+              return 0;  
+          }
+    }
+    //since have not yet considered joint limits, this 2nd soln should also exist
+        q_ik_soln[0] = q1;        
+        q_ik_soln[1] = q_shoulder;
+        q_ik_soln[2] = 0.0; //arbitrarily freeze this joint
+        q_ik_soln[3] = q_elbow;
+        //ROS_INFO_STREAM("partial soln: "<<q_ik_soln.transpose()<<endl);
+        //now fill in wrist angles in locations 4,5,6
+    
+    //q_ik_solns.clear();
+    //Eigen::Matrix4d A21,A32,A43,T40;
+    //A21 = compute_A_of_DH(1, q_shoulder);    
+    //A32 = compute_A_of_DH(2, 0);
+    //A43 = compute_A_of_DH(3, q_elbow);
+    //T40 = A10*A21*A32*A43;
+    is_singular = solve_spherical_wrist(q_ik_soln,R_des_70, q_ik_solns);    
+    
+    
+    
+    //------------------
+    
+    
+    
     int nsolns = q_ik_solns.size();
     if (nsolns<1)
     {
@@ -520,7 +590,7 @@ int KukaIkSolver::ik_solve(Eigen::Affine3d const& desired_hand_pose,  vector<Eig
     return nsolns; 
 }
 
-//there are 2 q1 solns; choose the soln closest to 0
+//there are 2 q1 solns, ignoring joint limits
 // should always have a reachable soln, unless out of reach
 bool KukaIkSolver::compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &q1_solns) {
     q1_solns.clear();
@@ -538,8 +608,10 @@ bool KukaIkSolver::compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &
     while (q1_near_0<-M_PI/2.0) q1_near_0+=M_PI;
     while (q1_near_0>M_PI/2.0) q1_near_0-=M_PI;
     q1_solns.push_back(q1_near_0);
-
-
+    double q1;
+    if (q1_near_0<0) q1 = q1_near_0+M_PI;
+    else q1 = q1_near_0-M_PI;
+    q1_solns.push_back(q1);
     return true;
 }
 
@@ -547,6 +619,7 @@ bool KukaIkSolver::compute_q1_solns(Eigen::Vector3d w_des, std::vector<double> &
 // note: if qw2 is near zero, then at a wrist singularity; 
 // inf solutions of qw1+D, qw1-D
 // use q1, q2, q3 from q_in; copy these values to q_solns, and tack on the two solutions qw1, qw2, qw3
+//CAREFUL: this fnc APPENDS solns to q_solns;  must initialize q_solns in calling pgm
 bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_des, std::vector<Eigen::VectorXd> &q_solns) {
     bool is_singular = false;
     Eigen::Matrix4d A01,A12,A23,A03,A34,A04,A45,A05,A56,A06;
@@ -620,7 +693,7 @@ bool KukaIkSolver::solve_spherical_wrist(Eigen::VectorXd q_in,Eigen::Matrix3d R_
     q_soln[6] = qw3;
     while (q_soln[6]>DH_q_max7) q_soln[6]-= 2.0*M_PI;
     while (q_soln[6]<DH_q_min7) q_soln[6]+= 2.0*M_PI;    
-    q_solns.clear();
+    //q_solns.clear();
     q_solns.push_back(q_soln);
     //2nd wrist soln: 
     q_soln[4] = qw1b;

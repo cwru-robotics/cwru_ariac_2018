@@ -186,12 +186,13 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
             J1_ang= q_vec[0];
-            delta_J1 = 0.1;
+            delta_J1 = (1.57- q_vec[0])/15.0;//0.1;
             old_q_vec = q_vec;
-            for (int i=0;i<9;i++) {
+            for (int i=0;i<15;i++) {
                old_q_vec = q_vec;
                J1_ang += delta_J1;
                q_vec[0]=J1_ang;
+               q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights
                delta_d8 = R_OUTSTRETCHED*cos(J1_ang)*delta_J1;
                q_vec[7]+= delta_d8;
                move_time_est = estimate_move_time(old_q_vec,q_vec)+0.1;     
@@ -201,9 +202,11 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             old_q_vec = q_vec;
             
             transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_CRUISE_array,q_vec);
-            if (y_part> -0.35) y_part = -0.35;
-            d8_disp = y_part + R_OUTSTRETCHED - Y_BASE_WRT_WORLD_AT_D8_HOME;
-            q_vec[7] = d8_disp;
+            q_vec[0] = M_PI/2.0;
+            //if (y_part> -0.35) y_part = -0.35;
+            //d8_disp = y_part + R_OUTSTRETCHED - Y_BASE_WRT_WORLD_AT_D8_HOME;
+            q_vec[6] = old_q_vec[6]; //  don't care about flange rotation,  so don't wait for it
+            q_vec[7] = old_q_vec[7];
             
             //q_vec[0]=1.57;
             move_time_est = estimate_move_time(old_q_vec,q_vec)+0.5; //+0.5;     
@@ -229,11 +232,13 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
             J1_ang= q_vec[0];
-            delta_J1 = 0.1;
-            for (int i=0;i<9;i++) {
+            //delta_J1 = 0.1;
+            delta_J1 = (1.57- q_vec[0])/15.0;
+            for (int i=0;i<15;i++) {
                old_q_vec = q_vec; 
                J1_ang += delta_J1;
                q_vec[0]=J1_ang;
+               q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights               
                delta_d8 = R_OUTSTRETCHED*cos(J1_ang)*delta_J1;
                q_vec[7]+= delta_d8;
                move_time_est = estimate_move_time(old_q_vec,q_vec)+0.08;
@@ -241,7 +246,12 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
                traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories   
             }
             old_q_vec = q_vec;
+            transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_CRUISE_array,q_vec);
             q_vec[0]=1.57;
+            q_vec[6] = old_q_vec[6]; //  don't care about flange rotation,  so don't wait for it
+            
+            q_vec[7] = old_q_vec[7];
+            
             move_time_est = estimate_move_time(old_q_vec,q_vec)+0.2;
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories             
@@ -249,7 +259,12 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
            
             ROS_INFO("sent multipoint traj to withdraw arm from middle row of bin");        
     }
-        
+    is_attached_ = gripperInterface_.isGripperAttached();
+    if (!is_attached_) {
+        ROS_WARN("dropped  part!");        
+        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+        return errorCode_;
+    }           
         errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
         if(!is_attached_) errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
         return errorCode_;

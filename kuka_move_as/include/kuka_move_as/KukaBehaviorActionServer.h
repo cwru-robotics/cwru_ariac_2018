@@ -75,6 +75,12 @@ const double DROPOFF_CLEARANCE = 0.005; //leave small  gap for dropoff
 
 const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
 const double X_BASE_WRT_WORLD = -0.050;
+const double D8_MIN = -1.8;
+const double D8_MAX = 1.8;
+
+const double BOX_CAM_1_Y = 0.615;
+const double BOX_CAM_2_Y = -0.70;
+
 
 const double MOVE_INTO_GRASP_TIME = 7.0;//spend this long retrying grasp
 
@@ -286,6 +292,8 @@ private:
     unsigned short int release_and_retract(double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);    
     unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
     unsigned short int move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
+    //unsigned short int KukaBehaviorActionServer::alt_move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout);
+    
 
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
@@ -300,6 +308,7 @@ private:
     inventory_msgs::Part grasped_part_;
 
     Eigen::VectorXd pickup_jspace_pose_, dropoff_jspace_pose_;
+    Eigen::VectorXd box_cam_grasp_inspection_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
     Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_;
     Eigen::VectorXd current_hover_pose_, current_key_pose_, current_cruise_pose_;
@@ -376,6 +385,8 @@ private:
     unsigned short int alt_compute_bin_pickup_key_poses(inventory_msgs::Part part);
 
     unsigned short int compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    unsigned short int alt_compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    
     //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
     bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);

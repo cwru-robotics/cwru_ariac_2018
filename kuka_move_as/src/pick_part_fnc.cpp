@@ -57,12 +57,14 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     if (!move_posecode1_to_posecode2(current_pose_code_, current_bin_cruise_pose_code_)) {
         ROS_WARN("error with move between pose codes");
         ROS_INFO("trying to recover w/ move to closest key pose");
+        /*
         if (find_nearest_key_pose(move_to_pose_code, current_key_pose_)) {
             move_to_jspace_pose(current_key_pose_, 2.5);
             current_pose_code_ = move_to_pose_code;
             ROS_INFO("current_pose_code_ = %d",current_pose_code_);
             
         }
+         * */
             //try again:
         if (!move_posecode1_to_posecode2(current_pose_code_, current_bin_cruise_pose_code_)) {
             ROS_WARN("error with move between pose codes; recovery failed");   
@@ -79,7 +81,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     
     //try combining moves: current_hover_pose_, approach_pickup_jspace_pose_
     traj_head = jspace_pose_to_traj(current_hover_pose_,1.5);
-    traj_tail = jspace_pose_to_traj(approach_pickup_jspace_pose_,1.0);
+    traj_tail = jspace_pose_to_traj(desired_approach_jspace_pose_,1.0);
     
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories
     ROS_INFO("sending multi-point concatenated traj: ");
@@ -126,8 +128,8 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
         ROS_WARN("did not attach; attempting to descend further: ");
         //cin>>ans;
         if (!move_into_grasp(MOVE_INTO_GRASP_TIME)) {
-            ROS_WARN("could not grasp part; giving up; moving to approach pose...");
-            move_to_jspace_pose(approach_pickup_jspace_pose_, 1.0); //approach_pickup_jspace_pose_
+            ROS_WARN("could not grasp part; giving up; moving to depart pose...");
+            move_to_jspace_pose(desired_depart_jspace_pose_, 1.5); //approach_pickup_jspace_pose_
 
             ROS_INFO("moving to current_hover_pose_ ");//pickup_hover_pose_
             //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
@@ -154,7 +156,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     //if here, part is attached to  gripper 
     //combine these  moves: approach_pickup_jspace_pose_, computed_bin_escape_jspace_pose_,
     //current_bin_cruise_pose_ w/ frozen wrist, current_bin_cruise_pose_
-    traj_head = jspace_pose_to_traj(approach_pickup_jspace_pose_,1.5);
+    traj_head = jspace_pose_to_traj(desired_depart_jspace_pose_,1.0);
 
     
     
@@ -178,7 +180,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     
     ROS_INFO("moving to hover_jspace_pose_ ");
     //freeze wrist:
-    for (int i=4;i<6;i++) current_hover_pose_[i] = approach_pickup_jspace_pose_[i];
+    for (int i=4;i<6;i++) current_hover_pose_[i] = desired_depart_jspace_pose_[i];
     traj_tail = jspace_pose_to_traj(current_hover_pose_,1.0);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories
     /*
@@ -196,7 +198,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     ROS_WARN("moving to computed_bin_escape_jspace_pose_; enter 1: ");
     //cin>>ans;
     //freeze wrist
-    for (int i=4;i<6;i++) computed_bin_escape_jspace_pose_[i] = approach_pickup_jspace_pose_[i];
+    for (int i=4;i<6;i++) computed_bin_escape_jspace_pose_[i] = desired_depart_jspace_pose_[i];
     traj_tail = jspace_pose_to_traj(computed_bin_escape_jspace_pose_,1.0);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
     /*
@@ -222,7 +224,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     temp_pose.resize(8);
     temp_pose = current_bin_cruise_pose_; //move here in 2 steps
     //keep toolflange the same
-    for (int i=4;i<6;i++) temp_pose[i] = approach_pickup_jspace_pose_[i];
+    for (int i=4;i<6;i++) temp_pose[i] = desired_depart_jspace_pose_[i];
     traj_tail = jspace_pose_to_traj(temp_pose,1.5);    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
     /*
@@ -260,9 +262,9 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
     ROS_INFO("sending multi-point concatenated traj: ");
     send_traj_goal(traj_head,current_bin_cruise_pose_code_);
     
-    
+    //CAREFUL: CHANGE IN STRATEGY; END THIS FUNC AT BIN CRUISE POSE
     //move to box cruise pose:
-    
+    /*
     if (!move_posecode1_to_posecode2(current_pose_code_, Q1_CRUISE_CODE)) {
         ROS_WARN("error with move between pose codes");
     }
@@ -276,6 +278,7 @@ unsigned short int KukaBehaviorActionServer::pick_part_from_bin(const kuka_move_
         ros::Duration(1.0).sleep();
         move_to_jspace_pose(q1_cruise_pose_, 5.0);     
     } 
+     * */
     //check if part is still attached
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {

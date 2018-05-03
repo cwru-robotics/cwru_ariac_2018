@@ -20,12 +20,13 @@
 
 #include <kuka_move_as/KukaBehaviorActionServer.h>
 int g_ans; //for cout breakpoint debugging
-
-
+  
 //define these funcs in separate files
 #include "pick_part_fnc.cpp"
 #include "compute_key_poses.cpp"
 #include "place_part_fnc.cpp"
+#include "test_pick_part_fnc.cpp"
+#include "test_pick_part_fnc_bin5.cpp"
 
 //#include "grasp_and_release_fncs.cpp"
 /*
@@ -61,6 +62,7 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
     placeFinder_.insert(pair<int8_t, string>(Part::QUALITY_SENSOR_2, "QUALITY_SENSOR_2"));   
     
     approach_dist_ = APPROACH_OFFSET_DIST;  //arbitrary, tunable
+    depart_dist_ = DEPART_OFFSET_DIST;
     deep_grasp_dist_ = DEEP_GRASP_MOVE_DIST;  //ditto
     
     robot_behavior_as.registerPreemptCallback(boost::bind(&KukaBehaviorActionServer::preemptCB, this));
@@ -95,7 +97,7 @@ traj_ctl_ac_("/ariac/arm/follow_joint_trajectory", true),gripperInterface_(nh) {
         q1_hover_pose_[i] = Q1_HOVER_array[i];
         q2_hover_pose_[i] = Q2_HOVER_array[i];        
     }
-
+    joint_state_vec_.resize(8);
     jointstate_subscriber_  =  nh.subscribe("/ariac/joint_states", 1, &KukaBehaviorActionServer::jointstateCB,this); 
     
     //set_key_poses();
@@ -115,6 +117,7 @@ void KukaBehaviorActionServer::trajDoneCb_(const actionlib::SimpleClientGoalStat
     if (bad_state_==rtn_state_) {
         ROS_WARN("TRAJ RETURNED ABORTED!!");
         int ans;
+        //cout<<"enter  1 to continue: ";
         //cin>>ans;
     }
     if (succeeded==rtn_state_) {
@@ -202,7 +205,10 @@ void RobotMoveActionServer::move_to_jspace_pose(Eigen::VectorXd q_vec, double dt
 void KukaBehaviorActionServer::jointstateCB(const sensor_msgs::JointState& message_holder) {
     
     joint_state_ = message_holder;
-    got_new_joint_states_=true;
+    for (int i=0;i<8;i++) {
+      joint_state_vec_[i] = joint_state_.position[i];
+      got_new_joint_states_=true;
+    }
 }
 
 
@@ -229,11 +235,22 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
             //report_success_or_abort(); //populate result message and inform client of status
             break;
+        case kuka_move_as::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN:
+            ROS_WARN("kinematic test fnc");
+            errorCode_ = test_pick_part_from_bin(goal);
+        break;
 
-        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN:
+        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN:  //re-wrote 5/2/2018; needs more testing
             ROS_INFO("PICK_PART_FROM_BIN");
             // use "goal", but only need to populate the "sourcePart" component
-            errorCode_ = pick_part_from_bin(goal);//pick_part_from_bin
+            part = goal->sourcePart;
+            if (part.location==Part::BIN5||part.location==Part::BIN4) {
+                errorCode_ = test_pick_part_from_bin5(goal); //temp testing using modified moves
+            }
+            else {
+               errorCode_ = test_pick_part_from_bin(goal); //temp testing using modified moves
+               //errorCode_ = pick_part_from_bin(goal);//pick_part_from_bin
+            }
             break;
             
         case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE:
@@ -607,8 +624,8 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
     switch (pose_code) {
         case APPROACH_DEPART_CODE:
             ROS_INFO("move_to_jspace_pose(APPROACH_DEPART_CODE)");
-            ROS_INFO_STREAM("desired_approach_depart_pose_"<<endl<<desired_approach_depart_pose_.transpose()<<endl);
-            transition_traj = jspace_pose_to_traj(desired_approach_depart_pose_);
+            ROS_INFO_STREAM("desired_approach_jspace_pose_"<<endl<<desired_approach_jspace_pose_.transpose()<<endl);
+            transition_traj = jspace_pose_to_traj(desired_approach_jspace_pose_);
             break;
         case GRASP_PLACE_CODE:
             ROS_INFO("move_to_jspace_pose(GRASP_PLACE_CODE)");
@@ -717,6 +734,20 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
     current_pose_code_ = posecode_goal;    
     if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return false;
     return true;
+}
+
+//estimate move time for a point-to-point move:
+//naive implementation: IGNORES accel/decel; only based on max vel
+//FIX THIS
+double KukaBehaviorActionServer::estimate_move_time(Eigen::VectorXd q_vec_start,Eigen::VectorXd q_vec_end) {
+    double max_time = 0.0;
+    double jnt_time;
+    //ros::spinOnce();
+    for (int ijnt=0;ijnt<8;ijnt++) {
+        jnt_time = fabs(q_vec_end[ijnt]-q_vec_start[ijnt])/MAX_JNT_SPEEDS[ijnt];
+        if (jnt_time>max_time) max_time=jnt_time;
+    }
+    return max_time; 
 }
 
 bool KukaBehaviorActionServer::report_success_or_abort() {
