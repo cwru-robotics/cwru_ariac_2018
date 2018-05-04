@@ -35,14 +35,17 @@ cs_add_library(GripperInterface src/GripperInterface.cpp)
 # may add more of these lines for more nodes from the same package
 cs_add_executable(transition_trajectories_test_main src/transition_trajectories_test_main.cpp)
 cs_add_executable(kuka_behavior_as src/kuka_behavior_as.cpp)
+cs_add_executable(kuka_behavior_as2 src/kuka_behavior_as2.cpp)
 cs_add_executable(robot_behavior_test_main src/robot_behavior_test_main.cpp)
+cs_add_executable(test_pick_interactive_client src/test_pick_interactive_client.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 target_link_libraries(transition_trajectories_test_main TransitionTrajectories)
 target_link_libraries(kuka_behavior_as TransitionTrajectories GripperInterface)
+target_link_libraries(kuka_behavior_as2 TransitionTrajectories GripperInterface)
 target_link_libraries(robot_behavior_test_main RobotBehaviorInterface)
-
+target_link_libraries(test_pick_interactive_client RobotBehaviorInterface)
 cs_install()
 cs_export()
     

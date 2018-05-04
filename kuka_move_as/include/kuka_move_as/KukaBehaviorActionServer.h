@@ -55,7 +55,9 @@ const bool DOWN = false;
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
-const double APPROACH_OFFSET_DIST = 0.05;
+
+const double APPROACH_OFFSET_DIST = 0.075;
+const double DEPART_OFFSET_DIST = 0.075;
 const double DEEP_GRASP_MOVE_DIST = -0.01;
 
 const double MIN_BIN_GRASP_DY = -0.165; //-0.153; //xxx yikes!
@@ -73,9 +75,18 @@ const double DROPOFF_CLEARANCE = 0.005; //leave small  gap for dropoff
 
 const double Y_BASE_WRT_WORLD_AT_D8_HOME = 1.01;
 const double X_BASE_WRT_WORLD = -0.050;
+const double D8_MIN = -1.8;
+const double D8_MAX = 1.8;
+
+const double BOX_CAM_1_Y = 0.615;
+const double BOX_CAM_2_Y = -0.70;
+
 
 const double MOVE_INTO_GRASP_TIME = 7.0;//spend this long retrying grasp
 
+const double MAX_JNT_SPEEDS[] = {4.5,4.5,4.5,4.5,4,4,4,0.9}; //{5,5,5,5,5,5,5,1}//try to tune these  for move-time estimates
+
+const double R_OUTSTRETCHED= 0.823; //radius in x-y plane from base to gripper w/ J_shoulder = -1.3, J_elbow = 0.3
 
 //int ans; //poor-man's debug response
 
@@ -254,6 +265,7 @@ private:
     trajectory_msgs::JointTrajectory des_trajectory_;
     
     sensor_msgs::JointState joint_state_;
+    Eigen::VectorXd joint_state_vec_;
 
     //actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>
     //        robot_motion_action_client("/ariac/arm/follow_joint_trajectory", true);
@@ -268,6 +280,8 @@ private:
     //unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     unsigned short int pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
     unsigned short int pick_part_from_box(Part part, double timeout);
+    unsigned short int test_pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int test_pick_part_from_bin5(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
 
     
     //unsigned short int discard_grasped_part();
@@ -278,6 +292,8 @@ private:
     unsigned short int release_and_retract(double timeout_arg=MAX_BEHAVIOR_SERVER_WAIT_TIME);    
     unsigned short int place_part_in_box_with_release(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
     unsigned short int move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout=MAX_BEHAVIOR_SERVER_WAIT_TIME);
+    //unsigned short int KukaBehaviorActionServer::alt_move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout);
+    
 
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
@@ -292,10 +308,11 @@ private:
     inventory_msgs::Part grasped_part_;
 
     Eigen::VectorXd pickup_jspace_pose_, dropoff_jspace_pose_;
+    Eigen::VectorXd box_cam_grasp_inspection_pose_;
     Eigen::VectorXd approach_pickup_jspace_pose_, approach_dropoff_jspace_pose_;
     Eigen::VectorXd pickup_deeper_jspace_pose_, pickup_hover_pose_, dropoff_hover_pose_;
     Eigen::VectorXd current_hover_pose_, current_key_pose_, current_cruise_pose_;
-    Eigen::VectorXd desired_approach_depart_pose_, desired_grasp_dropoff_pose_;
+    Eigen::VectorXd desired_approach_jspace_pose_, desired_depart_jspace_pose_,desired_grasp_dropoff_pose_;
     Eigen::VectorXd computed_jspace_approach_, computed_bin_escape_jspace_pose_;
     Eigen::VectorXd nom_bin_cruise_pose_,q1_cruise_pose_,computed_bin_cruise_jspace_pose_;
     Eigen::VectorXd  q1_hover_pose_,q2_hover_pose_, q_temp_pose_;
@@ -305,7 +322,7 @@ private:
        
     int box_dropoff_cruise_pose_code_, box_dropoff_hover_pose_code_; //would be Q1_CRUISE or Q2_CRUISE
 
-    double approach_dist_;
+    double approach_dist_,depart_dist_;
     double deep_grasp_dist_;
     
     Eigen::Affine3d grasp_transform_;
@@ -362,13 +379,21 @@ private:
 
     bool rail_prepose(int8_t location, double &q_rail);
     bool compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
-    unsigned short int compute_bin_pickup_key_poses(inventory_msgs::Part part);    
+    bool alt_compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
+
+    unsigned short int compute_bin_pickup_key_poses(inventory_msgs::Part part);  
+    unsigned short int alt_compute_bin_pickup_key_poses(inventory_msgs::Part part);
+
     unsigned short int compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    unsigned short int alt_compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    
     //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
     bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);
     bool compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,double approach_dist,Eigen::VectorXd &q_vec_soln);
     //fnc to derive forward IK solns from computed rvrs IK solns; useful, e.g.,  for bin5 computations of key poses
     void fwd_qvec_from_rvrs_qvec(double part_y, Eigen::VectorXd &q_vec);
+    void alt_fwd_qvec_from_rvrs_qvec(double part_y, Eigen::VectorXd &q_vec);
+
 
     //use the following functions to refine the IK soln for part dropoff;
     //e.g., hold part in approach pose; take snapshot, get joint angles, compute grasp transform, update dropoff pose IK soln
@@ -390,7 +415,10 @@ private:
     //bool bin_y_is_reachable(int8_t bin,double &part_y);
     bool bin_xy_is_reachable(int8_t bin,double &part_x, double &part_y);
 
-    bool find_nearest_key_pose(int &pose_code, Eigen::VectorXd &q_vec_joint_angles_8dof);
+    //bool find_nearest_key_pose(int &pose_code, Eigen::VectorXd &q_vec_joint_angles_8dof);
+
+    double estimate_move_time(Eigen::VectorXd q_vec_start,Eigen::VectorXd q_vec_end);
+    void goto_cruise_pose(Eigen::VectorXd desired_cruise_pose);
 
 
     //inventory_msgs::Part part_of_interest_;    

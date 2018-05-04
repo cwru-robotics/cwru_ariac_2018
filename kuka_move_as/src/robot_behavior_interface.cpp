@@ -111,6 +111,13 @@ void RobotBehaviorInterface::activeCb() {
     // ROS_INFO("Goal sent");
 }
 
+bool RobotBehaviorInterface::test_pick_part_from_bin(Part part, double timeout) {
+    ROS_INFO("test pick fnc called");
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN;
+    return( sendGoal(goal_type,part,timeout));    
+}
+
+    
 //blocking function!!
 bool RobotBehaviorInterface::pick_part_from_bin(Part part, double timeout) { 
     ROS_INFO("pick fnc called");

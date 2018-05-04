@@ -7,6 +7,7 @@
 #include<bin_inventory/bin_inventory.h>
 #include<box_inspector/box_inspector.h>
 
+int ans;
 void part_to_model(inventory_msgs::Part part, osrf_gear::Model &model) {
 	model.type=part.name;
 	model.pose=part.pose.pose;
@@ -17,9 +18,9 @@ void set_part_vals(Part pick_part,Part &place_part) {
     geometry_msgs::PoseStamped place_pose;
     //a hard-coded drop-off location: approx centered in box1
     //Q1 box pose: ~ centered--> x,y,z = 0.612, 0.612, 0.588
-    place_pose.pose.position.x = 0.6; //0.23; //0;//0.300; //AGV1 frame: Translation: [0.300, 3.300, 0.750]
-    place_pose.pose.position.y = 0.7; //+= 0.01; //= 3.13; //0; //3.300;
-    place_pose.pose.position.z = 0.588; //0; //0.750;    
+    place_pose.pose.position.x = 0.57; //these values are centered under box cam1
+    place_pose.pose.position.y = 0.61; //+= 0.01; //= 3.13; //0; //3.300;
+    place_pose.pose.position.z = 0.59; //0; //0.750;    
     place_pose.pose.orientation.x=0;
     place_pose.pose.orientation.y=0;
     place_pose.pose.orientation.z= 0;
@@ -43,7 +44,7 @@ int main(int argc, char** argv) {
 
     RobotBehaviorInterface robotBehaviorInterface(&nh);
     
-    inventory_msgs::Part pick_part,place_part;
+    inventory_msgs::Part pick_part,place_part,observed_part;
     inventory_msgs::Inventory inventory_msg;
 
     BoxInspector boxInspector(&nh);
@@ -61,13 +62,15 @@ int main(int argc, char** argv) {
     /*     part.location = bin_num;
      part.pose = part_pose;
      part.name = part_name.c_str();*/
-    //start from 2--skip the gear parts
+    //could start from 2 to skip the gear parts
+    bool go_on = true;
     for (int i_part_type=1;i_part_type<=NUM_PART_TYPES;i_part_type++) {
         std::string part_name = part_id_to_name_mappings[i_part_type];
         ROS_INFO_STREAM("attempting to remove parts  of  type "<<part_name<<endl);
         int nparts = binInventory.num_parts(i_part_type);
         ROS_INFO_STREAM("found "<<nparts<<" of these"<<endl);
         for (int ipart=0;ipart<nparts;ipart++) {
+            go_on = true;
             ROS_INFO("removing item %d of part_id %d",ipart, i_part_type);
               unsigned short int bin_num =   inventory_msg.inventory[i_part_type].bins[ipart];
               geometry_msgs::PoseStamped part_pose = inventory_msg.inventory[i_part_type].part_stamped_poses[ipart];
@@ -83,26 +86,55 @@ int main(int argc, char** argv) {
                if(!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
                   ROS_INFO("pick failed");
                   //gripperInterface_.release();     
-                  break;
-               }                   
-              ROS_INFO("attempting to place part: ");
-              set_part_vals(pick_part,place_part);
-              ROS_INFO_STREAM("part to be placed: "<<place_part<<endl);
+                  go_on=false;
+               }               
+              if (go_on) {
+                ROS_INFO("attempting to place part: ");
+                set_part_vals(pick_part,place_part);
+                ROS_INFO_STREAM("part to be placed: "<<place_part<<endl);
               //place_part_in_box_no_release(Part part,double timeout)
-                if(!robotBehaviorInterface.place_part_in_box_no_release(place_part)) {
+              //bool RobotBehaviorInterface::move_part_to_approach_pose(inventory_msgs::Part part,double timeout) {
+                if(!robotBehaviorInterface.move_part_to_approach_pose(place_part)) {
                   ROS_INFO("placement failed");
                   //gripperInterface_.release();     
-                  break;
-               }              
+                  go_on=false;
+               }   
+              }
+              if (go_on) {
+                  ROS_INFO("getting observed pose of part to compute grasp transform");
+                  ROS_INFO("pause first, for settling time");
+                  ros::Duration(2.0).sleep();
+                boxInspector.get_observed_part_pose(place_part, observed_part);
+                //cout<<"enter 1: ";
+                //cin>>ans;
+                //when above fnc call is working, call the following
+                ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
+                go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part);              
+              }
+              if (go_on) {
+                if(!robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part)) {
+                  ROS_INFO("placement failed");
+                  //gripperInterface_.release();     
+                  go_on=false;
+               }         
+              }
+              ROS_INFO("desired part x,y,z = %f, %f, %f",place_part.pose.pose.position.x,place_part.pose.pose.position.y,place_part.pose.pose.position.z );
+
+              cout<<"enter  1: ";
+              cin>>ans;
+              if (go_on) {
+                 robotBehaviorInterface.discard_grasped_part(place_part);
+              }
               
               //dummy test: just claim part is observed to be in exact location
               // replace this with actual observation from camera
+              /*
                 if(!robotBehaviorInterface.adjust_part_location_no_release(place_part,place_part)) {
                   ROS_INFO("placement failed");
                   //gripperInterface_.release();     
                   break;
                }    
-              
+              */
               
               //DEMO OF "RELEASE" FNC:  need to remove this, or parts will pile up!!
               //command to release a part--waits for max of 5 seconds for confirming release, else returns "false"
@@ -110,9 +142,9 @@ int main(int argc, char** argv) {
               if(!robotBehaviorInterface.release(5)) {
                   ROS_WARN("something is wrong!  unsuccessful releasing part after 5 seconds of trying");
               } 
-              */
+              /**/
               
-
+    /*
     ROS_INFO("double check starts");          
 
     //AUGMENT HERE!!!
@@ -142,8 +174,8 @@ int main(int argc, char** argv) {
                   ROS_INFO("discard failed");
                   //gripperInterface_.release();     
                   break;
-               }                      
-        }
+               }  */                    
+        } 
     }
 
 }

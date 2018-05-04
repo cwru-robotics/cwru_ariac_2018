@@ -16,10 +16,10 @@ using namespace std;
 //convenient for initializing data: C-style array 
 const int NDOF = 8;
 //const double Q1_HOVER_array[NDOF] = {0.0, 0.9, 0.0, -1.6, 0, 0.45, 0, -0.385}; 
-const double Q1_HOVER_array[NDOF] = {0.3, 1.3, 0.0, -1.0, 0, 0.45, 0, -0.385}; 
+const double Q1_HOVER_array[NDOF] = {-2.9, -1.5, 0, 0.4, -0.04, -1.25, 0, -0.9}; 
 
 //0.3, 1.3, 0.0, -1.0, 0, 0.45, 0, -0.385
-const double Q1_CRUISE_array[NDOF] = {1.57, 0.9, 0.0, -1.6, 0, 0.45, 0, -0.385}; 
+const double Q1_CRUISE_array[NDOF] = {1.57, -1.5, 0, 0.4, -0.04, -1.25, 0, -0.385}; 
 const double CRUISE_FLIP_MID_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.385};  
 const double Q1_DISCARD_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, 1.75};  
 
@@ -29,7 +29,21 @@ const double Q2_CRUISE_array[NDOF] = {1.57, 1.1, 0.0, -1.6, 0, 0.45, 0, -0.8};
 
 ////1.57, -1.35, 0.0, 0.5, 3, 0.8, 0, -0.81
 //const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 0, -1.2, 0, -0.81}; 
-const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 3, 0.8, 0, -0.81}; 
+const double BIN1_CRUISE_array[NDOF] = {1.57, -1.35, 0.0, 0.5, 3, 0.8, 0, -0.81};  //note positive wrist bend
+const double BIN1_NEAR_CRUISE_array[NDOF] =       {1.57, -1.35, 0, 0.5,  2.9,  1.3,  0, -0.81}; 
+//const double BIN1_CENTER_ROW_CRUISE_array[NDOF] = {1.57, -1.36, 0, 0.6,  2.9,  1.3,  0, -0.88};
+//1.569, -1.359, 0.005, 0.6, 2.914, 1.3, 0, -0.88
+//1.564, -1.345, 0, 0.3, 2.93, 0.78, 0.387, -0.8
+const double BIN1_CENTER_ROW_CRUISE_array[NDOF] = {1.57, -1.35, 0, 0.3, 2.93, 1.4, 0.387, -0.8}; //note positive wrist bend
+
+const double BIN1_CENTER_ROW_VIA_1[NDOF] =        {0.8, -1.36, 0, 0.6,   2.9,  1.3, 0, -0.88};
+const double BIN1_CENTER_ROW_VIA_2[NDOF] =        {0.5, -1.36, 0, 0.6,   2.9,  1.3, 0, -1.05};
+
+//const double BIN1_DEEP_CRUISE_array[NDOF] =       {1.57, -1.36, 0, 0.6, -0.1, -0.95, 0, -0.88};
+const double BIN1_DEEP_VIA_1[NDOF] = {0.8, -1.36, 0, 0.6, -0.1, -0.95, 0, -0.88};
+const double BIN1_DEEP_VIA_2[NDOF] = {0.5, -1.36, 0, 0.6, -0.1, -0.95, 0, -1.05};
+//use outstretched arm:
+const double BIN1_DEEP_CRUISE_array[NDOF] = {1.57, -1.35, 0, 0.3, -0.04, -1.4, 0, -0.8};  //note negative wrist bend
 
 //const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 0, -1.2, 0, -1.21}; 
 const double BIN1_HOVER_NEAR_array[NDOF] = {0.5, -1.35, 0.0, 0.5, 3, 0.8, 0, -1.21}; 
@@ -53,7 +67,10 @@ const double BIN4_HOVER_FAR_array[NDOF] = {0.1, -1.35, 0.0, 0.3, 0, -1.2, 0, 0.9
 
 //max sled val = 1.79; careful--bin5 approach NOT  flipped
 //position: [2.870471561614764, 1.3903678520995415, -0.015429008846624015, -0.7447154011426811, -2.932944045506636, -0.8267392468382049, -0.3143643136622174, 1.4464382879099866, 0.0]
-const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.0}; 
+//2.6260961309306126, 1.3522146683623353, 0.0018241288588187743, -0.5539856796579077, -2.9306088904300918, -0.8098751304684004, -2.6008835359030664, 1.2805203298247987
+//const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.0}; 
+const double BIN5_CRUISE_array[NDOF] = {1.57, 1.35, 0.0, -0.5, -0.8, -2.6, 0, 1.0}; 
+
 const double BIN5_HOVER_NEAR_array[NDOF] = {2.64, 1.35, 0.0, -0.5, 0, 0.45, 0, 1.3}; 
 const double BIN5_HOVER_FAR_array[NDOF] = {2.93, 1.35, 0.0, -0.3, 0, 0.45, 0, 1.3}; 
 const double BIN5_ESCAPE_array[NDOF] = {2.3, 1.35, 0, -0.6, 0.18, 1.0, -1.0, 1.1}; 
