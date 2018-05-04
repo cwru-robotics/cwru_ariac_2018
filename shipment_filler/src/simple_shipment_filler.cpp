@@ -114,12 +114,7 @@ int main(int argc, char** argv) {
     // the above is not a blocking function.  Can fetch a part, but don't try to deposit it in box until
     // box is in position
 
-    while(!boxInspector.get_box_pose_wrt_world(box_pose_wrt_world)) {
-        ROS_INFO("trying to see box pose w/rt world...");
-        ros::spinOnce();
-        ros::Duration(0.5).sleep();
-    }
-    ROS_INFO_STREAM("box pose wrt world is: "<<box_pose_wrt_world<<endl);
+   
 
 
     //first box is at Q1 inspection station; get a shipment:
@@ -144,6 +139,35 @@ int main(int argc, char** argv) {
             // SINCE ORDER UPDATE CONTAINS MULTIPLE SHIPMENTS. NEED TO COMBINE CHOOSE SHIPMENT AND ORDER UPDATE FNC
             ROS_INFO_STREAM("shipment to be filled: " << shipment << endl);
             //prep for drone request: set shipment name
+            // MAKE IT PICK UP THE FIRST OBJECT IN SHIPMENT.
+             if(binInventory.update()) {
+                    binInventory.get_inventory(current_inventory);
+                    }
+                    
+					current_model.type=shipment.products[0].type;
+					current_model.pose=shipment.products[0].pose;
+                    
+                //build "part" description for destination
+                    shipmentFiller.model_to_part(current_model,place_part,inventory_msgs::Part::QUALITY_SENSOR_1);
+                    std::string part_name(place_part.name);
+                    ROS_INFO_STREAM("attempting a placement of "<<place_part<<endl);
+
+                    if (!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory,place_part)) {
+                  //for some reason, it is not  possible to place this  part, regardless of quality and placement precision
+                  //move along to the next part  in the shipment
+                        ROS_WARN("unsuccessful with pick/place of model %d",0);
+                        ROS_WARN("moving on to try the next part in the shipment");
+                        }
+                    ROS_INFO("BEFORE LOOKING FOR BOX, press 1");   
+                    cin>>ans; 
+
+            while(!boxInspector.get_box_pose_wrt_world(box_pose_wrt_world)) {
+        		ROS_INFO("trying to see box pose w/rt world...");
+        		ros::spinOnce();
+        		ros::Duration(0.5).sleep();
+    		}
+    		ROS_INFO_STREAM("box pose wrt world is: "<<box_pose_wrt_world<<endl); // THIS IS BLOCKING NOW. How to avoid? 
+
             boxInspector.compute_shipment_poses_wrt_world(shipment,box_pose_wrt_world,desired_models_wrt_world);
             ROS_INFO("checking for unwanted parts");
             if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
