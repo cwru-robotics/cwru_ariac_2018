@@ -1,0 +1,126 @@
+# In this scenario:
+# - There are two orders of one shipment each:
+#   - The second will interrupt the first at an inconvenient time.
+#   - The second has no time limit, but should be completed as fast as possible.
+#   - After the second order is complete, the first order is to be resumed.
+# - Faulty parts should not be used to complete the order.
+# - The trial as a whole has a time limit of 500 sec.
+
+time_limit: 500
+
+options:
+  fill_demo_shipment: false
+  insert_models_over_bins: true
+  spawn_extra_models: false
+  model_type_aliases:
+    order_part1: gasket_part
+    order_part2: piston_rod_part
+    order_part3: gear_part
+    order_part4: pulley_part
+  gazebo_state_logging: true
+
+orders:
+  order_0:
+    announcement_condition: time
+    announcement_condition_value: 0.0
+    shipment_count: 1
+    products:
+      part_0:
+        type: order_part1
+        pose:
+          xyz: [0.1, -0.2, 0]
+          rpy: [0, 0, 'pi/2']
+      part_1:
+        type: order_part1
+        pose:
+          xyz: [-0.1, -0.2, 0]
+          rpy: [0, 0, '-pi/2']
+      part_2:
+        type: order_part2
+        pose:
+          xyz: [0.15, 0.15, 0]
+          rpy: [0, 0, 0]
+      part_3:
+        type: order_part2
+        pose:
+          xyz: [-0.15, 0.15, 0]
+          rpy: [0, 0, 0]
+      part_4:
+        type: order_part2
+        pose:
+          xyz: [0.0, 0.15, 0]
+          rpy: [0, 0, 'pi']
+  order_1:
+    announcement_condition: unwanted_products
+    announcement_condition_value: 3
+    shipment_count: 1
+    products:
+      part_0:
+        type: order_part4
+        pose:
+          xyz: [-0.1, -0.2, 0]
+          rpy: ['pi', 0, 0]
+      part_1:
+        type: order_part2
+        pose:
+          xyz: [0.0, 0.15, 0]
+          rpy: [0, 0, 'pi']
+      part_2:
+        type: order_part3
+        pose:
+          xyz: [0.15, 0.1, 0]
+          rpy: [0, 0, 0]
+      part_3:
+        type: order_part3
+        pose:
+          xyz: [0.15, 0.0, 0]
+          rpy: [0, 0, 0]
+      part_4:
+        type: order_part3
+        pose:
+          xyz: [0.15, -0.2, 0]
+          rpy: [0, 0, 0]
+      part_5:
+        type: order_part3
+        pose:
+          xyz: [0.15, -0.1, 0]
+          rpy: [0, 0, 0]
+
+models_over_bins:
+  bin1:
+    models:
+      gear_part:
+        xyz_start: [0.0, 0.0, 0.0]
+        xyz_end: [0.3, 0.37, 0.0]
+        rpy: [0, 0, '-pi/4']
+        num_models_x: 1
+        num_models_y: 4
+  bin2:
+    models:
+      piston_rod_part:
+        xyz_start: [0.0, 0.0, 0.0]
+        xyz_end: [0.25, 0.35, 0.0]
+        rpy: [0, 0, 'pi/4']
+        num_models_x: 2
+        num_models_y: 2
+  bin3:
+    models:
+      pulley_part:
+        xyz_start: [0.15, 0.05, 0.0]
+        xyz_end: [0.15, 0.35, 0.0]
+        rpy: [0, 0, 0]
+        num_models_x: 1
+        num_models_y: 2
+  bin5:
+    models:
+      gasket_part:
+        xyz_start: [0.0, 0.05, 0.0]
+        xyz_end: [0.2, 0.37, 0.0]
+        rpy: [0, 0, 'pi/2']
+        num_models_x: 2
+        num_models_y: 2
+
+faulty_products:
+  - piston_rod_part_3
+  - gear_part_2
+  - gasket_part_4
