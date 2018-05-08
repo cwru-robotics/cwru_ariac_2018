@@ -91,6 +91,7 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
   } else if (!msg->order_id.compare("order_0_update_0")) {
     current = *msg;
   } else if (!msg->order_id.compare("order_1")) {
+    priority_order_recvd.now();
     priority = *msg;
   } else if (!msg->order_id.compare("order_1_update_0")) {
     priority = *msg;
