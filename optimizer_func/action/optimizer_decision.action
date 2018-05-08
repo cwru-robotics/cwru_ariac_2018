@@ -1,0 +1,8 @@
+# goal definition
+int32 delays		# Accumulation of delays in loading based on drops, etc.
+---
+# result definition
+int32 swap_no_swap_quick_swap	# What decision is being made
+---
+# feedback definition
+int32 hold_on			# Not aware of what to feedback, so just wait

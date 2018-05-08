@@ -1,0 +1,18 @@
+# Request Messages
+osrf_gear/Shipment loaded
+osrf_gear/Shipment orphaned
+osrf_gear/Shipment missing
+osrf_gear/Shipment reposition
+int16 giving_up
+
+int16 NOT_GIVING_UP = 0
+int16 GIVING_UP = 1
+---
+# Response Messages
+int16 decision
+osrf_gear/Shipment shipment
+
+int16 USE_CURRENT_BOX =	0
+int16 PRIORITY_SHIP_THIS = 1	# Implied with label
+int16 PRIORITY_LOAD_NEXT = 2	# Implied with label
+int16 SHIP_NO_LABEL = 3
