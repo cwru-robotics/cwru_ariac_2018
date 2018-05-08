@@ -24,6 +24,9 @@ public:
     unsigned short int get_box_status() {
         return box_status_;
     };
+    bool get_action_server_returned() {
+        return action_server_returned_;
+    }
 
     void move_new_box_to_Q1();
     void move_box_Q1_to_Q2();

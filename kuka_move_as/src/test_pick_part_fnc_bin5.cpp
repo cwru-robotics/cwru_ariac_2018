@@ -62,7 +62,8 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         is_middle = true;
     }
     //DO APPROACH:
-    ros::spinOnce();
+    //ros::spinOnce();
+    get_fresh_joint_states(); //update joint_state_vec_
     //if (is_deep) {
     if (wrist_flip) {
         ROS_INFO("back-row; computing insertion motion");
@@ -70,8 +71,12 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         //XXX NEED A NEW REFERENCE POSE HERE...
         //transitionTrajectories_.c_array_to_qvec(BIN5_DEEP_CRUISE_array,q_vec);
         //need to assure elbow clearance
-        ros::spinOnce(); // want to update joint states
-        if (desired_approach_jspace_pose_[1]> -1.35) desired_approach_jspace_pose_[1] = -1.35;
+        get_fresh_joint_states(); // want to update joint states
+        
+        if (desired_approach_jspace_pose_[1]> -1.35) {
+            ROS_WARN("desired approach shoulder ang > -1.35; will NOT correct this... ");
+            //desired_approach_jspace_pose_[1] = -1.35;
+        }
         //XXX FIX ME!
         //if (y_part> -0.35) y_part = -0.35; //GENERALIZE THIS TO OTHER BINS
 
@@ -94,12 +99,12 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         send_traj_goal(traj_head, CUSTOM_JSPACE_POSE); //send this now--may need to confirm it is successful
         //XXX FIX  ME!
 
-        ros::spinOnce(); //update joint state vec
+        get_fresh_joint_states(); //update joint state vec
         //check that robot is converged:
         //IF THIS IS SUCCESSFUL,  PROPAGATE IT TO OTHER CASES
         move_time_est = 1.0;
         while (move_time_est > 0.02) {
-            ros::spinOnce(); //refresh joint states
+            get_fresh_joint_states(); //refresh joint states
             move_time_est = estimate_move_time(joint_state_vec_, q_vec);
             ROS_INFO("settling: move_time_est = %f", move_time_est);
             traj_head = jspace_pose_to_traj(q_vec, move_time_est);
@@ -118,12 +123,12 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
             d8_disp += delta_d8;
             q_vec[0] = J1_ang;
             q_vec[7] = d8_disp;
-            move_time_est = estimate_move_time(old_q_vec, q_vec) + 0.08;
+            move_time_est = estimate_move_time(old_q_vec, q_vec) + 0.1;
             traj_tail = jspace_pose_to_traj(q_vec, move_time_est);
             traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
         }
         //finish up at approach pose:
-        move_time_est = estimate_move_time(q_vec, desired_approach_jspace_pose_) + 0.2;
+        move_time_est = estimate_move_time(q_vec, desired_approach_jspace_pose_) + 1;
         traj_tail = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
         traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories             
 
@@ -139,7 +144,10 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         //q_vec[0]= -1.57; // change RIGHTY/LEFT for BIN4/BIN5 approach
         goto_cruise_pose(bin5_deep_cruise_pose);
 
-        if (desired_approach_jspace_pose_[1]> -1.35) desired_approach_jspace_pose_[1] = -1.35;
+        if (desired_approach_jspace_pose_[1]> -1.35) {
+            ROS_WARN("desired approach shoulder ang > -1.35; will NOT correct this... ");
+            //desired_approach_jspace_pose_[1] = -1.35;
+        }
 
         // FIX ME!!  reference y-value to current bin
         //if (y_part> -0.35) y_part = -0.35;
@@ -152,6 +160,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         J1_ang = q_vec[0];
         delta_J1 = (desired_approach_jspace_pose_[0] - J1_ang) / 10.0; //positive increments
         //compute move time to get to this pose:
+        
         move_time_est = estimate_move_time(joint_state_vec_, q_vec) + 0.5;
         traj_head = jspace_pose_to_traj(q_vec, move_time_est);
         //send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);
@@ -171,7 +180,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
             traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
         }
         //finish up at approach pose:
-        move_time_est = estimate_move_time(q_vec, desired_approach_jspace_pose_) + 0.5;
+        move_time_est = estimate_move_time(q_vec, desired_approach_jspace_pose_) + 1;
         traj_tail = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
         traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories             
 
@@ -323,7 +332,7 @@ void KukaBehaviorActionServer::alt_fwd_qvec_from_rvrs_qvec(double part_y, Eigen:
 void KukaBehaviorActionServer::goto_cruise_pose(Eigen::VectorXd desired_cruise_pose) {
     trajectory_msgs::JointTrajectory traj_head, traj_tail;
     //check if require righty/lefty flip:
-    ros::spinOnce(); //refresh joint states
+    get_fresh_joint_states(); //refresh joint states
     double J1_start = joint_state_vec_[0];
     double J1_goal = desired_cruise_pose[0];
     ROS_INFO("J1_start, J1_goal = %f, %f", J1_start, J1_goal);
@@ -412,7 +421,7 @@ void KukaBehaviorActionServer::goto_cruise_pose(Eigen::VectorXd desired_cruise_p
     int ntries = 0;
     while ((move_time_est > 0.06)&&(ntries < 10)) {
         ntries++;
-        ros::spinOnce(); //refresh joint states
+        get_fresh_joint_states(); //refresh joint states
         move_time_est = estimate_move_time(joint_state_vec_, desired_cruise_pose) + 0.05;
         ROS_INFO("settling: move_time_est = %f", move_time_est);
         traj_head = jspace_pose_to_traj(desired_cruise_pose, move_time_est);

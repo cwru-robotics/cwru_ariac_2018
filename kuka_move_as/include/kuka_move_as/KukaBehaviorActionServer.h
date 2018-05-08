@@ -346,7 +346,7 @@ private:
     Eigen::Affine3d affine_vacuum_dropoff_pose_wrt_base_link(Part part, double q_rail);
 
     ros::Subscriber jointstate_subscriber_; //
-    
+    bool get_fresh_joint_states(); //this fnc confirms a fresh call to jointstateCB to refresh joint_state_vec_
     void jointstateCB(const sensor_msgs::JointState& message_holder);
     bool got_new_joint_states_;
     void grab();
@@ -380,12 +380,18 @@ private:
     bool rail_prepose(int8_t location, double &q_rail);
     bool compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
     bool alt_compute_bin_hover_from_xy(double x_part,double y_part, Eigen::VectorXd &qvec);
+    
 
     unsigned short int compute_bin_pickup_key_poses(inventory_msgs::Part part);  
     unsigned short int alt_compute_bin_pickup_key_poses(inventory_msgs::Part part);
 
     unsigned short int compute_box_dropoff_key_poses(inventory_msgs::Part part);
     unsigned short int alt_compute_box_dropoff_key_poses(inventory_msgs::Part part);
+//compute box_cam_grasp_inspection_pose_: pose to hold part in view of camera to get grasp transform
+//also compute: box_dropoff_hover_pose_ (synonym) and box_dropoff_cruise_pose_
+//requires at least an estimate of the box pose as an argument
+    unsigned short int box_cam_grasp_inspection_pose(inventory_msgs::Part part);
+    
     
     //do IK to place gripper at specified affine3; choose solution that is closest to provided jspace pose
     bool compute_pickup_dropoff_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd approx_jspace_pose,Eigen::VectorXd &q_vec_soln);

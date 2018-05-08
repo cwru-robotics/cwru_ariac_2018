@@ -36,15 +36,13 @@ bool GripperInterface::isGripperAttached() {
 bool GripperInterface::waitForGripperAttach(double timeout) {
     timeout = timeout <= 0? FLT_MAX:timeout;
     ros::spinOnce();
+    double dt = 0.1;
     while((!attached_) && timeout > 0 && ros::ok()) {
-        ROS_INFO("Retry grasp");
-        //release();
-        ros::Duration(0.2).sleep();
+        ROS_INFO("testing for gripper attachment");
+        ros::Duration(dt).sleep();
         ros::spinOnce();
         grab();
-        ros::Duration(0.8).sleep();
-        ros::spinOnce();
-        timeout -= 1.0;
+        timeout -= dt;
     }
     return attached_;
 }

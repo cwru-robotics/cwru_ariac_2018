@@ -87,7 +87,9 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
         return errorCode_;
     }
  
-    ros::spinOnce(); //update joint states
+    //ros::spinOnce(); //update joint states
+        get_fresh_joint_states(); //update joint_state_vec_
+
     double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
         
@@ -118,7 +120,9 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     if (!is_attached_) {
         //return to cruise pose and return error message:
         ROS_WARN("dropped  part; returning to cruise pose");
-            ros::spinOnce(); //update joint states
+            //ros::spinOnce(); //update joint states
+        get_fresh_joint_states(); //update joint_state_vec_
+
         move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.5;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est);   
         send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);     
@@ -161,19 +165,24 @@ unsigned short int  KukaBehaviorActionServer::re_evaluate_approach_and_place_pos
     return errorCode_;    
 }
 
+//recomputed  key poses: desired_approach_jspace_pose_, desired_grasp_dropoff_pose_
+//actually, this is a misnomer; typically invoke this from grasp-inspection pose
 unsigned short int KukaBehaviorActionServer::place_part_in_box_from_approach_no_release(inventory_msgs::Part part,double timeout_arg) {
          trajectory_msgs::JointTrajectory traj_head, traj_tail;
 
-    ros::spinOnce(); //update joint states
+    //ros::spinOnce(); //update joint states
+    get_fresh_joint_states(); //update joint_state_vec_
+
     ROS_INFO("sending traj for place_part_in_box_from_approach_no_release");
     //XXX MAYBE START FROM box_dropoff_hover_pose_ ???
-    double move_time_est = estimate_move_time(joint_state_vec_, approach_dropoff_jspace_pose_)+0.5;
-    traj_head = jspace_pose_to_traj(approach_dropoff_jspace_pose_, move_time_est);
+    double move_time_est = estimate_move_time(joint_state_vec_, desired_approach_jspace_pose_)+0.5;
+    traj_head = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
     move_time_est = estimate_move_time(approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_) + 1;
     traj_tail = jspace_pose_to_traj(desired_grasp_dropoff_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
     send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);  
-    ROS_INFO("moving to dropoff pose");
+    ros::Duration(1).sleep(); //let settle before  release
+    ROS_INFO("moved to dropoff pose");
     /*
     ROS_INFO("moving to approach_dropoff_jspace_pose_ ");
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.0); //make a joint-space move
@@ -277,7 +286,9 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
     
     trajectory_msgs::JointTrajectory traj_head, traj_tail;
 
-    ros::spinOnce(); //update joint states
+    //ros::spinOnce(); //update joint states
+    get_fresh_joint_states(); //update joint_state_vec_
+    
     ROS_INFO("sending traj for retract");
     //XXX MAYBE START FROM box_dropoff_hover_pose_ ???
     double move_time_est = estimate_move_time(joint_state_vec_, approach_dropoff_jspace_pose_)+0.5;
@@ -319,7 +330,9 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
 unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs::Part part) {
     trajectory_msgs::JointTrajectory traj_head, traj_tail;
 
-    ros::spinOnce(); //update joint states
+    //ros::spinOnce(); //update joint states
+    get_fresh_joint_states(); //update joint_state_vec_
+    
     ROS_INFO("sending traj for part removal");
     //XXX MAYBE START FROM box_dropoff_hover_pose_ ???
     double move_time_est = estimate_move_time(joint_state_vec_, approach_dropoff_jspace_pose_)+0.5;

@@ -47,12 +47,17 @@ public:
   bool find_orphan_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &orphan_parts);
 
   bool get_observed_part_pose(inventory_msgs::Part place_part,inventory_msgs::Part &observed_part);
+  bool get_grasped_part_pose_wrt_world(inventory_msgs::Part &observed_part);
 
+    
   void model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location=inventory_msgs::Part::QUALITY_SENSOR_1);
   void compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment_wrt_box, 
           geometry_msgs::PoseStamped box_pose_wrt_world,
           vector<osrf_gear::Model>  &desired_models_wrt_world);
   
+  bool get_filtered_snapshots_from_box_cam(osrf_gear::LogicalCameraImage &filtered_box_camera_image);
+  bool get_grasped_part_pose_wrt_world(geometry_msgs::PoseStamped &grasped_part_pose_wrt_world);
+
 
   bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
@@ -70,6 +75,8 @@ public:
   bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
   bool post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world,vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords);
   bool pre_dropoff_check(inventory_msgs::Part part, osrf_gear::Model model_actual, osrf_gear::Model model_desired);
+  geometry_msgs::PoseStamped NOM_BOX1_POSE_WRT_WORLD,NOM_BOX2_POSE_WRT_WORLD;
+
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 
