@@ -184,18 +184,18 @@ int main(int argc, char** argv) {
                     if (go_on) {
                         ROS_INFO("observe pose of grasped part in approach pose");
                         ros::Duration(1.0).sleep(); //let robot stabilize;
-                        ROS_WARN("NEED TO GET OBSERVED PART POSE HERE...");
-                        ROS_WARN("result should be called observed_part");
+                        ROS_WARN("GET OBSERVED PART POSE HERE...");
                     //WRITE THIS FNC: given that we are grasping place_part in approach pose above box, 
                 // get actual pose of this part from the box camera
                 // DO watch out for timeout; if timeout, just proceed with blind placement
                         boxInspector.get_observed_part_pose(place_part, observed_part);
                 
                 //when above fnc call is working, call the following
-                        ROS_WARN("should now call re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
+                        ROS_WARN("re_evaluate_approach_and_place_poses...or put in shipmentFiller fnc");               
                         if(!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part,place_part)) {
                     //can't reach corrected poses.  May as well just drop the part
-                            ROS_WARN("dropping part");
+                            //xxx reconsider: drop part? or discard it?
+                            ROS_WARN("discarding part");
                             robotBehaviorInterface.discard_grasped_part(place_part);
                             go_on=false;
                         }
@@ -205,30 +205,30 @@ int main(int argc, char** argv) {
                     	ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");                        
                     	go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
                     }
-                        
+                    /*   
                     if (go_on) {
                     	ROS_INFO("successful part placement; should inspect before release");
                     	go_on = shipmentFiller.replace_faulty_parts_inspec1(shipment);
                     }
-           
+           */ 
 
-
+                    /*
             		if (go_on) {
                 		//adjust part locations in box: 
                 		go_on = shipmentFiller.adjust_part_location_before_dropoff(place_part);
             		}
-                  
+                  */
   
         
                     if (go_on) {
                         ROS_INFO("attempting part release; enter 1: ");
                         go_on = robotBehaviorInterface.release_and_retract(); //release the part
                     }
-
+                   /*
                     if(!shipmentFiller.remove_unwanted_parts(desired_models_wrt_world)) {
                         ROS_INFO("either no unwanted parts or couldnt remove");
                     }
-                    
+                    */
         
                     if (go_on) { //if here, 
                         ROS_INFO("declaring success, and moving on to the  next product");
@@ -256,12 +256,13 @@ int main(int argc, char** argv) {
    
             }
             
-
+/*
             if(go_on) {
+                
                 if(!shipmentFiller.adjust_shipment_part_locations(desired_models_wrt_world)) {
                     ROS_INFO("Unable to post adjust parts");
                 }
-            }
+            }*/
             
         }
     

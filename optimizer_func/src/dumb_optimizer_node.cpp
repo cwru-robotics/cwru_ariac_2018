@@ -1,8 +1,8 @@
-#include "ros/ros.h"
-#include "optimizer_func/optimizer_msgs.h"
+#include <ros/ros.h>
+#include <optimizer_func/optimizer_msgs.h>
 
-#include "osrf_gear/Shipment.h"
-#include "osrf_gear/Order.h"
+#include <osrf_gear/Shipment.h>
+#include <osrf_gear/Order.h>
 
 osrf_gear::Order current, priority;
 ros::Time current_order_recvd, priority_order_recvd;

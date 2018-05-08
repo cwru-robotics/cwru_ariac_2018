@@ -16,6 +16,22 @@ orderManager(nodehandle), boxInspector(nodehandle), binInventory(nodehandle) {
         //ROS_INFO_STREAM("response: "<<conveyor_svc_msg_STOP_);
         ros::Duration(0.1).sleep();
     }
+    
+    //  geometry_msgs::PoseStamped NOM_BOX1_POSE_WRT_WORLD,NOM_BOX2_POSE_WRT_WORLD;
+    // assign hard-coded nominal vals for boxes at Q1 and Q1:
+    //0.55, 0.61, 0.588; rpy = 0,0,0
+    NOM_BOX1_POSE_WRT_WORLD.header.frame_id = "world";
+    NOM_BOX1_POSE_WRT_WORLD.pose.position.x = 0.55;
+    NOM_BOX1_POSE_WRT_WORLD.pose.position.y = 0.61;
+    NOM_BOX1_POSE_WRT_WORLD.pose.position.z = 0.588;
+    NOM_BOX1_POSE_WRT_WORLD.pose.orientation.x=0.0;
+    NOM_BOX1_POSE_WRT_WORLD.pose.orientation.y=0.0;
+    NOM_BOX1_POSE_WRT_WORLD.pose.orientation.z=0.0;
+    NOM_BOX1_POSE_WRT_WORLD.pose.orientation.w=1.0;
+   
+    NOM_BOX2_POSE_WRT_WORLD=NOM_BOX1_POSE_WRT_WORLD;
+    NOM_BOX2_POSE_WRT_WORLD.pose.position.y = 0.266;
+
     //ariac/box_camera_1
     box_camera_1_subscriber_ = nh_.subscribe("/ariac/box_camera_1", 1,
             &ShipmentFiller::box_camera_1_callback, this);

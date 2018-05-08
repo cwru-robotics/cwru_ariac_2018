@@ -38,14 +38,14 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
         else if (x_part > X_NEAR) { is_deep = false; is_near = true; }
         else { is_deep=false; is_near=false; is_middle=true; }
         //DO APPROACH:
-        ros::spinOnce();
+        get_fresh_joint_states();
         //if (is_deep) {
         if (wrist_flip) {            
             ROS_INFO("back-row; computing insertion motion");
             //place the start here, at this cruise pose:
             transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_CRUISE_array,q_vec);
             //need to assure elbow clearance
-            ros::spinOnce(); // want to update joint states
+            get_fresh_joint_states(); // want to update joint states
             if (desired_approach_jspace_pose_[1]> -1.34) desired_approach_jspace_pose_[1]= -1.34;
             //XXX FIX ME!
             //if (y_part> -0.35) y_part = -0.35; //GENERALIZE THIS TO OTHER BINS
@@ -69,7 +69,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             //IF THIS IS SUCCESSFUL,  PROPAGATE IT TO OTHER CASES
             move_time_est=1.0;*/
             while (move_time_est>0.02) {
-                ros::spinOnce(); //refresh joint states
+                get_fresh_joint_states(); //refresh joint states
                 move_time_est = estimate_move_time(joint_state_vec_,q_vec);
                 ROS_INFO("settling: move_time_est = %f",move_time_est);
                 traj_head = jspace_pose_to_traj(q_vec,move_time_est); 

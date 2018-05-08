@@ -61,6 +61,7 @@ public:
   
   //  bool pick_part_fnc(inventory_msgs::Part part); 
   //bool place_part_no_release(inventory_msgs::Part part);
+  geometry_msgs::PoseStamped NOM_BOX1_POSE_WRT_WORLD,NOM_BOX2_POSE_WRT_WORLD;
 
   //bool select_part_from_inventory(part_name, bin_num, bin_part_pose_stamped);
   bool select_part_from_inventory(std::string part_name,int &bin_num,geometry_msgs::PoseStamped &part_pose);

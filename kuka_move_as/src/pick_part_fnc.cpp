@@ -352,23 +352,58 @@ bool KukaBehaviorActionServer::move_into_grasp(Eigen::VectorXd pickup_jspace_pos
 
 }
 
+
+//pick part from box (and discard)
+//would use this e.g. to remove bad part at Q2, or to make an order-update change, or to unpack a box for priority shipment
+// presumed initial state of robot is some cruise pose; COULD  be grasping a different part, 
+//  do  NOT leave robot over a box; if adjusting part locations, return to cruise when done
+
+//break this into multiple steps:
+//1) compute key poses for box pickup
+//     unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(inventory_msgs::Part part) {
+//2) if currently grasping a part, discard it
+//3) transition to box hover pose,  regardless of initial condition
+//4) go  through steps to grasp part
+//   --> if unsuccessful, return gripper failure;
+//5) with part grasped, use discard_grasped_part fnc
+
+//fnc:  transition_to_box_cruise_pose(box_cruise_pose)
+//fnc:  transition_to_box_hover_pose(box_hover_pose)
+
+/*
+void KukaBehaviorActionServer::transition_to_box_cruise_pose(box_cruise_pose) {
+    get_fresh_joint_states(); //update joint_state_vec_
+    //note: computation of box_cruise_pose takes into account initial pose of J1; 
+    //presumably, initial pose is a cruise pose, so should  be safe to move to box_cruise_pose from here;
+
+}
+*/
+
 unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, double timeout) {
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
             placeFinder_[part.location].c_str());
+    trajectory_msgs::JointTrajectory traj_head,traj_tail; 
+
     // set these member var values:
     //current_hover_pose_
     //approach_dropoff_jspace_pose_ = desired_approach_depart_pose_
     //desired_grasp_dropoff_pose_
+    //pickup_deeper_jspace_pose_
     
     //XXXXXXXXXXXXXXX  Q1  ONLY XXXXXXXXXXXXXXXXXX
     //BUG WORK-AROUND: Assign location code Q1;
-    part.location = inventory_msgs::Part::QUALITY_SENSOR_1;
+    //part.location = inventory_msgs::Part::QUALITY_SENSOR_1;
     //XXXXXXXXXXXXXXXXXX
-    errorCode_ = compute_box_dropoff_key_poses(part);
+    
+    //compute these poses:      
+    //box_dropoff_cruise_pose_, box_dropoff_hover_pose_=box_cam_grasp_inspection_pose_, desired_grasp_dropoff_pose_, approach_dropoff_jspace_pose_, 
+
+    errorCode_ = alt_compute_box_dropoff_key_poses(part);
     if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
-    //extract box location codes from Part:
+    //extract box location codes from Part: obsolete
+    /*
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
     
@@ -389,25 +424,34 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
         ROS_WARN("TRYING TO RECOVER FROM ABORT");
         ros::Duration(1.0).sleep();
         move_to_jspace_pose(approach_dropoff_jspace_pose_, 5.0);     
-    }      
+    }     
+    */
+    //note: computation of box_cruise_pose takes into account initial pose of J1; 
+    //presumably, initial pose is a cruise pose, so should  be safe to move to box_cruise_pose from here;    
     ROS_INFO("enabling gripper");
     gripperInterface_.grab(); //do this early, so grasp can occur at first contact
     is_attached_ =  false;
-    //cout<<"ready to descend to grasp; enter 1: ";
-    //cin>>ans;
-    //now move to bin pickup pose:
-    ROS_INFO_STREAM("ready to  move to desired_grasp_dropoff_pose_ " << std::endl << desired_grasp_dropoff_pose_.transpose());
-    //cout<<"enter 1: ";
-    //cin>>ans;    
+    
+    //construct a trajectory from cruise->hover->approach->grasp pose
+    double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0;     
+    traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
+        
+    move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+1.0;     
+    traj_tail = jspace_pose_to_traj(box_cam_grasp_inspection_pose_,move_time_est); 
+    traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail);
+    move_time_est = estimate_move_time(box_cam_grasp_inspection_pose_, desired_approach_jspace_pose_)+0.5;
+    traj_tail = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
+    traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
+    move_time_est = estimate_move_time(approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_) + 0.5;
+    traj_tail = jspace_pose_to_traj(desired_grasp_dropoff_pose_, move_time_est);
+    traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories     
+    send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);      
+    
     move_into_grasp(desired_grasp_dropoff_pose_, 1.5); //provide target pose
     cout<<"at computed grasp pose; "<<endl;    
     is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit
-
-
-    if (!is_attached_) {
-        ROS_WARN("did not attach; attempting to descend further: ");
-        //cin>>ans;
-        if (!move_into_grasp(MOVE_INTO_GRASP_TIME)) {
+    //descend further while testing for part attachment:
+    if (!move_into_grasp(MOVE_INTO_GRASP_TIME)) {
             ROS_WARN("could not grasp part; giving up; moving to approach pose...");
             move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //
             if (bad_state_ ==rtn_state_) {
@@ -423,12 +467,16 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
                 ros::Duration(1.0).sleep();
                 move_to_jspace_pose(current_hover_pose_, 5.0);     
             }              
-            current_pose_code_=current_hover_code; //establish code for recognized, key pose
+            //current_pose_code_=current_hover_code; //establish code for recognized, key pose
             errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
             return errorCode_;
-        }
+
     }
-    //if here, part is attached to  gripper
+    //if here, part is attached to  gripper;
+    ROS_INFO("discarding grasped part...");
+    discard_grasped_part(part);
+    /*
+    
     ROS_INFO("grasped part; moving to depart pose: "); 
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0);    
     
@@ -437,6 +485,7 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     //move_to_jspace_pose(CURRENT_HOVER_CODE, 1.0);
     //move_to_jspace_pose(current_hover_pose_, 1.0); //try it this way instead       
     //current_pose_code_=current_hover_code; //establish code for recognized, key pose
+     * */
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
             return errorCode_;
 }
