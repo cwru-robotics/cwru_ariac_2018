@@ -452,6 +452,9 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             //return false; //REMOVE THIS IF NEEDED
             //gripperInterface_.release();     
         }
+
+       
+
         if (go_on) {
             ROS_INFO("attempting to move part to pre-dropoff pose: ");
             //cout<<"enter 1: ";

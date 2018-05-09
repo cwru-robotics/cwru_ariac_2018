@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a ConveyorInterface");
     ConveyorInterface conveyorInterface(&nh);
     optimizer_func::optimizer_msgs optimizer_msg;
-    ros::ServiceClient client = n.serviceClient<optimizer_func::optimizer_msgs>("optimizer");
+    ros::ServiceClient client = nh.serviceClient<optimizer_func::optimizer_msgs>("optimizer");
 
     inventory_msgs::Part pick_part, place_part, observed_part;
     inventory_msgs::Inventory current_inventory;

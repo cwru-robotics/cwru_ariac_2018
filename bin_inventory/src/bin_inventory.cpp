@@ -242,7 +242,7 @@ int BinInventory::num_parts(std::string name) {
 } 
 
 int BinInventory::num_parts(int part_id) {
-    int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();
+    int num_parts_in_inventory = inventory_msg_.inventory[part_id].part_stamped_poses.size();//THERE SEEMS TO BE A PROBLEM HERE!
     return num_parts_in_inventory;
 }
 
