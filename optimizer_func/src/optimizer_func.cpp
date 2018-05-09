@@ -90,8 +90,8 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 
 
   // What are the timings for different actions
-  float cur_cont_timing = 0.0, cur_comp_timing = 0.0;
-  float cur_other_comp_timing = 0.0;
+  double cur_cont_timing = 0.0, cur_comp_timing = 0.0;
+  double cur_other_comp_timing = 0.0;
 
   // ROS_INFO("----- Continue loading current order current shipment ------");
   cur_cont_timing = timing_breakdown(cur_to_load, cur_to_remove, cur_to_move);
@@ -103,7 +103,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   }
 
   // What are the timings for the different actions
-  float pri_comp_timing[] = {0.0, 0.0}, pri_swap_timing[] = {0.0, 0.0};
+  double pri_comp_timing[] = {0.0, 0.0}, pri_swap_timing[] = {0.0, 0.0};
   ROS_INFO("----- Swap loading priority shipment 0 ------");
   pri_swap_timing[0] = timing_breakdown(pri0_to_load, pri0_to_remove, pri0_to_move);
   ROS_INFO("----- Complete loading priority shipment 0 ------");
@@ -125,13 +125,13 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   
   // Calculate the TS (Total Scores)
 
-  float cf = 1700.0 / 2100.0;
-  float current_order_timings_us[] = {0.0, 0.0, 0.0};
-  float current_order_timings_them[] = {0.0, 0.0, 0.0};
-  float priority_order_timings[] = {0.0, 0.0, 0.0};
+  double cf = 1700.0 / 2100.0;
+  double current_order_timings_us[] = {0.0, 0.0, 0.0};
+  double current_order_timings_them[] = {0.0, 0.0, 0.0};
+  double priority_order_timings[] = {0.0, 0.0, 0.0};
 
-  float cur_elapsed_time = (ros::Time::now().toSec() - current_order_recvd.toSec());
-  float pri_elapsed_time = (ros::Time::now().toSec() - priority_order_recvd.toSec());
+  double cur_elapsed_time = (ros::Time::now().toSec() - current_order_recvd.toSec());
+  double pri_elapsed_time = (ros::Time::now().toSec() - priority_order_recvd.toSec());
 
   // Continue on current shipment
   current_order_timings_us[0] = cur_elapsed_time + cur_cont_timing + cur_other_comp_timing + CONVEYOR_TIME;
@@ -156,20 +156,20 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   priority_order_timings[2] = pri_elapsed_time + pri_comp_timing[0] + pri_comp_timing[1] + CONVEYOR_TIME;
 
 
-  float total_score[3][3];
+  double total_score[3][3];
   memset(&total_score, 0x00, sizeof(total_score));
-  float completion_score[3];
+  double completion_score[3];
 
   // Calculate the completion scores
-  completion_score[0] = (2 + PLCMT) * (float) current.shipments[0].products.size() + ((current.shipments.size() > 1) ? (float) current.shipments[1].products.size() : 0.0);
-  completion_score[1] = PRIORITY_h * (2 + PLCMT) * (float) priority.shipments[0].products.size() + ((priority.shipments.size() > 1) ? (float) priority.shipments[1].products.size() : 0.0);
+  completion_score[0] = (2 + PLCMT) * (double) current.shipments[0].products.size() + ((current.shipments.size() > 1) ? (double) current.shipments[1].products.size() : 0.0);
+  completion_score[1] = PRIORITY_h * (2 + PLCMT) * (double) priority.shipments[0].products.size() + ((priority.shipments.size() > 1) ? (double) priority.shipments[1].products.size() : 0.0);
   completion_score[2] = (completion_score[0] + completion_score[1]) / 2.0;
 
   for (int row = 0; row < sizeof(priority_order_timings)/sizeof(priority_order_timings[0]); row++) {
     for (int col = 0; col < sizeof(priority_order_timings)/sizeof(priority_order_timings[0]); col++) {
-      float tempa = cf * completion_score[2];
-      float tempb = (current_order_timings_us[col] / current_order_timings_them[row]) * completion_score[0];
-      float tempc = (priority_order_timings[col] / priority_order_timings[row]) * completion_score[1];
+      double tempa = cf * completion_score[2];
+      double tempb = (current_order_timings_us[col] / current_order_timings_them[row]) * completion_score[0];
+      double tempc = (priority_order_timings[col] / priority_order_timings[row]) * completion_score[1];
 
       total_score[row][col] =  tempa +  tempb + tempc;
     }
@@ -179,7 +179,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   ROS_INFO("%4.2f\t%4.2f\t%4.2f", total_score[2][0], total_score[2][1], total_score[2][2]);
 
 
-  float avg_score[] = {(total_score[1][0] + total_score[2][0]) / 2.0, (total_score[0][1] + total_score[2][1]) / 2.0, (total_score[0][2] + total_score[1][2])/ 2.0};
+  double avg_score[] = {(total_score[1][0] + total_score[2][0]) / 2.0, (total_score[0][1] + total_score[2][1]) / 2.0, (total_score[0][2] + total_score[1][2])/ 2.0};
   
   ROS_INFO("Decision Time...");
   ROS_INFO("%2.4f\t%2.4f\t%2.4f", avg_score[0], avg_score[1], avg_score[2]);

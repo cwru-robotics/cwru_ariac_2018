@@ -27,12 +27,12 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 
   // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
   if (! msg->order_id.compare("order_0")) {
-    current_order_recvd.now();
+    current_order_recvd= ros::Time::now();
     current = *msg;
   } else if (!msg->order_id.compare("order_0_update_0")) {
     current = *msg;
   } else if (!msg->order_id.compare("order_1")) {
-    priority_order_recvd.now();
+    priority_order_recvd=ros::Time::now();
     priority = *msg;
   } else if (!msg->order_id.compare("order_1_update_0")) {
     priority = *msg;
@@ -120,7 +120,11 @@ int main(int argc, char **argv)
   req.reposition = empty_shipment;
   req.missing = empty_shipment;
 
-  current_order_recvd = ros::Time::now() - ros::Duration(135.0);
+  //std::cout<<"enter 1 to continue: ";
+  //int ans;
+  //std::cin>>ans;
+
+  current_order_recvd = ros::Time::now(); // - ros::Duration(135.0);
   priority_order_recvd = ros::Time::now();
   
   req.giving_up = optimizer_func::optimizer_msgs::Request::NOT_GIVING_UP;
