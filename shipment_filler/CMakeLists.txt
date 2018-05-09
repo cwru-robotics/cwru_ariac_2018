@@ -46,6 +46,7 @@ cs_add_executable(test_robot_behaviors src/test_robot_behaviors.cpp)
 cs_add_executable(test_pick_from_box src/test_pick_from_box.cpp)
 #cs_add_executable(simple_shipment_filler_wsn_test src/simple_shipment_filler_wsn_test.cpp)
 cs_add_executable(simple_shipment_filler_w_optimizer src/simple_shipment_filler_w_optimizer.cpp)
+cs_add_executable(shipment_filler_test src/shipment_filler_test.cpp)
 
 
 #the following is required, if desire to link a node in this package with a library created in this same package
@@ -56,6 +57,8 @@ target_link_libraries(test_pick_from_box ShipmentFiller)
 target_link_libraries(simple_shipment_filler ShipmentFiller) 
 #target_link_libraries(simple_shipment_filler_wsn_test ShipmentFiller) 
 target_link_libraries(simple_shipment_filler_w_optimizer ShipmentFiller) 
+#target_link_libraries(simple_shipment_filler_wsn_test ShipmentFiller) 
+target_link_libraries(shipment_filler_test ShipmentFiller)
 
 cs_install()
 cs_export()
