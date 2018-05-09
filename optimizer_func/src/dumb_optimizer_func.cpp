@@ -14,7 +14,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
       ROS_INFO("Giving up set, so advance the box (next shipment returned).");
       res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
       if(shipment_queue.shipments.size() > 1) {
-	shipment_queue.shipments.pop_back();
+	shipment_queue.shipments.erase(shipment_queue.shipments.begin());
       }
     } else {
       ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");

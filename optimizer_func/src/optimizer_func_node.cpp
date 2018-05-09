@@ -26,49 +26,30 @@ char *shipment_names[] = {"no_active_shipment", "order_0_shipment_0", "order_0_s
 void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 
   ROS_INFO("Received order: %s", msg->order_id.c_str());
+  ROS_INFO("The match is: %i", msg->order_id.compare(0, 6, "order_", 0, 6));
   // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
-  if (! msg->order_id.compare("order_0")) {
-    ROS_DEBUG("Identified order: %s; as order_0", msg->order_id.c_str());
+  if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
+    ROS_INFO("Identified order: %s; as an order_0 update", msg->order_id.c_str());
+
+    // TODO:: Better way to do this!!
+    // Assuming that updates are not part of the shipment_type.
+    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
+      // Strip out the previous order_0s
+      if (msg->shipments[indy].shipment_type.compare(0, 7, shipment_queue.shipments[indy].shipment_type)) {
+	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
+      }
+    }
+  } else if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
+    ROS_INFO("Identified order: %s; as an original order", msg->order_id.c_str());
     current_order_recvd= ros::Time::now();
-    current = *msg;
-    for (int indx = 0; indx < current.shipments.size(); indx++) {
-      shipment_queue.shipments.push_back(current.shipments[indx]);
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
     }
-  } else if (!msg->order_id.compare(0, 14, "order_0_update_")) {
-    ROS_DEBUG("Identified order: %s; as an order_0 update", msg->order_id.c_str());
-    // Assuming that updates are not part of the shipment_type.
-    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
-      // Strip out the previous order_0s
-      if (msg->shipments[indy].shipment_type.compare(0, 7, "order_0")) {
-	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
-      }
-    }
+  
     // Add new shipments.
     for (int indx = 0; indx < msg->shipments.size(); indx++) {
       shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
     }
-    current = *msg;
-  } else if (!msg->order_id.compare("order_1")) {
-    ROS_DEBUG("Identified order: %s; as order_1", msg->order_id.c_str());
-    priority_order_recvd=ros::Time::now();
-    priority = *msg;
-    for (int indx = 0; indx < priority.shipments.size(); indx++) {
-      shipment_queue.shipments.push_back(priority.shipments[indx]);
-    }
-  } else if (!msg->order_id.compare(0, 14, "order_1_update_")) {
-    ROS_DEBUG("Identified order: %s; as an order_1 update", msg->order_id.c_str());
-    // Assuming that updates are not part of the shipment_type.
-    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
-      // Strip out the previous order_0s
-      if (msg->shipments[indy].shipment_type.compare(0, 7, "order_1")) {
-	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
-      }
-    }
-    // Add new shipments.
-    for (int indx = 0; indx < msg->shipments.size(); indx++) {
-      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
-    }
-    priority = *msg;
   } else {
     ROS_ERROR("Order was not identified!!!");
   }
@@ -98,12 +79,15 @@ int main(int argc, char **argv)
    */
   ros::NodeHandle n;
 
+  // initialize the shipment_queue with a null shipment
+  shipment_queue.shipments.resize(1);
+  shipment_queue.shipments[0].shipment_type.append(NULL_SHIPMENT);
+  
   ros::ServiceServer service = n.advertiseService("optimizer", optimize_shipments);
   ROS_INFO("Ready to respond to optimization requests.");
 
   ros::Subscriber sub = n.subscribe("ariac/orders", 5, orderCallback);
 
-  // ros::spin();
   
   // Below is testing stuff.
 
