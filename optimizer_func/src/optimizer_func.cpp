@@ -25,21 +25,43 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 
   // Set up an empty shipment for the time being
   osrf_gear::Shipment null_shipment;
-  null_shipment.shipment_type.append("no_shipment");
   
   // ROS_DEBUG("Part names:    %s %s %s %s %s", the_parts[0], the_parts[1], the_parts[2], the_parts[3], the_parts[4]);
   // ROS_DEBUG("%i\t%i\t%i\t%i\t%i", part_counts[0], part_counts[1], part_counts[2], part_counts[3], part_counts[4]);
 
   // If there is not an order yet, just send an empty response
-  if ((current.shipments.size() < 1) && (priority.shipments.size() < 1)) {
-    ROS_INFO("No orders have been made placed yet.");
-    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
-    res.shipment = null_shipment;
+  // if ((current.shipments.size() < 1) && (priority.shipments.size() < 1)) {
+  if ((shipment_queue.shipments.size() < 1) && (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION)) {
+    ROS_INFO("No orders in the queue.");
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    } else {
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    }
+    res.shipment = shipment_queue.shipments[0];
     return true;
   }
 
+  if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+      if (shipment_queue.shipments.size() > 0) {
+	res.shipment = shipment_queue.shipments[0];
+      } else {
+	res.shipment = null_shipment;
+      }
+    } else {
+      // This is a condition to complete
+      // res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    }
+    return true;
+  }
+
+
   // If the current shipment if full, or giving_up, advance it
-  if ((current.shipments[0].products.size() > 0) && ((req.loaded.products.size() == current.shipments[0].products.size()) || (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) ) {
+  // if ((current.shipments[0].products.size() > 0) && ((req.loaded.products.size() == current.shipments[0].products.size()) || (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) ) {
+  if ((req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION) && (shipment_queue.shipments[0].products.size() > 0) && ((req.loaded.products.size() == shipment_queue.shipments[0].products.size()) || (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) ) {
     if (req.loaded.products.size() == current.shipments[0].products.size()) {
       ROS_INFO("Shipment is full, move it along");
     }
