@@ -220,6 +220,7 @@ bool ShipmentFiller::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
     double dt = 0.1;
     while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q1_image_) {
         wait_time+=dt;
+        ros::spinOnce();
         ros::Duration(dt).sleep();
     }
     if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
@@ -237,6 +238,7 @@ bool ShipmentFiller::get_bad_part_Q2(inventory_msgs::Part &bad_part) {
     double dt = 0.1;
     while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q2_image_) {
         wait_time+=dt;
+        ros::spinOnce();        
         ros::Duration(dt).sleep();
     }
     if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
