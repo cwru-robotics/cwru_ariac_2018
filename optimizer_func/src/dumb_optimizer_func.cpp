@@ -13,23 +13,25 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
     if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
       ROS_INFO("Giving up set, so advance the box (next shipment returned).");
       res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
-      if(shipment_queue.shipments.size() > 1) {
-	shipment_queue.shipments.erase(shipment_queue.shipments.begin());
-      }
+      if (!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) {
+	if(shipment_queue.shipments.size() > 1) 
+	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
+      }	else
+	ROS_WARN("Asking about a different shipment than expected!!");
     } else {
       ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");
       res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
     }
-    res.shipment = shipment_queue.shipments[0];
     ROS_INFO("Sending next shipment; queue size: %i", (int) shipment_queue.shipments.size());
   } else if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
     ROS_INFO("Request from Q2");
     ROS_INFO("Always advancing box (showing next shipment).");
     res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
-    res.shipment = shipment_queue.shipments[0];
   } else {
     ROS_ERROR("Request did not come from Q1 or Q2!!");
+    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
   }
+  res.shipment = shipment_queue.shipments[0];
 
   return true;
 }

@@ -25,11 +25,12 @@ char *shipment_names[] = {"no_active_shipment", "order_0_shipment_0", "order_0_s
 // Listening for the Orders from ARIAC
 void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 
-  ROS_INFO("Received order: %s", msg->order_id.c_str());
-  ROS_INFO("The match is: %i", msg->order_id.compare(0, 6, "order_", 0, 6));
+  ROS_INFO("Received order %s with %i shipments", msg->order_id.c_str(), (int) msg->shipments.size());
+  ROS_DEBUG("shipment_queue is so long: %i", (int)shipment_queue.shipments.size());
   // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
-  if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
-    ROS_INFO("Identified order: %s; as an order_0 update", msg->order_id.c_str());
+  // if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
+  if (!msg->order_id.size() > 8) {
+    ROS_INFO("Identified order: %s as an order_0 update", msg->order_id.c_str());
 
     // TODO:: Better way to do this!!
     // Assuming that updates are not part of the shipment_type.
@@ -39,20 +40,25 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
       }
     }
-  } else if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
-    ROS_INFO("Identified order: %s; as an original order", msg->order_id.c_str());
-    current_order_recvd= ros::Time::now();
-    for (int indx = 0; indx < msg->shipments.size(); indx++) {
-      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
-    }
   
     // Add new shipments.
     for (int indx = 0; indx < msg->shipments.size(); indx++) {
-      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
+      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
+    }
+  } else if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
+    ROS_DEBUG("Identified order: %s as an original order", msg->order_id.c_str());
+    if (!msg->order_id.compare("order_0")) {
+      current_order_recvd= ros::Time::now();
+    } else if (!msg->order_id.compare("order_1")) {
+      priority_order_recvd= ros::Time::now();
+    }
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
     }
   } else {
     ROS_ERROR("Order was not identified!!!");
   }
+  ROS_DEBUG("shipment_queue is so long: %i", (int)shipment_queue.shipments.size());
 }
 
 /**
