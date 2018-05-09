@@ -53,6 +53,7 @@ const bool UP = true;
 const bool DOWN = false;
 
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
+const double QUALITY_INSPECTION_MAX_WAIT_TIME = 2.0;
 
 const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
 

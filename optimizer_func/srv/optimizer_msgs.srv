@@ -4,7 +4,10 @@ osrf_gear/Shipment orphaned
 osrf_gear/Shipment missing
 osrf_gear/Shipment reposition
 int16 giving_up
+int16 inspection_site
 
+int16 Q1_STATION = 1
+int16 Q2_STATION = 2
 int16 NOT_GIVING_UP = 0
 int16 GIVING_UP = 1
 ---
@@ -16,3 +19,4 @@ int16 USE_CURRENT_BOX =	0
 int16 PRIORITY_SHIP_THIS = 1	# Implied with label
 int16 PRIORITY_LOAD_NEXT = 2	# Implied with label
 int16 SHIP_NO_LABEL = 3
+int16 ADVANCE_THIS_BOX_TO_Q2 = 4
