@@ -20,6 +20,9 @@
 extern osrf_gear::Order current, priority;
 extern ros::Time current_order_recvd, priority_order_recvd;
 
+extern osrf_gear::Order shipment_queue;
+extern int shipment_queue_indx;
+
 
 bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res);
