@@ -25,18 +25,40 @@ char *shipment_names[] = {"no_active_shipment", "order_0_shipment_0", "order_0_s
 // Listening for the Orders from ARIAC
 void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 
+  ROS_INFO("Received order %s with %i shipments", msg->order_id.c_str(), (int) msg->shipments.size());
+  ROS_DEBUG("shipment_queue is so long: %i", (int)shipment_queue.shipments.size());
   // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
-  if (! msg->order_id.compare("order_0")) {
-    current_order_recvd= ros::Time::now();
-    current = *msg;
-  } else if (!msg->order_id.compare("order_0_update_0")) {
-    current = *msg;
-  } else if (!msg->order_id.compare("order_1")) {
-    priority_order_recvd=ros::Time::now();
-    priority = *msg;
-  } else if (!msg->order_id.compare("order_1_update_0")) {
-    priority = *msg;
+  // if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
+  if (!msg->order_id.size() > 8) {
+    ROS_INFO("Identified order: %s as an order_0 update", msg->order_id.c_str());
+
+    // TODO:: Better way to do this!!
+    // Assuming that updates are not part of the shipment_type.
+    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
+      // Strip out the previous order_0s
+      if (msg->shipments[indy].shipment_type.compare(0, 7, shipment_queue.shipments[indy].shipment_type)) {
+	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
+      }
+    }
+  
+    // Add new shipments.
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
+    }
+  } else if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
+    ROS_DEBUG("Identified order: %s as an original order", msg->order_id.c_str());
+    if (!msg->order_id.compare("order_0")) {
+      current_order_recvd= ros::Time::now();
+    } else if (!msg->order_id.compare("order_1")) {
+      priority_order_recvd= ros::Time::now();
+    }
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
+    }
+  } else {
+    ROS_ERROR("Order was not identified!!!");
   }
+  ROS_DEBUG("shipment_queue is so long: %i", (int)shipment_queue.shipments.size());
 }
 
 /**
@@ -63,71 +85,74 @@ int main(int argc, char **argv)
    */
   ros::NodeHandle n;
 
+  // initialize the shipment_queue with a null shipment
+  shipment_queue.shipments.resize(1);
+  shipment_queue.shipments[0].shipment_type.append(NULL_SHIPMENT);
+  
   ros::ServiceServer service = n.advertiseService("optimizer", optimize_shipments);
   ROS_INFO("Ready to respond to optimization requests.");
 
   ros::Subscriber sub = n.subscribe("ariac/orders", 5, orderCallback);
 
-  // ros::spin();
   
   // Below is testing stuff.
 
-  current.shipments.resize(1);
-  current.shipments[0].shipment_type.append("order_0_shipment_0");
-  current.shipments[0].products.resize(6);
+  // current.shipments.resize(1);
+  // current.shipments[0].shipment_type.append("order_0_shipment_0");
+  // current.shipments[0].products.resize(6);
 
-  ADD_PRODUCT(current.shipments[0].products[0], "gasket_part", 0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
-  ADD_PRODUCT(current.shipments[0].products[1], "gasket_part", -0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
-  ADD_PRODUCT(current.shipments[0].products[2], "piston_rod_part", 0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(current.shipments[0].products[3], "piston_rod_part", -0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(current.shipments[0].products[4], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
-  ADD_PRODUCT(current.shipments[0].products[5], "gear_part", 0.15, -0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(current.shipments[0].products[0], "gasket_part", 0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
+  // ADD_PRODUCT(current.shipments[0].products[1], "gasket_part", -0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
+  // ADD_PRODUCT(current.shipments[0].products[2], "piston_rod_part", 0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(current.shipments[0].products[3], "piston_rod_part", -0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(current.shipments[0].products[4], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
+  // ADD_PRODUCT(current.shipments[0].products[5], "gear_part", 0.15, -0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
   
-  priority.shipments.resize(2);
-  priority.shipments[0].shipment_type.append("order_1_shipment_0");
-  priority.shipments[0].products.resize(6);
-  priority.shipments[1].shipment_type.append("order_1_shipment_1");
-  priority.shipments[1].products.resize(5);
+  // priority.shipments.resize(2);
+  // priority.shipments[0].shipment_type.append("order_1_shipment_0");
+  // priority.shipments[0].products.resize(6);
+  // priority.shipments[1].shipment_type.append("order_1_shipment_1");
+  // priority.shipments[1].products.resize(5);
 
-  ADD_PRODUCT(priority.shipments[0].products[0], "pulley_part", -0.1, -0.2, 0.0, 1.0, 0.0, 0.0, 0.0);
-  ADD_PRODUCT(priority.shipments[0].products[1], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
-  ADD_PRODUCT(priority.shipments[0].products[2], "gear_part", 0.15, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(priority.shipments[0].products[3], "gear_part", 0.15, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(priority.shipments[0].products[4], "gear_part", 0.15, -0.2, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(priority.shipments[0].products[5], "gear_part", 0.15, -0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[0].products[0], "pulley_part", -0.1, -0.2, 0.0, 1.0, 0.0, 0.0, 0.0);
+  // ADD_PRODUCT(priority.shipments[0].products[1], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
+  // ADD_PRODUCT(priority.shipments[0].products[2], "gear_part", 0.15, 0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[0].products[3], "gear_part", 0.15, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[0].products[4], "gear_part", 0.15, -0.2, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[0].products[5], "gear_part", 0.15, -0.1, 0.0, 0.0, 0.0, 0.0, 1.0);
   
-  ADD_PRODUCT(priority.shipments[1].products[0], "gasket_part", 0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
-  ADD_PRODUCT(priority.shipments[1].products[1], "gasket_part", -0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
-  ADD_PRODUCT(priority.shipments[1].products[2], "piston_rod_part", 0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(priority.shipments[1].products[3], "piston_rod_part", -0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
-  ADD_PRODUCT(priority.shipments[1].products[4], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
+  // ADD_PRODUCT(priority.shipments[1].products[0], "gasket_part", 0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
+  // ADD_PRODUCT(priority.shipments[1].products[1], "gasket_part", -0.1, -0.2, 0.0, 0.0, 0.0, -sqrt(2)/2, sqrt(2)/2);
+  // ADD_PRODUCT(priority.shipments[1].products[2], "piston_rod_part", 0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[1].products[3], "piston_rod_part", -0.15, 0.15, 0.0, 0.0, 0.0, 0.0, 1.0);
+  // ADD_PRODUCT(priority.shipments[1].products[4], "piston_rod_part", 0.0, 0.15, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-  osrf_gear::Shipment loaded_parts;
-  loaded_parts.products.resize(3);
+  // osrf_gear::Shipment loaded_parts;
+  // loaded_parts.products.resize(3);
 
-  loaded_parts.products[0] = current.shipments[0].products[1];
-  loaded_parts.products[1] = current.shipments[0].products[2];
-  loaded_parts.products[2] = current.shipments[0].products[5];
+  // loaded_parts.products[0] = current.shipments[0].products[1];
+  // loaded_parts.products[1] = current.shipments[0].products[2];
+  // loaded_parts.products[2] = current.shipments[0].products[5];
   
   // decision_func(loaded_parts, ros::Duration(0.0));
 
-  optimizer_func::optimizer_msgs::Request req;
-  optimizer_func::optimizer_msgs::Response res;
-  osrf_gear::Shipment empty_shipment;
+  // optimizer_func::optimizer_msgs::Request req;
+  // optimizer_func::optimizer_msgs::Response res;
+  // osrf_gear::Shipment empty_shipment;
   
-  req.loaded = loaded_parts;
-  req.orphaned = empty_shipment;
-  req.reposition = empty_shipment;
-  req.missing = empty_shipment;
+  // req.loaded = loaded_parts;
+  // req.orphaned = empty_shipment;
+  // req.reposition = empty_shipment;
+  // req.missing = empty_shipment;
 
   //std::cout<<"enter 1 to continue: ";
   //int ans;
   //std::cin>>ans;
 
-  current_order_recvd = ros::Time::now(); // - ros::Duration(135.0);
-  priority_order_recvd = ros::Time::now();
+  // current_order_recvd = ros::Time::now(); // - ros::Duration(135.0);
+  // priority_order_recvd = ros::Time::now();
   
-  req.giving_up = optimizer_func::optimizer_msgs::Request::NOT_GIVING_UP;
+  // req.giving_up = optimizer_func::optimizer_msgs::Request::NOT_GIVING_UP;
 
   // Run the optimization routine
   // optimize_shipments(req, res);

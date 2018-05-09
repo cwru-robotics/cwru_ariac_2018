@@ -15,6 +15,8 @@ int current_shipment = 0;
 bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res) {
 
+  ROS_INFO("Beginning optimization for %s", req.loaded.shipment_type.c_str());
+
   // Count the total parts being ordered. Not doing anything with the infor now.
   int part_counts[the_parts_count];
   memset(&part_counts, 0x00, sizeof(part_counts));
@@ -22,47 +24,92 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   count_parts(current, priority, (int *) &part_counts);
 
   // Set up an empty shipment for the time being
-  osrf_gear::Shipment null_ship;
-  null_ship.shipment_type.append("no_shipment");
+  osrf_gear::Shipment null_shipment;
   
-  // ROS_INFO("Part names:    %s %s %s %s %s", the_parts[0], the_parts[1], the_parts[2], the_parts[3], the_parts[4]);
-  // ROS_INFO("%i\t%i\t%i\t%i\t%i", part_counts[0], part_counts[1], part_counts[2], part_counts[3], part_counts[4]);
+  // ROS_DEBUG("Part names:    %s %s %s %s %s", the_parts[0], the_parts[1], the_parts[2], the_parts[3], the_parts[4]);
+  // ROS_DEBUG("%i\t%i\t%i\t%i\t%i", part_counts[0], part_counts[1], part_counts[2], part_counts[3], part_counts[4]);
 
   // If there is not an order yet, just send an empty response
-  if ((current.shipments.size() < 1) && (priority.shipments.size() < 1)) {
-    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
-    res.shipment = null_ship;
+  // if ((current.shipments.size() < 1) && (priority.shipments.size() < 1)) {
+  if ((shipment_queue.shipments.size() < 1) && (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION)) {
+    ROS_INFO("No orders in the queue.");
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    } else {
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    }
+    res.shipment = shipment_queue.shipments[0];
+    return true;
   }
 
+  if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+      if (shipment_queue.shipments.size() > 0) {
+	res.shipment = shipment_queue.shipments[0];
+      } else {
+	res.shipment = null_shipment;
+      }
+    } else {
+      // This is a condition to complete
+      // res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    }
+    return true;
+  }
+
+
+  // If the current shipment if full, or giving_up, advance it
+  // if ((current.shipments[0].products.size() > 0) && ((req.loaded.products.size() == current.shipments[0].products.size()) || (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) ) {
+  if ((req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION) && (shipment_queue.shipments[0].products.size() > 0) && ((req.loaded.products.size() == shipment_queue.shipments[0].products.size()) || (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) ) {
+    if (req.loaded.products.size() == current.shipments[0].products.size()) {
+      ROS_INFO("Shipment is full, move it along");
+    }
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      ROS_INFO("Giving up on shipment, move it along");
+    }
+    res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
+
+    // If there is another shipment in the order, start on that one, otherwise 
+    if (priority.shipments.size() > 0)
+      res.shipment = priority.shipments[0];
+    else if (current.shipments.size() > 1 )
+      res.shipment = current.shipments[1];
+    else
+      res.shipment = null_shipment;
+    return true;
+  }
+  
   // If there is not a priority order yet, stick with the current order.
   if (priority.shipments.size() < 1) {
     res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
-    // This needs to auto increment
     res.shipment = current.shipments[0];
+    return true;
   }
 
   // If the current Order is complete, finish the priority order.
   if ((current.shipments.size() < 1) && (priority.shipments.size() > 0)) {
     res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
-    // This needs to auto increment
     res.shipment = priority.shipments[0];
+    return true;
   }
 
   if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
     ROS_INFO("The answer is ship the box now");
-    res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_SHIP_THIS;
+    res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
     if (priority.shipments.size() > 0) {
       res.shipment = priority.shipments[0];
     } else if (current.shipments.size() > 0) {
       res.shipment = current.shipments[0];
     }
+    return true;
   }
 
   // What is loaded in the form of a shipment message
   osrf_gear::Shipment loaded_parts, cur_loaded, cur_in_place, cur_to_load, cur_to_remove, cur_to_move;
 
   // How does the current shipment look
-  // ROS_INFO("Compare current shipment to itself");
+  ROS_INFO("Compare current shipment to itself");
 
   // What is in the box.  Lumping it together so that it can be compared to multiple shipments.
   for (int indx = 0; indx < req.loaded.products.size(); indx++) {
@@ -75,19 +122,23 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
     loaded_parts.products.push_back(req.reposition.products[indx]);
   }
 
+  ROS_INFO("Starting Comparision");
   // Something like this should be done when choosing which shipment to load first.
   order_breakdown(&(current.shipments[current_shipment]), &loaded_parts, &(current.shipments[current_shipment]), &cur_in_place, &cur_to_load, &cur_to_remove, &cur_to_move);
   
+  ROS_INFO("Comparision to priority 0");
   // How does the current shipment compare to the priority order shipment 0
   osrf_gear::Shipment pri0_loaded, pri0_in_place, pri0_to_load, pri0_to_remove, pri0_to_move;
   // ROS_INFO("Compare current shipment to priority order shipment 0");
   order_breakdown(&(current.shipments[current_shipment]), &loaded_parts, &(priority.shipments[0]), &pri0_in_place, &pri0_to_load, &pri0_to_remove, &pri0_to_move);
 
+  ROS_INFO("Comparision to priority 1");
   // How does the corrent shipment compare to the priority order shipment 1
   osrf_gear::Shipment pri1_loaded, pri1_in_place, pri1_to_load, pri1_to_remove, pri1_to_move;
   // ROS_INFO("Compare current shipment to priority order shipment 1");
   order_breakdown(&(current.shipments[current_shipment]), &loaded_parts, &(priority.shipments[1]), &pri1_in_place, &pri1_to_load, &pri1_to_remove, &pri1_to_move);
 
+  ROS_INFO("Starting Timings");
 
   // What are the timings for different actions
   double cur_cont_timing = 0.0, cur_comp_timing = 0.0;
@@ -96,10 +147,10 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   // ROS_INFO("----- Continue loading current order current shipment ------");
   cur_cont_timing = timing_breakdown(cur_to_load, cur_to_remove, cur_to_move);
   // ROS_INFO("----- Complete loading current current shipment ------");
-  cur_comp_timing = timing_breakdown(current.shipments[current_shipment], null_ship, null_ship);
+  cur_comp_timing = timing_breakdown(current.shipments[current_shipment], null_shipment, null_shipment);
   if (current.shipments.size() > 1) {
     // ROS_INFO("----- Complete loading current order other shipment ------");
-    cur_other_comp_timing = timing_breakdown(current.shipments[!current_shipment], null_ship, null_ship);
+    cur_other_comp_timing = timing_breakdown(current.shipments[!current_shipment], null_shipment, null_shipment);
   }
 
   // What are the timings for the different actions
@@ -107,13 +158,13 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   ROS_INFO("----- Swap loading priority shipment 0 ------");
   pri_swap_timing[0] = timing_breakdown(pri0_to_load, pri0_to_remove, pri0_to_move);
   ROS_INFO("----- Complete loading priority shipment 0 ------");
-  pri_comp_timing[0] = timing_breakdown((priority.shipments[0]), null_ship, null_ship);
+  pri_comp_timing[0] = timing_breakdown((priority.shipments[0]), null_shipment, null_shipment);
 
   if (priority.shipments.size() > 1) {
     ROS_INFO("----- Swap loading priority shipment 1 ------");
     pri_swap_timing[1] = timing_breakdown(pri1_to_load, pri1_to_remove, pri1_to_move);
     ROS_INFO("----- Complete loading priority shipment 1 ------");
-    pri_comp_timing[1] = timing_breakdown((priority.shipments[1]), null_ship, null_ship);
+    pri_comp_timing[1] = timing_breakdown((priority.shipments[1]), null_shipment, null_shipment);
   }
   
   // Which to compare

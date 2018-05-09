@@ -46,6 +46,14 @@ void start_competition(ros::NodeHandle & node) {
         ROS_INFO("Competition started!");
     }
 }
+bool done_with_this_shipment(vector<bool> parts_checklist) {
+  int nparts = parts_checklist.size();
+  bool am_done = true;
+  for (int i=0;i<nparts;i++) {
+    am_done = am_done&&parts_checklist[i];
+  }
+  return am_done;
+}
 
 int main(int argc, char** argv) {
     // ROS set-ups:
@@ -55,6 +63,7 @@ int main(int argc, char** argv) {
     //still deciding what and how much to expose at this top level
     int ans;
     inventory_msgs::Part bad_part;
+    std::vector<bool> parts_checklist;//, done_with_part_Q2;
     string current_shipment_name("no_active_shipment");
     string no_shipment_name("no_active_shipment");
 
@@ -168,17 +177,19 @@ int main(int argc, char** argv) {
     //suspend here until receive first order; (box is still moving to Q1 destination)
 
     string Q1_shipment_name = no_shipment_name;
+    string prior_Q1_shipment_name = no_shipment_name;
     while (Q1_shipment_name == no_shipment_name) {
         ROS_INFO("waiting for first order...");
         ros::spinOnce();
         ros::Duration(0.5).sleep();
         optimizer_client.call(optimizer_msg);
         shipment = optimizer_msg.response.shipment;
-        string rtn_name(shipment.shipment_type);
-        Q1_shipment_name = rtn_name;
+        //string rtn_name(shipment.shipment_type);
+        Q1_shipment_name = std::string(shipment.shipment_type); //rtn_name;
         ROS_INFO_STREAM("optimizer returned shipment name: " << Q1_shipment_name << endl);
     }
     ROS_INFO("Got first shipment: ");
+    prior_Q1_shipment_name = Q1_shipment_name;
     Q1_shipment = shipment; //make a copy of this shipment here, noting it is associated with station Q1
     ROS_INFO_STREAM("initial shipment: " << endl << Q1_shipment << endl);
 
@@ -188,7 +199,9 @@ int main(int argc, char** argv) {
     bool have_active_shipment_Q1 = true;
 
     //acquire first part while waiting on box; move this part to camera inspection above box
-    int num_models = desired_models_wrt_world.size();
+    int num_models_in_order = desired_models_wrt_world.size();
+    parts_checklist.resize(num_models_in_order);
+    for (int i=0;i<num_models_in_order;i++) parts_checklist[i]=false;
     int i_model = 0;
     current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
     //build "part" description for destination
@@ -197,17 +210,17 @@ int main(int argc, char** argv) {
     ROS_INFO_STREAM("attempting to acquire and place part: " << place_part << endl);
 
     //try (up to three times) to get this part and show it to box1 camera; if NG, try next part
-    while ((i_model < num_models)&&!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part)) {
+    while ((i_model < num_models_in_order)&&!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part)) {
         ROS_WARN("giving up on model index %d; trying next model", i_model); //very unlikely to happen
         problem_model_indices.push_back(i_model);
         i_model++;
-        if (i_model < num_models) {
+        if (i_model < num_models_in_order) {
             current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
             //build "part" description for destination
             shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
         }
     }
-    if (i_model < num_models) {
+    if (i_model < num_models_in_order) {
         ROS_INFO("grasped part index %d and holding under box1 cam", i_model);
     } else {
         ROS_WARN("something is horribly wrong; could not grasp acquire ANY parts  from this order!");
@@ -295,6 +308,7 @@ int main(int argc, char** argv) {
         boxInspector.update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,
                 misplaced_models_actual_coords_wrt_world, misplaced_models_desired_coords_wrt_world,
                 missing_models_wrt_world, orphan_models_wrt_world);
+        
 
         //xxx FINISH ME: do a Q1 camera check; a bad part should be classified as an orphaned  part
 
@@ -304,11 +318,37 @@ int main(int argc, char** argv) {
         shipmentFiller.modelvec_to_shipment(current_shipment_name, missing_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, shipment_missing);
         shipmentFiller.modelvec_to_shipment(current_shipment_name, misplaced_models_actual_coords_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, shipment_reposition);
         optimizer_msg.request.loaded = shipment_loaded;
-        optimizer_msg.request.orphaned = shipment_missing;
+        optimizer_msg.request.orphaned = shipment_orphaned;
         optimizer_msg.request.reposition = shipment_reposition;
         optimizer_msg.request.giving_up = optimizer_func::optimizer_msgsRequest::NOT_GIVING_UP;
+                //xxx FAKE: dont attempt to adjust misplaced parts:
+        if (have_active_shipment_Q1&&(orphan_models_wrt_world.size() ==0) && (missing_models_wrt_world.size()==0) ) {
+            //FAKE: call this done:
+            for (int i=0;i<num_models_in_order;i++) parts_checklist[i]=true;
+            ROS_WARN("fake for debug: no orphans and total parts in box = order size; recommmending move along");
+        }
+        //keep this next line: know when to say when
+        if (done_with_this_shipment(parts_checklist)) {
+                    optimizer_msg.request.giving_up = optimizer_func::optimizer_msgsRequest::GIVING_UP;
+        }
+
         //send a service request:
+        ROS_INFO("sending request to optimizer");
         optimizer_client.call(optimizer_msg);
+        //see if shipment name has changed:
+        Q1_shipment_name = std::string(shipment.shipment_type); 
+        if (Q1_shipment_name != prior_Q1_shipment_name) {
+            ROS_INFO_STREAM("new shipment name received: "<<Q1_shipment_name<<endl);
+            prior_Q1_shipment_name = Q1_shipment_name;    
+            num_models_in_order = shipment.products.size();
+            //use parts_checklist to keep track of parts that are satisfied, or parts we are giving  up on
+            parts_checklist.resize(num_models_in_order);
+            for (int i=0;i<num_models_in_order;i++) parts_checklist[i]=false;
+        }
+        
+
+
+
         //check if current box should continue to be used:
         if (optimizer_msg.response.decision == optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX) {
             ROS_INFO("optimizer says to use this box");
@@ -329,11 +369,24 @@ int main(int argc, char** argv) {
                 robotBehaviorInterface.discard_grasped_part(remove_part);
             }
                 //second priority: adjust a part position
-                /*
-                else if (misplaced_models_actual_coords_wrt_world.size()>0) {
-                    ROS_WARN("should do part relocation here...");
-                }      */
-
+            /*
+            else if (misplaced_models_actual_coords_wrt_world.size()>0) {
+             if 
+                ROS_WARN("should do part relocation here; merely mark the part to be ignored via done_with_part_Q1");
+                current_model = misplaced_models_actual_coords_wrt_world[0];
+                //int model_index = part_indices_misplaced[0];
+                int model_index = 0; //fake above
+                shipmentFiller.model_to_part(current_model, pick_part, inventory_msgs::Part::QUALITY_SENSOR_1);
+                //and desired part pose:
+                current_model = misplaced_models_desired_coords_wrt_world[0];
+                shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
+                
+                robotBehaviorInterface.adjust_part_location_with_release(pick_part,place_part); 
+                //regardless, mark this part as done:
+                done_with_part_Q1[imodel] = true;
+                                   
+                }      
+            */
                 //third priority: get a new part and try to place in box
             else if (missing_models_wrt_world.size() > 0) { //get a new part and place it in box
                 //do the sequence to pick and place:
@@ -400,7 +453,7 @@ int main(int argc, char** argv) {
             conveyorInterface.move_new_box_to_Q1();
         }
 
-        /*
+        /*  NEED TO CHECK ON DEPOT STATUS
                 advanced_shipment_on_conveyor =
                         shipmentFiller.advance_shipment_on_conveyor(DRONE_DOCK_LOCATION_CODE);
                 //send notice to drone:
@@ -412,8 +465,8 @@ int main(int argc, char** argv) {
                 }
 
          */
-        ROS_WARN("stopping after single shipment...FIX ME!");
-        return 0;
+        
 
-    } //while ros::OK()
+    } 
+    return 0;//while ros::OK()
 }

@@ -2,83 +2,37 @@
 #include "optimizer_func/helper_funcs.h"
 
 
-int case_number = 0;
-
 bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res)
 {
   osrf_gear::Shipment empty_shipment;
-  
-  if (((req.loaded.products.size() > 0) &&		\
-       (req.orphaned.products.size() == 0) &&		\
-       (req.missing.products.size() == 0) &&		\
-       (req.reposition.products.size() == 0)) ||	\
-      (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP)) {
+  empty_shipment.shipment_type.append("no_shipment");
 
-    // Set the decision to ship with label and start loading next shipment
-    res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
-
-    // What is the next shipment
-    switch (case_number) {
-    case 0:
-      break;
-    case 1:
-      if (current.shipments.size() > 1) {
-	case_number = 2;
-	res.shipment = current.shipments[1];
-	
-      } else {
-	case_number = 3;
-	res.shipment = priority.shipments[0];
-      }
-      break;
-    case 2:
-      case_number = 3;
-      res.shipment = priority.shipments[0];
-      break;
-    case 3:
-      if (priority.shipments.size() > 1) {
-	case_number = 4;
-	res.shipment = priority.shipments[1];
-      }
-      break;
-    case 4:
-      case_number = 5;
-      res.shipment = empty_shipment;
-      break;
-    }	
-    
-  } else {
-
-    // Set the decision to keep loading the current shipment
-    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
-
-    // What is the current shipment being loaded
-    switch (case_number) {
-    case 0:
-      if (current.shipments.size() > 0) {
-	case_number = 1;
-	res.shipment = current.shipments[0];
-      } else {
-	res.shipment = empty_shipment;
-      }
-      break;
-    case 1:
-      res.shipment = current.shipments[0];
-      break;
-    case 2:
-      res.shipment = current.shipments[1];
-      break;
-    case 3:
-      res.shipment = priority.shipments[0];
-      break;
-    case 4:
-      res.shipment = priority.shipments[1];
-      break;
-    default:
-      res.shipment = empty_shipment;
+  if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION) {
+    ROS_INFO("Request from Q1");
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      ROS_INFO("Giving up set, so advance the box (next shipment returned).");
+      res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
+      if (!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) {
+	if(shipment_queue.shipments.size() > 1) 
+	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
+      }	else
+	ROS_WARN("Asking about a different shipment than expected!!");
+    } else {
+      ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
     }
+    ROS_INFO("Sending next shipment; queue size: %i", (int) shipment_queue.shipments.size());
+  } else if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
+    ROS_INFO("Request from Q2");
+    ROS_INFO("Always advancing box (showing next shipment).");
+    res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+  } else {
+    ROS_ERROR("Request did not come from Q1 or Q2!!");
+    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
   }
+  res.shipment = shipment_queue.shipments[0];
+
   return true;
 }
 
