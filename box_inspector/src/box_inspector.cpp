@@ -636,6 +636,287 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
 } 
 
 
+bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+        vector<osrf_gear::Model> &satisfied_models_wrt_world,
+        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
+        vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
+        vector<osrf_gear::Model> &missing_models_wrt_world,
+        vector<osrf_gear::Model> &orphan_models_wrt_world,
+        vector<int> &part_indices_missing,
+        vector<int> &part_indices_misplaced,
+        vector<int> &part_indices_precisely_placed) {
+    int ans; // FOR DEBUG
+    osrf_gear::LogicalCameraImage filtered_box_camera_image;
+    
+    if (!get_filtered_snapshots_from_box_cam(filtered_box_camera_image)) {
+        return false;
+    }
+    
+    /*
+    int n_snapshots = 3;
+    got_new_snapshot_ = false;
+    vector<geometry_msgs::Pose> sum_pose, average_pose;
+
+    filtered_box_camera_image = box_inspector_image_;
+    if (!get_new_snapshot_from_box_cam()) {
+        return false;
+    } //failed to get new image; blackout?
+
+    //got at least one snapshot; proceed to average
+    int num_parts_seen = box_inspector_image_.models.size();
+    ROS_INFO("update_inspection: box camera saw %d objects", num_parts_seen);
+    sum_pose.resize(num_parts_seen);
+    average_pose.resize(num_parts_seen);
+    for (int i = 0; i < num_parts_seen; i++) {
+        sum_pose[i].position.x = 0;
+        sum_pose[i].position.y = 0;
+        sum_pose[i].position.z = 0;
+        sum_pose[i].orientation.x = 0;
+        sum_pose[i].orientation.y = 0;
+        sum_pose[i].orientation.z = 0;
+        sum_pose[i].orientation.w = 0;
+
+    }
+    int i_snapshots = 0;
+    for (int i = 0; i < n_snapshots; i++) { // Should remove hard coded numbers and use while
+        if (get_new_snapshot_from_box_cam()) {
+            filtered_box_camera_image = box_inspector_image_;
+            if (box_inspector_image_.models.size() == num_parts_seen) {
+                i_snapshots++;
+                for (int j = 0; j < num_parts_seen; j++) {
+                    sum_pose[j].position.x += box_inspector_image_.models[j].pose.position.x;
+                    sum_pose[j].position.y += box_inspector_image_.models[j].pose.position.y;
+                    sum_pose[j].position.z += box_inspector_image_.models[j].pose.position.z;
+                    sum_pose[j].orientation.x += box_inspector_image_.models[j].pose.orientation.x;
+                    sum_pose[j].orientation.y += box_inspector_image_.models[j].pose.orientation.y;
+                    sum_pose[j].orientation.z += box_inspector_image_.models[j].pose.orientation.z;
+                    sum_pose[j].orientation.w += box_inspector_image_.models[j].pose.orientation.w;
+
+                }
+            }
+        }
+    }
+    if (i_snapshots > 0) {
+        for (int j = 0; j < num_parts_seen; j++) {
+            average_pose[j].position.x = sum_pose[j].position.x / i_snapshots;
+            average_pose[j].position.y = sum_pose[j].position.y / i_snapshots;
+            average_pose[j].position.z = sum_pose[j].position.z / i_snapshots;
+            average_pose[j].orientation.x = sum_pose[j].orientation.x / i_snapshots;
+            average_pose[j].orientation.y = sum_pose[j].orientation.y / i_snapshots;
+            average_pose[j].orientation.z = sum_pose[j].orientation.z / i_snapshots;
+            average_pose[j].orientation.w = sum_pose[j].orientation.w / i_snapshots;
+            double n = sqrt(pow(average_pose[j].orientation.x, 2.0) + pow(average_pose[j].orientation.y, 2.0) + pow(average_pose[j].orientation.z, 2.0) + pow(average_pose[j].orientation.w, 2.0)); //SHOULD AVOID PERFORMANCE OVERHEAD OF MULTIPLE FNC CALL; change to x*x instead
+            average_pose[j].orientation.x /= n;
+            average_pose[j].orientation.y /= n;
+            average_pose[j].orientation.z /= n;
+            average_pose[j].orientation.w /= n;
+
+        }
+
+
+        for (int i = 0; i < num_parts_seen; i++) {
+            filtered_box_camera_image.models[i].pose = average_pose[i];
+        }
+        */
+
+        ROS_INFO_STREAM("filtered box camera image" << filtered_box_camera_image);
+        int num_parts_seen = filtered_box_camera_image.models.size();
+        int num_parts_desired = desired_models_wrt_world.size();
+        orphan_models_wrt_world.clear(); //this will be empty, unless something very odd happens
+        satisfied_models_wrt_world.clear(); //shipment will be complete when this matches parts/poses specified in shipment
+        misplaced_models_actual_coords_wrt_world.clear();
+        misplaced_models_desired_coords_wrt_world.clear();
+        missing_models_wrt_world.clear();
+        part_indices_misplaced.clear();
+        part_indices_missing.clear();
+        part_indices_precisely_placed.clear();
+        int num_each_parts_seen[5] = {0, 0, 0, 0, 0};
+        int num_each_parts_des[5] = {0, 0, 0, 0, 0};
+        for (int i = 0; i < num_parts_seen; i++) {
+            switch (name_to_part_id_mappings[filtered_box_camera_image.models[i].type]) {
+                case 1:
+                    num_each_parts_seen[0] += 1;
+                    break;
+                case 2:
+                    num_each_parts_seen[1] += 1;
+                    break;
+                case 3:
+                    num_each_parts_seen[2] += 1;
+                    break;
+                case 4:
+                    num_each_parts_seen[3] += 1;
+                    break;
+                case 5:
+                    num_each_parts_seen[4] += 1;
+                    break;
+            }
+        }
+        for (int i = 0; i < num_parts_desired; i++) {
+            switch (name_to_part_id_mappings[desired_models_wrt_world[i].type]) {
+                case 1:
+                    num_each_parts_des[0] += 1;
+                    break;
+                case 2:
+                    num_each_parts_des[1] += 1;
+                    break;
+                case 3:
+                    num_each_parts_des[2] += 1;
+                    break;
+                case 4:
+                    num_each_parts_des[3] += 1;
+                    break;
+                case 5:
+                    num_each_parts_des[4] += 1;
+                    break;
+            }
+
+        }
+
+        for (int i = 0; i < filtered_box_camera_image.models.size(); i++) {
+            if (filtered_box_camera_image.models[i].type != "shipping_box") {
+                bool found = false;
+                for (int j = 0; j < desired_models_wrt_world.size(); j++) {
+                    if (filtered_box_camera_image.models[i].type == desired_models_wrt_world[j].type) {
+                        geometry_msgs::PoseStamped model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                        bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose, desired_models_wrt_world[j].pose);
+                        if (pose_comparison) {
+                            found = true;
+                            geometry_msgs::PoseStamped pose_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                    		osrf_gear::Model model;
+                    		model = filtered_box_camera_image.models[i];
+                    		model.pose = pose_wrt_world.pose;
+                    		satisfied_models_wrt_world.push_back(model); //OR satisfied_models_wrt_world.push_back(desired_models_wrt_world[j]);
+                    		part_indices_precisely_placed.push_back(j);
+                
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        for (int ipart = 0; ipart < 5; ipart++) {
+
+
+            if (num_each_parts_seen[ipart] < num_each_parts_des[ipart]) {
+                for (int j = 0; j < desired_models_wrt_world.size(); j++) {
+                    if (desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart + 1]) {
+                        bool found = false;
+                        for (int i = 0; i < filtered_box_camera_image.models.size(); i++) {
+                            if (filtered_box_camera_image.models[i].type == desired_models_wrt_world[j].type) {
+                                geometry_msgs::PoseStamped model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                                bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose, desired_models_wrt_world[j].pose);
+                                if (pose_comparison) {
+                                    found = true;
+                                }
+                            }
+                        }
+                        if (!found) {
+                            ROS_INFO("found missing");
+                            missing_models_wrt_world.push_back(desired_models_wrt_world[j]);
+                            part_indices_missing.push_back(j);
+                        }
+                    }
+                }
+
+            } else if (num_each_parts_seen[ipart] > num_each_parts_des[ipart]) {
+                for (int i = 0; i < filtered_box_camera_image.models.size(); i++) {
+
+                    if (filtered_box_camera_image.models[i].type == part_id_to_name_mappings[ipart + 1]) {
+
+
+                        bool found = false;
+                        for (int j = 0; j < desired_models_wrt_world.size(); j++) {
+                            if (filtered_box_camera_image.models[i].type == desired_models_wrt_world[j].type) {
+                                geometry_msgs::PoseStamped model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                                bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose, desired_models_wrt_world[j].pose);
+                                if (pose_comparison) {
+                                    found = true;
+                                }
+                            }
+                        }
+                        if (!found) {
+                            geometry_msgs::PoseStamped pose_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                            osrf_gear::Model model;
+                            model = filtered_box_camera_image.models[i];
+                            model.pose = pose_wrt_world.pose;
+                            orphan_models_wrt_world.push_back(model);
+                        }
+
+                    }
+                }
+            }
+            else if (num_each_parts_des[ipart] == num_each_parts_seen[ipart]) {
+                for (int i = 0; i < filtered_box_camera_image.models.size(); i++) {
+                    if (filtered_box_camera_image.models[i].type == part_id_to_name_mappings[ipart + 1]) {
+                        bool found = false;
+                        for (int j = 0; j < desired_models_wrt_world.size(); j++) {
+                            if (filtered_box_camera_image.models[i].type == desired_models_wrt_world[j].type) {
+                                geometry_msgs::PoseStamped model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                                bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose, desired_models_wrt_world[j].pose);
+                                if (pose_comparison) {
+                                    found = true;
+                                }
+                            }
+                        }
+
+                        if (!found) {
+                            geometry_msgs::PoseStamped pose_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                            osrf_gear::Model model;
+                            model = filtered_box_camera_image.models[i];
+                            model.pose = pose_wrt_world.pose;
+                            misplaced_models_actual_coords_wrt_world.push_back(model);
+                            
+                        }
+
+
+                    }
+                }
+
+
+                for (int j = 0; j < desired_models_wrt_world.size(); j++) {
+                    if (desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart + 1]) {
+                        bool found = false;
+                        for (int i = 0; i < filtered_box_camera_image.models.size(); i++) {
+                            if (filtered_box_camera_image.models[i].type == desired_models_wrt_world[j].type) {
+                                geometry_msgs::PoseStamped model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, filtered_box_camera_image.models[i].pose);
+                                bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose, desired_models_wrt_world[j].pose);
+
+                                if (pose_comparison) {
+                                    found = true;
+                                }
+                            }
+                        }
+
+                        if (!found) {
+
+                            misplaced_models_desired_coords_wrt_world.push_back(desired_models_wrt_world[j]);
+                            part_indices_misplaced.push_back(j);
+                        }
+                    }
+                }
+
+
+            }
+
+        }
+        ros::spinOnce();
+        if(qual_sensor_1_sees_faulty_part_) {
+            osrf_gear::Model bad_model;
+            part_to_model(bad_part_Qsensor1_,bad_model);
+            orphan_models_wrt_world.push_back(bad_model);
+
+        }
+        
+        if(qual_sensor_2_sees_faulty_part_) {
+            osrf_gear::Model bad_model;
+            part_to_model(bad_part_Qsensor2_,bad_model);
+            orphan_models_wrt_world.push_back(bad_model);
+        }
+    return 1;
+
+} 
+
 //intent of this function: when holding a part above the (Q1) box, find the (filtered) pose of
 // the part with respect to world coords; this is used to identify the actual grasp transform
 // return false if camera not working or not credible interpretation

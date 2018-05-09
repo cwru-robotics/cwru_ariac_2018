@@ -81,6 +81,17 @@ public:
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world);
 
+
+  bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+       vector<osrf_gear::Model> &satisfied_models_wrt_world,
+       vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
+       vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
+       vector<osrf_gear::Model> &missing_models_wrt_world,
+       vector<osrf_gear::Model> &orphan_models_wrt_world,
+       vector<int> &part_indices_missing,
+        vector<int> &part_indices_misplaced,
+        vector<int> &part_indices_precisely_placed);
+
   //operates on an image, computes model poses w/rt box, puts result in shipment_status
   bool model_poses_wrt_box(osrf_gear::LogicalCameraImage box_inspector_image, 
     osrf_gear::Shipment &shipment_status);
