@@ -4,6 +4,9 @@
 char *the_parts[] = {"disk_part", "gasket_part", "gear_part", "piston_rod_part", "pulley_part"};
 int the_parts_count = 5;
 
+osrf_gear::Order shipment_queue;
+int shipment_queue_indx = 0;
+
 
 int count_parts(osrf_gear::Order current, osrf_gear::Order priority, int *parts_counts) {
   int part = 0;
@@ -51,10 +54,10 @@ float timing_breakdown(osrf_gear::Shipment to_load, osrf_gear::Shipment to_remov
   // Total time to swap over order.
   total_time = unload_time + swapping_time + new_load_time;
   
-  ROS_INFO("Dump parts time: %1.4f", unload_time);
-  ROS_INFO("Swap out parts time: %1.4f", swapping_time);
-  ROS_INFO("Additional parts loading time: %1.4f", new_load_time);
-  ROS_INFO("Total time: %1.4f", total_time);
+  ROS_DEBUG("Dump parts time: %1.4f", unload_time);
+  ROS_DEBUG("Swap out parts time: %1.4f", swapping_time);
+  ROS_DEBUG("Additional parts loading time: %1.4f", new_load_time);
+  ROS_DEBUG("Total time: %1.4f", total_time);
 
   return total_time;
 }
@@ -93,10 +96,10 @@ int order_breakdown(osrf_gear::Shipment *cur_shipment, osrf_gear::Shipment *load
 
   }
 
-  ROS_INFO("Parts ordered:     %i %i %i %i %i", num_parts_ordered[0], num_parts_ordered[1], num_parts_ordered[2], num_parts_ordered[3], num_parts_ordered[4]);
-  ROS_INFO("Alt parts ordered: %i %i %i %i %i", num_each_part[0], num_each_part[1], num_each_part[2], num_each_part[3], num_each_part[4]);
-  ROS_INFO("Parts loaded:      %i %i %i %i %i", num_parts_loaded[0], num_parts_loaded[1], num_parts_loaded[2], num_parts_loaded[3], num_parts_loaded[4]);
-  ROS_INFO("Conversion:        %i %i %i %i %i", num_each_part_conversion[0], num_each_part_conversion[1], num_each_part_conversion[2], num_each_part_conversion[3], num_each_part_conversion[4]);
+  ROS_DEBUG("Parts ordered:     %i %i %i %i %i", num_parts_ordered[0], num_parts_ordered[1], num_parts_ordered[2], num_parts_ordered[3], num_parts_ordered[4]);
+  ROS_DEBUG("Alt parts ordered: %i %i %i %i %i", num_each_part[0], num_each_part[1], num_each_part[2], num_each_part[3], num_each_part[4]);
+  ROS_DEBUG("Parts loaded:      %i %i %i %i %i", num_parts_loaded[0], num_parts_loaded[1], num_parts_loaded[2], num_parts_loaded[3], num_parts_loaded[4]);
+  ROS_DEBUG("Conversion:        %i %i %i %i %i", num_each_part_conversion[0], num_each_part_conversion[1], num_each_part_conversion[2], num_each_part_conversion[3], num_each_part_conversion[4]);
 
   // Iterate over all the loaded parts
   for (int indx = 0; indx < loaded->products.size(); indx++) {
@@ -141,8 +144,8 @@ int order_breakdown(osrf_gear::Shipment *cur_shipment, osrf_gear::Shipment *load
     }
   }
 
-  ROS_INFO("Inplace, load, remove, move");
-  ROS_INFO("%i %i %i %i", (int) (*in_place).products.size(), (int) (*to_load).products.size(), (int) (*remove).products.size(), (int) (*move).products.size());
+  ROS_DEBUG("Inplace, load, remove, move");
+  ROS_DEBUG("%i %i %i %i", (int) (*in_place).products.size(), (int) (*to_load).products.size(), (int) (*remove).products.size(), (int) (*move).products.size());
 
   return 0;
 
