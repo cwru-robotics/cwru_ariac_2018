@@ -34,15 +34,40 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
     for (int indx = 0; indx < current.shipments.size(); indx++) {
       shipment_queue.shipments.push_back(current.shipments[indx]);
     }
-  } else if (!msg->order_id.compare("order_0_update_0")) {
-    ROS_DEBUG("Identified order: %s; as order_0_update_0", msg->order_id.c_str());
+  } else if (!msg->order_id.compare(0, 14, "order_0_update_")) {
+    ROS_DEBUG("Identified order: %s; as an order_0 update", msg->order_id.c_str());
+    // Assuming that updates are not part of the shipment_type.
+    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
+      // Strip out the previous order_0s
+      if (msg->shipments[indy].shipment_type.compare(0, 7, "order_0")) {
+	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
+      }
+    }
+    // Add new shipments.
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
+    }
     current = *msg;
   } else if (!msg->order_id.compare("order_1")) {
     ROS_DEBUG("Identified order: %s; as order_1", msg->order_id.c_str());
     priority_order_recvd=ros::Time::now();
     priority = *msg;
-  } else if (!msg->order_id.compare("order_1_update_0")) {
-    ROS_DEBUG("Identified order: %s; as order_1_update_0", msg->order_id.c_str());
+    for (int indx = 0; indx < priority.shipments.size(); indx++) {
+      shipment_queue.shipments.push_back(priority.shipments[indx]);
+    }
+  } else if (!msg->order_id.compare(0, 14, "order_1_update_")) {
+    ROS_DEBUG("Identified order: %s; as an order_1 update", msg->order_id.c_str());
+    // Assuming that updates are not part of the shipment_type.
+    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
+      // Strip out the previous order_0s
+      if (msg->shipments[indy].shipment_type.compare(0, 7, "order_1")) {
+	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
+      }
+    }
+    // Add new shipments.
+    for (int indx = 0; indx < msg->shipments.size(); indx++) {
+      shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg->shipments[indx]);
+    }
     priority = *msg;
   } else {
     ROS_ERROR("Order was not identified!!!");
