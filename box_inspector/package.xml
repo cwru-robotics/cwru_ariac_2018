@@ -46,12 +46,17 @@
 <build_depend>xform_utils</build_depend>
 <build_depend>osrf_gear</build_depend>
 <build_depend>bin_inventory</build_depend>
+<build_depend>order_manager</build_depend>
+<build_depend>kuka_move_as</build_depend>
   <run_depend>roscpp</run_depend>
 <run_depend>std_msgs</run_depend>
 <run_depend>geometry_msgs</run_depend>
 <run_depend>xform_utils</run_depend>
 <run_depend>osrf_gear</run_depend>
 <run_depend>bin_inventory</run_depend>
+<run_depend>order_manager</run_depend>
+<run_depend>kuka_move_as</run_depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- You can specify that this package is a metapackage here: -->

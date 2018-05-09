@@ -24,7 +24,111 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
     NOM_BOX2_POSE_WRT_WORLD = NOM_BOX1_POSE_WRT_WORLD;
     NOM_BOX2_POSE_WRT_WORLD.pose.position.y = 0.266;
 
+    quality_sensor_1_subscriber_ = nh_.subscribe("/ariac/quality_control_sensor_1", 1,
+            &BoxInspector::quality_sensor_1_callback, this);
+    qual_sensor_1_sees_faulty_part_ = false;
+
+    quality_sensor_2_subscriber_ = nh_.subscribe("/ariac/quality_control_sensor_2", 1,
+            &BoxInspector::quality_sensor_2_callback, this);
+    qual_sensor_2_sees_faulty_part_ = false;
+
 }
+
+void part_to_model(inventory_msgs::Part part, osrf_gear::Model &model) {
+    model.type = part.name;
+    model.pose = part.pose.pose;
+
+}
+
+void BoxInspector::quality_sensor_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
+    qual_sensor_1_image_ = *image_msg;
+    //ROS_INFO("got Qsensor1 msg...");
+    qual_sensor_1_sees_faulty_part_ = find_faulty_part_Q1(qual_sensor_1_image_, bad_part_Qsensor1_);
+    got_new_Q1_image_ = true;
+}
+
+
+
+
+void BoxInspector::quality_sensor_2_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
+    qual_sensor_2_image_ = *image_msg;
+    qual_sensor_2_sees_faulty_part_ = find_faulty_part_Q2(qual_sensor_2_image_, bad_part_Qsensor2_);
+    got_new_Q2_image_ =true;
+}
+
+
+bool BoxInspector::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qual_sensor_image,
+        inventory_msgs::Part &bad_part) {
+    int num_bad_parts = qual_sensor_image.models.size();
+    if (num_bad_parts == 0) return false;
+    //if here, find a bad part and populate bad_part w/ pose in world coords
+    osrf_gear::Model model = qual_sensor_image.models[0];
+    geometry_msgs::Pose cam_pose, part_pose;
+    geometry_msgs::PoseStamped stPose_part_wrt_world;
+    cam_pose = qual_sensor_image.pose;
+    part_pose = model.pose;
+    bad_part.name = model.type;
+    stPose_part_wrt_world = compute_stPose(cam_pose, part_pose);
+    bad_part.pose = stPose_part_wrt_world;
+    bad_part.location = inventory_msgs::Part::QUALITY_SENSOR_1;
+    return true;
+}
+
+
+
+bool BoxInspector::find_faulty_part_Q2(const osrf_gear::LogicalCameraImage qual_sensor_image,
+        inventory_msgs::Part &bad_part) {
+    int num_bad_parts = qual_sensor_image.models.size();
+    if (num_bad_parts == 0) return false;
+    //if here, find a bad part and populate bad_part w/ pose in world coords
+    osrf_gear::Model model = qual_sensor_image.models[0];
+    geometry_msgs::Pose cam_pose, part_pose;
+    geometry_msgs::PoseStamped stPose_part_wrt_world;
+    cam_pose = qual_sensor_image.pose;
+    part_pose = model.pose;
+    bad_part.name = model.type;
+    stPose_part_wrt_world = compute_stPose(cam_pose, part_pose);
+    bad_part.pose = stPose_part_wrt_world;
+    bad_part.location = inventory_msgs::Part::QUALITY_SENSOR_2;
+    return true;
+}
+
+bool BoxInspector::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
+    got_new_Q1_image_ = false;
+    double wait_time = 0;
+    double dt = 0.1;
+    while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q1_image_) {
+        wait_time+=dt;
+        ros::spinOnce();
+        ros::Duration(dt).sleep();
+    }
+    if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
+        ROS_WARN("timed  out waiting for quality inspection cam1");
+        return false;
+    }
+    //if here, then got an update from Q1 cam:
+    bad_part = bad_part_Qsensor1_;
+    return qual_sensor_1_sees_faulty_part_;
+}
+
+bool BoxInspector::get_bad_part_Q2(inventory_msgs::Part &bad_part) {
+    got_new_Q2_image_ = false;
+    double wait_time = 0;
+    double dt = 0.1;
+    while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q2_image_) {
+        wait_time+=dt;
+        ros::spinOnce();        
+        ros::Duration(dt).sleep();
+    }
+    if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
+        ROS_WARN("timed  out waiting for quality inspection cam2");
+        return false;
+    }
+    //if here, then got an update from Q2 cam:
+    bad_part = bad_part_Qsensor2_;
+    return qual_sensor_2_sees_faulty_part_;    
+}
+
 
 bool BoxInspector::find_orphan_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &orphan_models) {
 
@@ -514,7 +618,21 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
             }
 
         }
-        return 1;
+        ros::spinOnce();
+        if(qual_sensor_1_sees_faulty_part_) {
+            osrf_gear::Model bad_model;
+            part_to_model(bad_part_Qsensor1_,bad_model);
+            orphan_models_wrt_world.push_back(bad_model);
+
+        }
+        
+        if(qual_sensor_2_sees_faulty_part_) {
+            osrf_gear::Model bad_model;
+            part_to_model(bad_part_Qsensor2_,bad_model);
+            orphan_models_wrt_world.push_back(bad_model);
+        }
+    return 1;
+
 } 
 
 
