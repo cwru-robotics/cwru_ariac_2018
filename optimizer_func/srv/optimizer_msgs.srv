@@ -16,7 +16,7 @@ int16 decision
 osrf_gear/Shipment shipment
 
 int16 USE_CURRENT_BOX =	0
-int16 PRIORITY_SHIP_THIS = 1	# Implied with label
+int16 PRIORITY_SHIP_THIS = 1	# Implied with label -- Depricated
 int16 PRIORITY_LOAD_NEXT = 2	# Implied with label
-int16 SHIP_NO_LABEL = 3
+int16 SHIP_NO_LABEL = 3		# Depricated
 int16 ADVANCE_THIS_BOX_TO_Q2 = 4
