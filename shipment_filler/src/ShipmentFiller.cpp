@@ -83,6 +83,24 @@ bool ShipmentFiller::current_shipment_has_been_filled() { //delete order from it
     return (orderManager.current_shipment_has_been_filled());
 }
 
+//fnc to convert a vector of poses to a shipment message
+void ShipmentFiller::modelvec_to_shipment(string shipment_name, vector<osrf_gear::Model> vec_of_models, geometry_msgs::PoseStamped box_pose, osrf_gear::Shipment &shipment) {
+    /* string shipment_type
+       osrf_gear/Product[] products
+       string type
+    */
+    geometry_msgs::Pose part_pose_wrt_box;
+    int nproducts = vec_of_models.size();
+    shipment.products.resize(nproducts);
+    shipment.shipment_type = shipment_name.c_str();
+    for (int i=0;i<nproducts;i++) {
+        shipment.products[i].type = vec_of_models[i].type;
+        //could convert part pose to pose w/rt box, and install it:
+        part_pose_wrt_box =   compute_pose_part_wrt_box((vec_of_models[i]).pose, box_pose);
+        shipment.products[i].pose = part_pose_wrt_box;
+    }
+}
+
 void ShipmentFiller::box_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     box_cam_1_image_ = *image_msg;
     double box_y_val; //cam_y_val;
@@ -198,14 +216,36 @@ return 0;
 
 bool ShipmentFiller::get_bad_part_Q1(inventory_msgs::Part &bad_part) {
     got_new_Q1_image_ = false;
+    double wait_time = 0;
+    double dt = 0.1;
+    while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q1_image_) {
+        wait_time+=dt;
+        ros::Duration(dt).sleep();
+    }
+    if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
+        ROS_WARN("timed  out waiting for quality inspection cam1");
+        return false;
+    }
+    //if here, then got an update from Q1 cam:
     bad_part = bad_part_Qsensor1_;
     return qual_sensor_1_sees_faulty_part_;
 }
 
 bool ShipmentFiller::get_bad_part_Q2(inventory_msgs::Part &bad_part) {
     got_new_Q2_image_ = false;
+    double wait_time = 0;
+    double dt = 0.1;
+    while ((wait_time<QUALITY_INSPECTION_MAX_WAIT_TIME)&&!got_new_Q2_image_) {
+        wait_time+=dt;
+        ros::Duration(dt).sleep();
+    }
+    if (wait_time>= QUALITY_INSPECTION_MAX_WAIT_TIME) {
+        ROS_WARN("timed  out waiting for quality inspection cam2");
+        return false;
+    }
+    //if here, then got an update from Q2 cam:
     bad_part = bad_part_Qsensor2_;
-    return qual_sensor_2_sees_faulty_part_;
+    return qual_sensor_2_sees_faulty_part_;    
 }
 
 bool ShipmentFiller::find_faulty_part_Q2(const osrf_gear::LogicalCameraImage qual_sensor_image,
@@ -238,17 +278,16 @@ geometry_msgs::PoseStamped ShipmentFiller::compute_stPose(geometry_msgs::Pose ca
     return part_pose_stamped;
 }
 
-geometry_msgs::PoseStamped ShipmentFiller::compute_stPose_part_in_box_wrt_world(geometry_msgs::Pose pose_wrt_box, geometry_msgs::PoseStamped box_pose_wrt_world) {
+
+//convert from part_pose_wrt_world to part_pose_wrt_box
+geometry_msgs::Pose ShipmentFiller::compute_pose_part_wrt_box(geometry_msgs::Pose part_pose_wrt_world, geometry_msgs::PoseStamped box_pose_wrt_world) {
     geometry_msgs::PoseStamped part_pose_stamped;
-    Eigen::Affine3d box_wrt_world, part_wrt_box, part_wrt_world;
-    box_wrt_world = xformUtils.transformPoseToEigenAffine3d(box_pose_wrt_world);
-    part_wrt_box = xformUtils.transformPoseToEigenAffine3d(pose_wrt_box);
-    part_wrt_world = box_wrt_world*part_wrt_box;
-    geometry_msgs::Pose part_pose_wrt_world = xformUtils.transformEigenAffine3dToPose(part_wrt_world);
-    part_pose_stamped.header.stamp = ros::Time::now();
-    part_pose_stamped.header.frame_id = "world";
-    part_pose_stamped.pose = part_pose_wrt_world;
-    return part_pose_stamped;
+    Eigen::Affine3d affine_box_wrt_world, affine_part_wrt_box, affine_part_wrt_world;
+    affine_box_wrt_world = xformUtils.transformPoseToEigenAffine3d(box_pose_wrt_world);
+    affine_part_wrt_world = xformUtils.transformPoseToEigenAffine3d(part_pose_wrt_world);
+    affine_part_wrt_box = affine_part_wrt_box*affine_box_wrt_world.inverse();
+    geometry_msgs::Pose part_pose_wrt_box = xformUtils.transformEigenAffine3dToPose(affine_part_wrt_box);
+    return part_pose_wrt_box;
 }
 
 void ShipmentFiller::drone_depot_laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr & scan_msg) {
@@ -362,12 +401,15 @@ bool ShipmentFiller::get_part_and_place_in_box(inventory_msgs::Inventory &curren
 //}
 
 //for this version, stop at approach pose before part dropoff
+//persist re-trying for up to MAX_TRIES attempts; return true or false for success/failure
 bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part) {
     //try to find part in inventory;
     //try to pick this part--and delete it from current inventory
     //try to place  part in box and release;
     //perform inspection/correction outside this func
     //a return of "true" does not confirm success; return of "false" is a known  failure
+    const int MAX_TRIES = 3;
+    int num_tries =0;
     bool go_on=true; 
     int ans;
     
@@ -377,8 +419,10 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
     bool part_in_inventory = true; 
     inventory_msgs::Part pick_part;
 
-    while (part_in_inventory) {  //persistently rety pick/place until success or until out of inventory     
+    while (part_in_inventory&& (num_tries<MAX_TRIES)) {  //persistently retry pick/place until success or until out of inventory     
       bool go_on=true; 
+      num_tries++;
+
       part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
       if (!part_in_inventory) {
         ROS_WARN("could not find desired  part in inventory; giving up on process_part()");
@@ -401,7 +445,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
         if (!robotBehaviorInterface.pick_part_from_bin(pick_part)) {
             ROS_INFO("pick failed");
             go_on = false;
-            return false; //REMOVE THIS IF NEEDED
+            //return false; //REMOVE THIS IF NEEDED
             //gripperInterface_.release();     
         }
         if (go_on) {
@@ -424,6 +468,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
             return true;
         }
     }
+    return false;
 }
 
 

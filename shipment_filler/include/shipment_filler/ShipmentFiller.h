@@ -51,6 +51,8 @@ public:
   void model_to_part(osrf_gear::Model model, inventory_msgs::Part &part, unsigned short int location=inventory_msgs::Part::QUALITY_SENSOR_1);
   bool get_part_and_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part);
   bool get_part_and_prepare_place_in_box(inventory_msgs::Inventory &current_inventory, inventory_msgs::Part place_part);
+   geometry_msgs::Pose compute_pose_part_wrt_box(geometry_msgs::Pose part_pose_wrt_world, geometry_msgs::PoseStamped box_pose_wrt_world);
+  void modelvec_to_shipment(string shipment_name, vector<osrf_gear::Model> vec_of_models, geometry_msgs::PoseStamped box_pose, osrf_gear::Shipment &shipment);
 
   //bool test_pose_close_to_near_box_edge(geometry_msgs::Pose pose_wrt_box);
   //unsigned short int get_box_placement_location_code(geometry_msgs::Pose pose_wrt_box);
