@@ -1,6 +1,6 @@
 # cwru_ariac_2018
 for NIST ARIAC competition
-
+ 
 example:
 Start up demo simulation:
 `roslaunch osrf_gear sample_environment.launch`
