@@ -299,7 +299,7 @@ bool BinInventory::find_part(std::string part_name,inventory_msgs::Part &pick_pa
 bool BinInventory::find_part(inventory_msgs::Inventory current_inventory,std::string part_name,inventory_msgs::Part &pick_part, int &partnum) {
   int part_id = name_to_part_id_mappings[part_name];
   ROS_INFO("debug: part id: %d", part_id );
-  int num_parts_avail = num_parts(part_id);
+  int num_parts_avail = num_parts(current_inventory,part_id); //made a change here that should definitely fix the segfault bug
   ROS_INFO("debug: num parts available: %d", num_parts_avail);
   if (num_parts_avail<1) return false;
 
@@ -341,7 +341,7 @@ bool BinInventory::remove_part_from_inventory( int part_id, int partnum, invento
         ROS_WARN("invalid part_id!");
         return false; 
     }
-    int num_parts = inventory.inventory[part_id].bins.size();
+    int num_parts = inventory.inventory[part_id].bins.size(); //num_parts(inventory,part_id); does the same thing, really. Could change for uniformity
     if (partnum>= num_parts) {
         ROS_WARN("invalid partnum...not that many parts in provided inventory!");
         return false;
