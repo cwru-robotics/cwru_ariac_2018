@@ -11,6 +11,18 @@
 #include <xform_utils/xform_utils.h>
 #include<bin_inventory/bin_inventory.h>
 #include <inventory_msgs/Part.h>
+#include <std_srvs/Trigger.h>
+#include <order_manager/order_manager.h>
+#include <inventory_msgs/Inventory.h>
+#include <inventory_msgs/Part.h>
+#include <osrf_gear/Product.h>
+#include <osrf_gear/ConveyorBeltControl.h>
+#include <sensor_msgs/LaserScan.h>
+#include <osrf_gear/DroneControl.h>
+#include <kuka_move_as/RobotBehaviorInterface.h>
+#include <kuka_move_as/KukaBehaviorActionServer.h>
+#include<bin_inventory/bin_inventory.h>
+#include<box_inspector/box_inspector.h>
 using namespace std;
 
 /*const int NUM_PART_TYPES=5;
@@ -45,7 +57,10 @@ public:
   bool get_box_pose_wrt_world(geometry_msgs::PoseStamped &box_pose_wrt_world);
   bool find_missing_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &missing_wrt_world) ;
   bool find_orphan_parts(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &orphan_parts);
-
+  bool get_bad_part_Q1(inventory_msgs::Part &bad_part);
+  bool get_bad_part_Q2(inventory_msgs::Part &bad_part);
+  bool find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qual_sensor_image,inventory_msgs::Part &bad_part);
+  bool find_faulty_part_Q2(const osrf_gear::LogicalCameraImage qual_sensor_image,inventory_msgs::Part &bad_part);
   bool get_observed_part_pose(inventory_msgs::Part place_part,inventory_msgs::Part &observed_part);
   bool get_grasped_part_pose_wrt_world(inventory_msgs::Part &observed_part);
 
@@ -66,6 +81,17 @@ public:
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world);
 
+
+  bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+       vector<osrf_gear::Model> &satisfied_models_wrt_world,
+       vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
+       vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
+       vector<osrf_gear::Model> &missing_models_wrt_world,
+       vector<osrf_gear::Model> &orphan_models_wrt_world,
+       vector<int> &part_indices_missing,
+        vector<int> &part_indices_misplaced,
+        vector<int> &part_indices_precisely_placed);
+
   //operates on an image, computes model poses w/rt box, puts result in shipment_status
   bool model_poses_wrt_box(osrf_gear::LogicalCameraImage box_inspector_image, 
     osrf_gear::Shipment &shipment_status);
@@ -84,11 +110,20 @@ private:
     XformUtils xformUtils_;
 
     void box_camera_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);   
+    osrf_gear::LogicalCameraImage qual_sensor_1_image_,qual_sensor_2_image_;
+
+    void quality_sensor_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    ros::Subscriber quality_sensor_1_subscriber_;  
+    void quality_sensor_2_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);
+    ros::Subscriber quality_sensor_2_subscriber_;    
 
     geometry_msgs::PoseStamped compute_stPose(geometry_msgs::Pose cam_pose,geometry_msgs::Pose part_pose);
-
+    bool qual_sensor_1_sees_faulty_part_,qual_sensor_2_sees_faulty_part_;
     ros::Subscriber box_camera_subscriber_;
     osrf_gear::LogicalCameraImage box_inspector_image_;
     bool got_new_snapshot_;
+    inventory_msgs::Part bad_part_Qsensor1_,bad_part_Qsensor2_;
+    bool got_new_Q1_image_;
+    bool got_new_Q2_image_;
 };
 #endif
