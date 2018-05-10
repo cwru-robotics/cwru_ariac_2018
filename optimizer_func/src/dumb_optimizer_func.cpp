@@ -17,7 +17,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 	if(shipment_queue.shipments.size() > 1) 
 	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
       }	else
-	ROS_WARN("Asking about a different shipment than expected!!");
+	ROS_WARN("Expecting shipment %s, and received shipment %s", shipment_queue.shipments[0].shipment_type.c_str(), req.loaded.shipment_type.c_str());
     } else {
       ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");
       res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
@@ -31,6 +31,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
     ROS_ERROR("Request did not come from Q1 or Q2!!");
     res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
   }
+  ROS_INFO("Sending information on %s", shipment_queue.shipments[0].shipment_type.c_str());
   res.shipment = shipment_queue.shipments[0];
 
   return true;
