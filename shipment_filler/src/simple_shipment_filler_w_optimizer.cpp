@@ -20,6 +20,7 @@
 #include<conveyor_as/ConveyorInterface.h>
 #include<optimizer_func/optimizer_msgs.h>
 #include <kuka_move_as/GripperInterface.h>
+#include <queue>
 
 const double COMPETITION_TIMEOUT = 500.0; // need to  know what this is for the finals;
 // want to ship out partial credit before time runs out!
@@ -106,6 +107,8 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a GripperInterface");    
     GripperInterface gripperInterface(nh);
     
+    queue <osrf_gear::Shipment> drone_shipment_queue;
+    
     
     optimizer_func::optimizer_msgs optimizer_msg;
 
@@ -121,7 +124,7 @@ int main(int argc, char** argv) {
 
     inventory_msgs::Part pick_part, place_part, observed_part, remove_part;
     inventory_msgs::Inventory current_inventory;
-    osrf_gear::Shipment shipment, Q1_shipment, Q2_shipment; //keep track of shipments at Q1 and and Q2
+    osrf_gear::Shipment shipment, Q1_shipment, Q2_shipment,drone_shipment; //keep track of shipments at Q1 and and Q2
     osrf_gear::Order order;
     geometry_msgs::PoseStamped box_pose_wrt_world;
     vector<osrf_gear::Model> desired_models_wrt_world;
@@ -625,6 +628,7 @@ int main(int argc, char** argv) {
                 prior_Q1_shipment_name = Q1_shipment_name;
                 have_active_shipment_Q1 = false;
                 drone_shipment_name = Q2_shipment_name; //this is the label to use for drone shipping
+                drone_shipment_queue.push(Q2_shipment);  //remember this shipment
             } else if (optimizer_msg.response.decision == optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX) {
                 ROS_WARN("commanded to use current box...UNEXPECTED; THIS  CODE NOT READY");
                 //xxx FIX THIS: replace with q2 inspection handling only, else ship as-is, depending on optimizer response
@@ -643,7 +647,9 @@ int main(int argc, char** argv) {
         ros::spinOnce(); //need to update callbacks to get depot status
         if (conveyorInterface.drone_depot_sees_box()&& (!waiting_on_drone)) {
             ROS_INFO("shipment seen at drone depot");
-            shipmentFiller.set_drone_shipment_name(Q2_shipment);
+            drone_shipment=drone_shipment_queue.front();
+            drone_shipment_queue.pop();
+            shipmentFiller.set_drone_shipment_name(drone_shipment);
             reported_shipment_to_drone = shipmentFiller.report_shipment_to_drone();
             waiting_on_drone=true;
         }
