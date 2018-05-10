@@ -2,18 +2,110 @@
 #include "optimizer_func/helper_funcs.h"
 
 
-
-// Shipment incrementing by deleting sent shipments, and possibly reordering them in the storage units.
-
-
-// This needs to be updated. 
 int current_shipment = 0;
 
+int short_term_memory = -1;
+int middle_term_memory = 0;
 
-// The actual routine for optimizing what to do next.
-// TODO: Needs to keep memory of where it is in the process of servicing the orders
+// Could make this a time based decision instead of being based on count
+#define NUM_REP_REQS	8
+
 bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res) {
+
+
+  ROS_INFO("Asking about %s from Q%i, have %s as next in queue", req.loaded.shipment_type.c_str(), req.inspection_site, shipment_queue.shipments[0].shipment_type.c_str());
+  if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION) {
+    ROS_INFO("Request from Q1");
+    if ((req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) || (middle_term_memory > NUM_REP_REQS)) {
+      ROS_INFO("Giving up set, so advance the box (next shipment returned).");
+      short_term_memory = -1;
+      res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
+      if ((!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) || (!req.loaded.shipment_type.compare(NULL_SHIPMENT))) {
+	if (!req.loaded.shipment_type.compare(NULL_SHIPMENT)) {
+	  ROS_WARN("The optimizer expected %s, but received %s instead", shipment_queue.shipments[0].shipment_type.c_str(), req.loaded.shipment_type.c_str());
+	}
+	if(shipment_queue.shipments.size() > 1) 
+	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
+      }	else
+	ROS_WARN("Expecting shipment %s, and received shipment %s", shipment_queue.shipments[0].shipment_type.c_str(), req.loaded.shipment_type.c_str());
+    } else {
+      ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");
+      if (short_term_memory == req.loaded.products.size() + req.orphaned.products.size() + req.missing.products.size() + req.reposition.products.size()) {
+	middle_term_memory++;
+	ROS_INFO("middle_term_memory: %i", middle_term_memory);
+      } else
+	middle_term_memory = 0;
+      short_term_memory = req.loaded.products.size() + req.orphaned.products.size() + req.missing.products.size() + req.reposition.products.size();
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    }
+    ROS_INFO("Sending next shipment; queue size: %i", (int) shipment_queue.shipments.size());
+  } else if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
+    ROS_INFO("Request from Q2");
+    if (req.giving_up ==  optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      ROS_INFO("Giving up.  Responding PRIORIYT_LOAD_NEXT and work on shipment %s", shipment_queue.shipments[0].shipment_type.c_str());
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    } else if (req.giving_up ==  optimizer_func::optimizer_msgsRequest::NOT_GIVING_UP) {
+      // TODO:
+      // The only thing being checked here is whether the overall score will be substanially
+      // dropped by not removing a faulty part.
+      ROS_INFO("Not giving up, check to decide whether to do anything.");
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    } else {
+      ROS_ERROR("Error state!! Just advancing shipment.");
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    }
+  } else {
+    ROS_ERROR("Request did not come from Q1 or Q2!!");
+    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+  }
+  ROS_INFO("Sending information on %s", shipment_queue.shipments[0].shipment_type.c_str());
+  res.shipment = shipment_queue.shipments[0];
+  ROS_INFO("Asking about %s from Q%i, have %s as next in queue", req.loaded.shipment_type.c_str(), req.inspection_site, shipment_queue.shipments[0].shipment_type.c_str());
+  if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION) {
+    ROS_INFO("Request from Q1");
+    if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      ROS_INFO("Giving up set, so advance the box (next shipment returned).");
+      res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
+      if ((!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) || (!req.loaded.shipment_type.compare(NULL_SHIPMENT))) {
+	if(shipment_queue.shipments.size() > 1) 
+	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
+      }	else
+	ROS_WARN("Expecting shipment %s, and received shipment %s", shipment_queue.shipments[0].shipment_type.c_str(), req.loaded.shipment_type.c_str());
+    } else {
+      ROS_INFO("Not giving up, so keep using the same box (same shipment returned).");
+
+      // TODO: 
+      // Peform optimization here.  Results in altering the shipment_queue.
+      // Should only do this if there is an "order_1."
+      // Should only change the order of the queue if there is more than a modest benefit.
+      
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    }
+    ROS_INFO("Sending next shipment; queue size: %i", (int) shipment_queue.shipments.size());
+  } else if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
+    ROS_INFO("Request from Q2");
+    if (req.giving_up ==  optimizer_func::optimizer_msgsRequest::GIVING_UP) {
+      ROS_INFO("Giving up.  Responding PRIORIYT_LOAD_NEXT and work on shipment %s", shipment_queue.shipments[0].shipment_type.c_str());
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    } else if (req.giving_up ==  optimizer_func::optimizer_msgsRequest::NOT_GIVING_UP) {
+      // TODO:
+      // The only thing being checked here is whether the overall score will be substanially
+      // dropped by not removing a faulty part.
+      ROS_INFO("Not giving up, check to decide whether to do anything.");
+      res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
+    } else {
+      ROS_ERROR("Error state!! Just advancing shipment.");
+      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+    }
+  } else {
+    ROS_ERROR("Request did not come from Q1 or Q2!!");
+    res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+
+  }
+  res.shipment = shipment_queue.shipments[0];
+
+  return true;
 
   ROS_INFO("Beginning optimization for %s", req.loaded.shipment_type.c_str());
 
@@ -31,10 +123,10 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 
   // If there is not an order yet, just send an empty response
   // if ((current.shipments.size() < 1) && (priority.shipments.size() < 1)) {
-  if ((shipment_queue.shipments.size() < 1) && (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION)) {
+  if ((req.inspection_site == optimizer_func::optimizer_msgsRequest::Q1_STATION)) {
     ROS_INFO("No orders in the queue.");
     if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
-      res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
+      res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
     } else {
       res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
     }
@@ -45,10 +137,10 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   if (req.inspection_site == optimizer_func::optimizer_msgsRequest::Q2_STATION) {
     if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
       res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
-      if (shipment_queue.shipments.size() > 0) {
-	res.shipment = shipment_queue.shipments[0];
-      } else {
+      if (shipment_queue.shipments.size() < 1) {
 	res.shipment = null_shipment;
+      } else {
+	res.shipment = shipment_queue.shipments[0];
       }
     } else {
       // This is a condition to complete
