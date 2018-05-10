@@ -93,7 +93,7 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
         
-    move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+1.0;     
+    move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+2.0;     
         traj_tail = jspace_pose_to_traj(box_cam_grasp_inspection_pose_,move_time_est); 
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail);
     //for all cases, execute trajectory and eval convergence:    

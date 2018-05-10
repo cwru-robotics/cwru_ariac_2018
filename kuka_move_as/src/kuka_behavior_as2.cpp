@@ -259,7 +259,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             errorCode_ = place_part_in_box_no_release(part);
             break;
         case kuka_move_as::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE:
-            ROS_INFO("MOVE_GRASPED_PART_TO_APPROACH_POSE (place part in box)");
+            ROS_INFO("MOVE_GRASPED_PART_TO_APPROACH_POSE (and view before place part in box)");
             part = goal->destinationPart;
             errorCode_ = move_grasped_part_to_approach_pose(part);
             break;            

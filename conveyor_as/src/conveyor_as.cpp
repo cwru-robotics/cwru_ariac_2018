@@ -80,6 +80,7 @@ public:
     double box3_position_est;  //distance of 3rd box from box dispenser (if exists)
     bool sensors_are_active;
     bool conveyor_enabled;
+    //bool drone_depot_sensor_sees_box() { return drone_depot_sensor_sees_box_;};
     ConveyorActionServer(); //define the body of the constructor outside of class definition
 
     ~ConveyorActionServer(void) {
