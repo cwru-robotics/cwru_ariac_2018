@@ -72,6 +72,8 @@ private:
   geometry_msgs::PoseStamped compute_stPose(geometry_msgs::Pose cam_pose,geometry_msgs::Pose part_pose);
    unsigned short int advance_shipment_on_conveyor(unsigned short int command_code);
    void update_state(double dt);
+   void update_state_stalled(double dt);
+
   double conveyor_power_;
 
 public:
@@ -80,6 +82,7 @@ public:
     double box3_position_est;  //distance of 3rd box from box dispenser (if exists)
     bool sensors_are_active;
     bool conveyor_enabled;
+    //bool drone_depot_sensor_sees_box() { return drone_depot_sensor_sees_box_;};
     ConveyorActionServer(); //define the body of the constructor outside of class definition
 
     ~ConveyorActionServer(void) {
@@ -220,42 +223,41 @@ unsigned short int ConveyorActionServer::advance_shipment_on_conveyor(unsigned s
 
         switch (command_code) {
             case conveyor_as::conveyorGoal::MOVE_NEW_BOX_TO_Q1_STATION:
+                conveyor_client_.call(conveyor_svc_msg_GO_);
                 travel_time_=0;
                 expected_travel_time_= EXPECTED_CONVEYOR_ADVANCE_TIME_BOX_DISPENSER_TO_Q1;
                 ROS_INFO("expected travel time = %f",expected_travel_time_);
-                ROS_INFO("trying to commmand conveyor to move: ");
-                while (!conveyor_ok) {
-                    conveyor_client_.call(conveyor_svc_msg_GO_);
-                    conveyor_ok = conveyor_svc_msg_GO_.response.success;
-                    ros::spinOnce();
-                    ros::Duration(0.5).sleep();
-                    ROS_WARN("waiting for OK response from conveyor service");
-                  if (!conveyor_enabled) {
-                     ROS_WARN("conveyor not enabled; congested?");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
+                ROS_INFO("trying to command conveyor to move box to Q1: ");
+                box_cam1_sees_box_=false;
+                while ((!box_cam1_sees_box_) && (travel_time_<expected_travel_time_) )
+                { 
+                   if (conveyor_enabled) { update_state(dt); } //only update travel time, states, and feedback if conveyor moving
+                   else { 
+                       ROS_WARN("conveyor not enabled; retriggering"); 
+                       update_state_stalled(dt);
                    }
+                    //be a nag--keep insisting on conveyor motion, regardless
+                    conveyor_client_.call(conveyor_svc_msg_GO_); //keep trying, if congested
                 }
-                ROS_INFO("conveyor commanded to move");
-                if (!box_cam1_sees_box_) ROS_INFO("box not yet seen at cam1 station");
-                while ((!box_cam1_sees_box_) && 
-                         (travel_time_<expected_travel_time_) &&
-                          conveyor_enabled) {
-                    update_state(dt);
-                }
+                //stopped either due to timeout or saw first glimpse of box, so stop conveyor:
+                //if here, finally dropped out of "while"; either saw box or time expired
                 if (travel_time_>expected_travel_time_) {
                   ROS_WARN("should have seen box at box-cam 1, but did not; stopping");
                   ROS_WARN("most recent sensor update was %f sec ago",seconds_since_last_sensor_update_);
                   conveyor_client_.call(conveyor_svc_msg_STOP_);
                   return conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q1;
                 }
-                if (!conveyor_enabled) {
-                   ROS_WARN("conveyor shut down--congested");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                }
+                
+                //if here, time not yet expired,  but DID see box; start computing distances
                 ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
-                while ((box_cam_1_dist_to_go_ > 0)&&(travel_time_<expected_travel_time_)&&
-                          (conveyor_enabled)) {
-                    update_state(dt);
+                while ((box_cam_1_dist_to_go_ > 0)&&(travel_time_<expected_travel_time_)) {
+                   if (conveyor_enabled) { update_state(dt); } //only update travel time, states, and feedback if conveyor moving
+                   else { 
+                       ROS_WARN("conveyor not enabled; retriggering"); 
+                       update_state_stalled(dt);
+                   }
+                    //be a nag--keep insisting on conveyor motion, regardless
+                    conveyor_client_.call(conveyor_svc_msg_GO_); //keep trying, if congested
                 }
                 conveyor_client_.call(conveyor_svc_msg_STOP_);
 
@@ -264,10 +266,7 @@ unsigned short int ConveyorActionServer::advance_shipment_on_conveyor(unsigned s
                   ROS_WARN("most recent sensor update was %f sec ago",seconds_since_last_sensor_update_);
                   return conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q1;
                  }
-                if (!conveyor_enabled) {
-                   ROS_WARN("conveyor shut down--congested");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                }
+                
                 //if here, successfully saw box stopped at desired location
                 ROS_INFO("now see box at box_cam_1_dist_to_go_ = %f", box_cam_1_dist_to_go_);
                 ROS_INFO_STREAM("travel time was "<<travel_time_<<endl);
@@ -280,49 +279,49 @@ unsigned short int ConveyorActionServer::advance_shipment_on_conveyor(unsigned s
                 conveyor_client_.call(conveyor_svc_msg_GO_);
                 travel_time_=0;
                 expected_travel_time_= EXPECTED_CONVEYOR_ADVANCE_TIME_BOX_Q1_TO_Q2;
-                while (!conveyor_ok) {
-                    conveyor_client_.call(conveyor_svc_msg_GO_);
-                    conveyor_ok = conveyor_svc_msg_GO_.response.success;
-                    ros::spinOnce();
-                  if (!conveyor_enabled) {
-                     ROS_WARN("conveyor not enabled; congested?");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                   }
-                }
+                box_cam2_sees_box_=false;
                 ROS_INFO("conveyor commanded to move");
-
-                if (!box_cam2_sees_box_) ROS_INFO("box not yet seen at inspection 2 station");
-               while ((!box_cam2_sees_box_) && 
-                         (travel_time_<expected_travel_time_) &&
-                          conveyor_enabled) {
-                    update_state(dt);
+                while ((!box_cam2_sees_box_) && (travel_time_<expected_travel_time_) )
+                { 
+                   ros::spinOnce();
+                   if (conveyor_enabled) { update_state(dt); } //only update travel time, states, and feedback if conveyor moving
+                   else { 
+                       ROS_WARN("conveyor not enabled; retriggering"); 
+                       update_state_stalled(dt);
+                   }
+                    //be a nag--keep insisting on conveyor motion, regardless
+                    conveyor_client_.call(conveyor_svc_msg_GO_); //keep trying, if congested
                 }
+
+                //if here, finally dropped out of "while"; either saw box or time expired
+                conveyor_client_.call(conveyor_svc_msg_STOP_);
+
                 if (travel_time_>expected_travel_time_) {
                   ROS_WARN("should have seen box at box-cam 2, but did not; stopping");
                   ROS_WARN("most recent sensor update was %f sec ago",seconds_since_last_sensor_update_);
                   conveyor_client_.call(conveyor_svc_msg_STOP_);
                   return conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q2;
                 }
-                if (!conveyor_enabled) {
-                   ROS_WARN("conveyor shut down--congested");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                }
+                //if here, time not yet expired,  but DID see box; start computing distances
                 ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
-                while ((box_cam_2_dist_to_go_ > 0)&&(travel_time_<expected_travel_time_)&&
-                          (conveyor_enabled)) {
-                    update_state(dt);
+                while ((box_cam_2_dist_to_go_ > 0)&&(travel_time_<expected_travel_time_)) {
+                   if (conveyor_enabled) { update_state(dt); } //only update travel time, states, and feedback if conveyor moving
+                   else { 
+                       ROS_WARN("conveyor not enabled; retriggering"); 
+                       update_state_stalled(dt);
+                   }
+                    //be a nag--keep insisting on conveyor motion, regardless
+                    conveyor_client_.call(conveyor_svc_msg_GO_); //keep trying, if congested
                 }
+                //dropped out of loop--either timeout or see box where it belongs
                 conveyor_client_.call(conveyor_svc_msg_STOP_);
 
                 if (travel_time_>expected_travel_time_) {
-                  ROS_WARN("should have seen box at box-cam 1, but did not; stopping");
+                  ROS_WARN("should have seen box at box-cam 2, but did not; stopping");
                   ROS_WARN("most recent sensor update was %f sec ago",seconds_since_last_sensor_update_);
                   return conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q2;
                  }
-                if (!conveyor_enabled) {
-                   ROS_WARN("conveyor shut down--congested");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                }
+          
                 //if here, successfully saw box stopped at desired location
                 ROS_INFO("now see box at box_cam_2_dist_to_go_ = %f", box_cam_2_dist_to_go_);
                 ROS_INFO("travel time was %f",travel_time_);
@@ -332,24 +331,30 @@ unsigned short int ConveyorActionServer::advance_shipment_on_conveyor(unsigned s
             case conveyor_as::conveyorGoal::MOVE_BOX_Q2_TO_DRONE_DEPOT:
                 ROS_INFO("advancing box from Q2 to drone depot");
                 conveyor_client_.call(conveyor_svc_msg_GO_);
-
                 travel_time_=0;
                 expected_travel_time_= EXPECTED_CONVEYOR_ADVANCE_TIME_BOX_Q2_TO_DEPOT;
-                while ((!drone_depot_sensor_sees_box_)&&(travel_time_<expected_travel_time_)&&
-                          (conveyor_enabled)) {
-                    update_state(dt);
+                drone_depot_sensor_sees_box_ = false;
+                while ((!drone_depot_sensor_sees_box_)&&(travel_time_<expected_travel_time_))
+                {
+                   if (conveyor_enabled) { update_state(dt); } //only update travel time, states, and feedback if conveyor moving
+                   else { 
+                       ROS_WARN("conveyor not enabled; retriggering"); 
+                       update_state_stalled(dt);
+                   }
+                    //be a nag--keep insisting on conveyor motion, regardless
+                    conveyor_client_.call(conveyor_svc_msg_GO_); //keep trying, if congested
                 }
+                //dropped  out of loop, so stop the  conveyor
+                conveyor_client_.call(conveyor_svc_msg_STOP_);
+                
                 if (travel_time_>expected_travel_time_) {
-                  ROS_WARN("should have seen box at depot, but did not; stopping");
+                  ROS_WARN("should have seen box at depot, but did not; stopped conveyor");
                   ROS_WARN("most recent sensor update was %f sec ago",seconds_since_last_sensor_update_);
                   return conveyor_as::conveyorResult::BOX_ESTIMATED_AT_DRONE_DEPOT;
                  }
-                if (!conveyor_enabled) {
-                   ROS_WARN("conveyor shut down--congested");
-                   return conveyor_as::conveyorResult::CONVEYOR_CONGESTED_DISABLED;
-                }
+
+                //if here, then sensor sees box
                 ROS_INFO("prox sensor sees box!");
-                conveyor_client_.call(conveyor_svc_msg_STOP_);
                 ROS_INFO("travel time was %f",travel_time_);
                 return conveyor_as::conveyorResult::BOX_SENSED_AT_DRONE_DEPOT;
                 break;
@@ -419,3 +424,21 @@ void ConveyorActionServer::update_state(double dt) {
      as_.publishFeedback(feedback_);
 }
 
+void ConveyorActionServer::update_state_stalled(double dt) {
+     conveyor_client_.call(conveyor_svc_msg_GO_);
+     ros::spinOnce();
+     ros::Duration(dt).sleep();
+     //travel_time_+=dt;
+     //ROS_INFO_STREAM("travel time: "<<travel_time_<<endl);
+     seconds_since_last_sensor_update_ = (ros::Time::now() -time_at_last_sensor_update_).toSec();
+    if (seconds_since_last_sensor_update_ < SENSOR_BLACKOUT_TIME_THREHSHOLD) { sensors_are_active=true; }
+    else { sensors_are_active = false; }
+    feedback_.box1_distance = box1_position_est;
+	feedback_.box2_distance = box2_position_est;
+	feedback_.box3_distance = box3_position_est;
+	feedback_.sensors_are_active = sensors_are_active;
+	feedback_.estimated_seconds_to_goal = expected_travel_time_ - travel_time_; //FIX ME
+        feedback_.drone_depot_sensor_sees_box = drone_depot_sensor_sees_box_;
+        feedback_.conveyor_enabled = conveyor_enabled;
+     as_.publishFeedback(feedback_);
+}

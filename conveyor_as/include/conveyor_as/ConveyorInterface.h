@@ -27,6 +27,8 @@ public:
     bool get_action_server_returned() {
         return action_server_returned_;
     }
+    
+    bool drone_depot_sees_box() {return drone_depot_sensor_sees_box;};
 
     void move_new_box_to_Q1();
     void move_box_Q1_to_Q2();
@@ -38,6 +40,7 @@ public:
     double box2_distance;
     double box3_distance;
     bool sensors_are_active;    
+    bool drone_depot_sensor_sees_box;
     
 protected:
 

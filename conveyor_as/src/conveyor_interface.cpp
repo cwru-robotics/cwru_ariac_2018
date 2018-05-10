@@ -58,6 +58,7 @@ void ConveyorInterface::feedbackCb(const conveyor_as::conveyorFeedbackConstPtr &
     box2_distance = feedback->box2_distance;
     box3_distance = feedback->box3_distance;
     sensors_are_active = feedback->sensors_are_active;
+    drone_depot_sensor_sees_box = feedback->drone_depot_sensor_sees_box;
     ROS_INFO("fdbk: est seconds to goal = %f",estimated_seconds_to_goal);
     if (sensors_are_active) ROS_INFO("sensors are active");
     else ROS_INFO("sensors not publishing");

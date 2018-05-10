@@ -301,7 +301,7 @@ void ShipmentFiller::drone_depot_laser_scan_callback(const sensor_msgs::LaserSca
     for (int iray = 0; iray < num_rays; iray++) {
         if (scan_msg->ranges[iray] < max_range - 0.01) {
             drone_depot_sensor_sees_box_ = true;
-            ROS_INFO("shipment seen at drone loading dock");
+            //ROS_INFO("shipment seen at drone loading dock");
         }
     }
 }
