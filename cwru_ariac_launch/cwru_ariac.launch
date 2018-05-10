@@ -1,5 +1,6 @@
 <launch> 
 <node name= "robot_behavior_server" pkg= "kuka_move_as" type= "kuka_behavior_as" /> 
-<node name= "simple_shipment_filler" pkg= "shipment_filler" type= "simple_shipment_filler" /> 
+<node name= "simple_shipment_filler_w_optimizer" pkg= "shipment_filler" type= "simple_shipment_filler_w_optimizer" /> 
 <node name= "conveyor_as" pkg= "conveyor_as" type= "conveyor_as" /> 
+<node name= "dumb_optimizer" pkg= "optimizer_func" type= "dumb_optimizer" /> 
 </launch> 
