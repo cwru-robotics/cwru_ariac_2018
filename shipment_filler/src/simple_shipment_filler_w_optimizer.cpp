@@ -633,10 +633,13 @@ int main(int argc, char** argv) {
         }
 
         //CHECK ON DEPOT STATUS: ship a box, if present;
+        ros::spinOnce(); //need to update callbacks to get depot status
         if (conveyorInterface.drone_depot_sees_box()) {
+            ROS_INFO("shipment seen at drone depot");
             shipmentFiller.set_drone_shipment_name(Q2_shipment);
             reported_shipment_to_drone = shipmentFiller.report_shipment_to_drone();
         }
+        else ROS_INFO("conveyorInterface does not  report seeing a box at depot");
 
 
     }
