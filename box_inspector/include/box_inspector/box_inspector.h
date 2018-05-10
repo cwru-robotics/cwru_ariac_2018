@@ -9,7 +9,7 @@
 #include <osrf_gear/Order.h>
 #include <osrf_gear/Product.h>
 #include <xform_utils/xform_utils.h>
-#include<bin_inventory/bin_inventory.h>
+#include <bin_inventory/bin_inventory.h>
 #include <inventory_msgs/Part.h>
 #include <std_srvs/Trigger.h>
 #include <order_manager/order_manager.h>
