@@ -13,7 +13,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
     if (req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) {
       ROS_INFO("Giving up set, so advance the box (next shipment returned).");
       res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
-      if (!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) {
+      if ((!shipment_queue.shipments[0].shipment_type.compare(req.loaded.shipment_type)) || (!req.loaded.shipment_type.compare("no_active_shipment"))) {
 	if(shipment_queue.shipments.size() > 1) 
 	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());
       }	else
