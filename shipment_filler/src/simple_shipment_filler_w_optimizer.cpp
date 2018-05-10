@@ -170,10 +170,10 @@ int main(int argc, char** argv) {
     //initialize first request to optimizer: empty shipment
 
     //populate a request for the shipment  optimizer service:
-    shipmentFiller.modelvec_to_shipment(current_shipment_name, satisfied_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_loaded);
-    shipmentFiller.modelvec_to_shipment(current_shipment_name, orphan_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_orphaned);
-    shipmentFiller.modelvec_to_shipment(current_shipment_name, missing_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_missing);
-    shipmentFiller.modelvec_to_shipment(current_shipment_name, misplaced_models_actual_coords_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_reposition);
+    shipmentFiller.modelvec_to_shipment(no_shipment_name, satisfied_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_loaded);
+    shipmentFiller.modelvec_to_shipment(no_shipment_name, orphan_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_orphaned);
+    shipmentFiller.modelvec_to_shipment(no_shipment_name, missing_models_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_missing);
+    shipmentFiller.modelvec_to_shipment(no_shipment_name, misplaced_models_actual_coords_wrt_world, boxInspector.NOM_BOX1_POSE_WRT_WORLD, empty_shipment_reposition);
     optimizer_msg.request.loaded = empty_shipment_loaded;
     optimizer_msg.request.orphaned = empty_shipment_missing;
     optimizer_msg.request.reposition = empty_shipment_reposition;
@@ -387,10 +387,10 @@ int main(int argc, char** argv) {
 
 
             //populate a service message for optimizer:    
-            shipmentFiller.modelvec_to_shipment(current_shipment_name, satisfied_models_wrt_world, box_pose_wrt_world, shipment_loaded);
-            shipmentFiller.modelvec_to_shipment(current_shipment_name, orphan_models_wrt_world, box_pose_wrt_world, shipment_orphaned);
-            shipmentFiller.modelvec_to_shipment(current_shipment_name, missing_models_wrt_world, box_pose_wrt_world, shipment_missing);
-            shipmentFiller.modelvec_to_shipment(current_shipment_name, misplaced_models_actual_coords_wrt_world, box_pose_wrt_world, shipment_reposition);
+            shipmentFiller.modelvec_to_shipment(Q1_shipment_name, satisfied_models_wrt_world, box_pose_wrt_world, shipment_loaded);
+            shipmentFiller.modelvec_to_shipment(Q1_shipment_name, orphan_models_wrt_world, box_pose_wrt_world, shipment_orphaned);
+            shipmentFiller.modelvec_to_shipment(Q1_shipment_name, missing_models_wrt_world, box_pose_wrt_world, shipment_missing);
+            shipmentFiller.modelvec_to_shipment(Q1_shipment_name, misplaced_models_actual_coords_wrt_world, box_pose_wrt_world, shipment_reposition);
             optimizer_msg.request.loaded = shipment_loaded;
             optimizer_msg.request.orphaned = shipment_orphaned;
             optimizer_msg.request.reposition = shipment_reposition;
