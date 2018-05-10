@@ -154,6 +154,7 @@ int main(int argc, char** argv) {
     bool reported_shipment_to_drone = false;
     bool advanced_shipment_on_conveyor = false;
     bool go_on = true;
+    bool waiting_on_drone=false;
 
     ROS_INFO("attempting to get an inventory update; pretty much screwed until this is possible");
     while (!binInventory.update()) {
@@ -342,7 +343,9 @@ int main(int argc, char** argv) {
     //END OF LONG PREAMBLE
 
     while (ros::ok()) {
-
+        ros::spinOnce();        
+        if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout
+        
         if (!have_active_shipment_Q2 && !have_active_shipment_Q1) { //populate service msg w/ empty shipment
             ROS_WARN("no active orders; will request order from optimizer");
             //define current Q1 shipment as an empty order
@@ -361,6 +364,7 @@ int main(int argc, char** argv) {
             while (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q1 &&
                     (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_SEEN_AT_Q1)) {
                 ros::spinOnce();
+                if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout
                 ros::Duration(0.1).sleep();
                 nprint++;
                 if (nprint % 10 == 0) {
@@ -424,7 +428,8 @@ int main(int argc, char** argv) {
                 conveyorInterface.move_box_Q1_to_Q2();
             }
         }
-
+        ros::spinOnce();        
+        if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout
         //see if have any work to do at Q1, assuming no Q2
         //only case should be USE_CURRENT_BOX
         if (!have_active_shipment_Q2) {
@@ -463,7 +468,8 @@ int main(int argc, char** argv) {
 
             }
         }
-
+        ros::spinOnce();        
+        if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout
         //eventually, optimizer will give us an active order at Q1
         if (have_active_shipment_Q1) {
             ROS_INFO("processing shipment at Q1");
@@ -590,8 +596,9 @@ int main(int argc, char** argv) {
             while (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q2 &&
                     (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_SEEN_AT_Q2)) {
                 ros::spinOnce();
+                if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout                
                 ros::Duration(0.1).sleep();
-                nprint++;
+                nprint++;     
                 if (nprint % 10 == 0) {
                     ROS_INFO("waiting for conveyor to advance a box to Q2...");
                 }
@@ -634,12 +641,17 @@ int main(int argc, char** argv) {
 
         //CHECK ON DEPOT STATUS: ship a box, if present;
         ros::spinOnce(); //need to update callbacks to get depot status
-        if (conveyorInterface.drone_depot_sees_box()) {
+        if (conveyorInterface.drone_depot_sees_box()&& (!waiting_on_drone)) {
             ROS_INFO("shipment seen at drone depot");
             shipmentFiller.set_drone_shipment_name(Q2_shipment);
             reported_shipment_to_drone = shipmentFiller.report_shipment_to_drone();
+            waiting_on_drone=true;
         }
-        else ROS_INFO("conveyorInterface does not  report seeing a box at depot");
+        //else ROS_INFO("conveyorInterface does not  report seeing a box at depot");
+
+        if (waiting_on_drone) ROS_WARN("drone has  not yet picked up shipment");
+        ros::spinOnce();        
+        if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false;
 
 
     }
