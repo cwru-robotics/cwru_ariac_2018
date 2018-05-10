@@ -165,23 +165,29 @@ bool BoxInspector::get_observed_part_pose(inventory_msgs::Part place_part, inven
     int winner = 0;
     float max_ht = 0;
     int debug;
+    bool found_a_candidate=false;
     geometry_msgs::PoseStamped grasped_pose_wrt_wrld;
+    string grasped_part_name(place_part.name); 
+        
     for (int i = 1; i < box_inspector_image_.models.size(); i++) {
-
-        grasped_pose_wrt_wrld = compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
-        if (grasped_pose_wrt_wrld.pose.position.z > max_ht) {
-            max_ht = grasped_pose_wrt_wrld.pose.position.z;
-            winner = i;
-
+        string model_name(box_inspector_image_.models[i].type);
+        if (model_name==grasped_part_name) {
+            found_a_candidate=true;
+            grasped_pose_wrt_wrld = compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+            if (grasped_pose_wrt_wrld.pose.position.z > max_ht) {
+                max_ht = grasped_pose_wrt_wrld.pose.position.z;
+                winner = i;
+            }
         }
-
     }
+    if (!found_a_candidate) return false; // certainly did not see intended grasped part
+    
     grasped_pose_wrt_wrld = compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[winner].pose);
     ROS_INFO_STREAM("winning model is:" << grasped_pose_wrt_wrld);
 
     model_to_part(box_inspector_image_.models[winner], observed_part);
     observed_part.pose = grasped_pose_wrt_wrld;
-    return 1;
+    return true; //have at least a candidate pose for grasped part; needs further vetting
 }
 
 bool BoxInspector::post_dropoff_check(vector<osrf_gear::Model> desired_models_wrt_world, vector<osrf_gear::Model> &misplaced_models_desired_coords, vector<osrf_gear::Model> &misplaced_models_actual_coords) {
