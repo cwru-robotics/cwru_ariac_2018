@@ -192,7 +192,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
                old_q_vec = q_vec;
                J1_ang += delta_J1;
                q_vec[0]=J1_ang;
-               q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights
+               q_vec[6] = q_vec[6]-delta_J1; //counter-rotate flange to avoid part hitting uprights
                delta_d8 = R_OUTSTRETCHED*cos(J1_ang)*delta_J1;
                q_vec[7]+= delta_d8;
                move_time_est = estimate_move_time(old_q_vec,q_vec)+0.1;     
