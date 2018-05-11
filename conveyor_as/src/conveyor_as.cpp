@@ -153,6 +153,7 @@ void ConveyorActionServer::drone_depot_laser_scan_callback(const sensor_msgs::La
             //ROS_INFO("shipment seen at drone loading dock");
         }
     }
+    if (drone_depot_sensor_sees_box_) ROS_WARN("box seen at drone depot");
 }
 
 void ConveyorActionServer::box_camera_1_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {

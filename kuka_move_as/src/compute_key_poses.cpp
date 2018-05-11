@@ -52,6 +52,9 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
        O_part_wrt_world[0] = part_x;
        O_part_wrt_world[1]= part_y;   
        affine_part_wrt_world.translation() = O_part_wrt_world;
+       //re-specify pick-up pose attempt:
+       part.pose.pose.position.x = part_x;
+       part.pose.pose.position.y = part_y;
     }
 
     if(!compute_bin_hover_from_xy(part_x,part_y, computed_jspace_approach_)) {
@@ -1401,6 +1404,9 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
     ROS_INFO("part origin is %f m from gripper origin",part_origin_dist);
     cout<<"enter 1: ";
     cin>>ans;
+    if (part_origin_dist> GRIPPER_OFFSET_CREDIBILITY_TOLERANCE) {
+        return false;
+    }
     //problem here: need to  consider what WILL  be the FK when reposition d8;
     //ASSUME  have access to box_dropoff_hover_pose_ with intended d8:
     q_vec_joint_angles_8dof[7] =  box_dropoff_hover_pose_[7];
@@ -1458,12 +1464,13 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d actua
        //better would be  to force  this as an arg
        //q_vec_joint_angles_8dof[7] = box_dropoff_hover_pose_[7];
        ROS_INFO_STREAM("got current joint angles: "<<endl<<q_vec_joint_angles_8dof.transpose()<<endl);
-       bool ret_val =  recompute_pickup_dropoff_IK(actual_grasped_part_pose_wrt_world,
+       bool success =  recompute_pickup_dropoff_IK(actual_grasped_part_pose_wrt_world,
           desired_part_pose_wrt_world, q_vec_joint_angles_8dof,q_vec_soln);
        ROS_INFO_STREAM("current joint angles: "<<q_vec_joint_angles_8dof.transpose()<<endl);
        ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln.transpose()<<endl);
+       if (!success) ROS_WARN("recompute_pickup_dropoff_IK was not successful");
        
-       return ret_val;
+       return success;
 }
 
 //get_pickup_IK(affine_vacuum_pickup_pose_wrt_base_link_, bin_hover_jspace_pose_, box_placement_location_code, dropoff_jspace_pose_))
@@ -1616,6 +1623,8 @@ unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(in
        O_part_wrt_world[0] = part_x;
        O_part_wrt_world[1]= part_y;   
        affine_part_wrt_world.translation() = O_part_wrt_world;
+       part.pose.pose.position.x = part_x; //alter part pickup info
+       part.pose.pose.position.y = part_y;
     }
 
     if(!alt_compute_bin_hover_from_xy(part_x,part_y, computed_jspace_approach_)) {

@@ -80,6 +80,19 @@ bool get_part_index_to_reposition(vector<int> part_indices_misplaced, vector<boo
     return false;
 }
 
+bool get_part_index_to_acquire(vector<int> part_indices_missing,vector<bool> parts_checklist, int &missing_part_index,int &desired_part_index) {
+    int num_missing = part_indices_missing.size();
+    for (missing_part_index=0;missing_part_index<num_missing;missing_part_index++) {
+        desired_part_index = part_indices_missing[missing_part_index];
+        if (!parts_checklist[desired_part_index]) {
+            //found an occurrence of part on misplaced list that has NOT been previously treated
+            return true;  
+        }
+    }
+    //did not find match, so there are no untreated missing parts
+    return false;    
+}
+
 int main(int argc, char** argv) {
     // ROS set-ups:
     ros::init(argc, argv, "shipment_filler"); //node name
@@ -401,7 +414,10 @@ int main(int argc, char** argv) {
             ROS_INFO("after inspection: n_precise =  %d; n_imprecise = %d; n_missing = %d; n_orphaned = %d", n_precise,
                     n_imprecise, n_missing, n_orphaned);
 
-
+            for (int i=0;i<n_precise;i++) {
+                int good_part_index = part_indices_precisely_placed[i];
+                parts_checklist[i] = true;  //mark these parts as "done"               
+            }
             //populate a service message for optimizer:    
             shipmentFiller.modelvec_to_shipment(Q1_shipment_name, satisfied_models_wrt_world, box_pose_wrt_world, shipment_loaded);
             shipmentFiller.modelvec_to_shipment(Q1_shipment_name, orphan_models_wrt_world, box_pose_wrt_world, shipment_orphaned);
@@ -414,7 +430,7 @@ int main(int argc, char** argv) {
             optimizer_msg.request.inspection_site = optimizer_func::optimizer_msgsRequest::Q1_STATION;
 
             //check if shipment-filler is giving up, or advising "done"
-            //keep this next line: know when to say when
+            //keep this next line: know when to say when--including "success" with all parts correctly placed
             if (done_with_this_shipment(parts_checklist)) {
                 optimizer_msg.request.giving_up = optimizer_func::optimizer_msgsRequest::GIVING_UP;
             }
@@ -484,8 +500,10 @@ int main(int argc, char** argv) {
         if (!conveyorInterface.drone_depot_sees_box()) waiting_on_drone=false; //sprinkle these throughout
         //eventually, optimizer will give us an active order at Q1
         if (have_active_shipment_Q1) {
+            int missing_part_index,misplaced_part_index,desired_part_id;
+        
             ROS_INFO("processing shipment at Q1");
-            int misplaced_part_index, desired_part_id;
+
             //at this point,  have_active_shipment_Q1, and order and box inspection have been updated; get to work on one part
 
             //shipment response has two possibilities: USE_CURRENT_BOX or ADVANCE_THIS_BOX_TO_Q2
@@ -528,7 +546,8 @@ int main(int argc, char** argv) {
                 
                 //bool get_part_index_to_reposition(vector<int> part_indices_misplaced, vector<bool> parts_checklist, int &part_index) {
                 //            int misplaced_part_index, desired_part_id;
-
+                //here is block of code to operate on misplaced  parts;
+                // only do so if have a misplaced  part for which repositioning was not already attempted
                 else if (get_part_index_to_reposition(part_indices_misplaced,parts_checklist,misplaced_part_index,desired_part_id) ) {
                                      //xxx FAKE: dont attempt to adjust misplaced parts:
                     ROS_INFO("found part index %d  of desired shipment is misplaced and not yet attempted to reposition",desired_part_id);
@@ -549,28 +568,70 @@ int main(int argc, char** argv) {
                             parts_checklist[desired_part_id] = true; 
                 }      
 
-                    //third priority: get a new part and try to place in box
-                else if (missing_models_wrt_world.size() > 0) { //get a new part and place it in box
+                //MAIN MANIPULATION CONDITION:
+                //third priority: get a new part and try to place in box; 
+                //bool get_part_index_to_acquire(part_indices_missing,parts_checklist,missing_part_index,desired_part_id) {
+                //bool get_part_index_to_acquire(vector<int> part_indices_missing,vector<bool> parts_checklist, int &missing_part_index,int &desired_part_index) {
+                
+                else if (get_part_index_to_acquire(part_indices_missing,parts_checklist,missing_part_index,desired_part_id) ) 
+                {   //get a viable index for a missing part
+                    ROS_INFO("trying to acquire a missing part");
+                    binInventory.get_inventory(current_inventory); //update the inventory
                     //do the sequence to pick and place:
-                    ROS_INFO("acquiring a missing part");
-                    current_model = missing_models_wrt_world[0];
+
+                    //don't bother to recompute desired part poses w/rt world--assume box has not moved since last time
+                    current_model = missing_models_wrt_world[missing_part_index];
                     ROS_INFO_STREAM("working on this model: " << current_model << endl);
                     shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
                     ROS_INFO_STREAM("corresponding place_part: " << place_part << endl);
                     
-                    go_on = shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part);
+                    place_part_name = std::string(place_part.name);
+                    part_in_inventory = binInventory.find_part(current_inventory, place_part_name, pick_part, partnum_in_inventory);
+                    if (!part_in_inventory) {
+                        ROS_WARN("this part not found in inventory; marking it unavailable to fill");
+                        parts_checklist[desired_part_id] = true;
+                    }
+                    ROS_INFO_STREAM("chosen pick_part: " << endl << pick_part << endl);
+
+    
+                    //plan ahead--is both acquisition  and  drop-off  feasible?
+                    go_on = robotBehaviorInterface.evaluate_key_pick_and_place_poses(pick_part,place_part);
+                    if (!go_on) {
+                        ROS_WARN("could not compute key pickup and place poses for this part source and destination");
+                    }    
+                    
+                    if (go_on) { //so far, so good: try acquiring part and moving to viewing pose:
+                        ROS_INFO_STREAM("attempting to acquire and place part"); 
+                        go_on = shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part); 
+                    }
                     
                     if (go_on) {
-                        ros::Duration(2.0).sleep(); //wait for settling before observing pose
+                        ros::Duration(1.0).sleep(); //wait for settling before observing pose
                         observed_part=place_part; //fills in part name;the rest is wrong
+                            //see if part is viewable:
+                        
                         if(gripperInterface.isGripperAttached()) {
                           //observed_part is a reference var--will get repopulated
                           //use grasp pose to recompute key dropoff poses, if possible
-                          if (boxInspector.get_grasped_part_pose_wrt_world(observed_part)) {
-                              ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
-                              go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part);
-                          }
+                            bool did_observe_grasped_part=false;
+                            
+                            
+                            did_observe_grasped_part = boxInspector.get_grasped_part_pose_wrt_world(observed_part); //updates observed_part
+                            if (did_observe_grasped_part) {
+                                ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
+                                ROS_WARN("calling re_evaluate_approach_and_place_poses");
+                                if (!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part)) {
+                                    //go back to original key poses:
+                                    robotBehaviorInterface.evaluate_key_pick_and_place_poses(pick_part,place_part);
+                                    ROS_WARN("re-evaluation of dropoff poses was not successful;  using open-loop plan");
+                                }         
+                            }
+                            else { 
+                                ROS_WARN("could not observe grasped part; using open-loop dropoff plan");
+                                //retain original  key poses
+                            }
                         }
+
                         else {
                             ROS_WARN("dropped part");
                         }
@@ -583,7 +644,7 @@ int main(int argc, char** argv) {
                         }
 
                         if (go_on) {
-                            ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");
+                            ROS_INFO("using best estimate approach and place poses to place part in box, no release");
                             go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
                         }
 
@@ -660,12 +721,22 @@ int main(int argc, char** argv) {
 
         //CHECK ON DEPOT STATUS: ship a box, if present;
         ros::spinOnce(); //need to update callbacks to get depot status
+        if(conveyorInterface.drone_depot_sees_box()) {
+            ROS_WARN("true conveyorInterface.drone_depot_sees_box()");
+            if (waiting_on_drone) ROS_WARN("and waiting on drone");
+            else ROS_WARN("need to call drone");
+        }
         if (conveyorInterface.drone_depot_sees_box()&& (!waiting_on_drone)) {
-            ROS_INFO("shipment seen at drone depot");
+            ROS_INFO("shipment seen at drone depot--making service call to  drone");
             drone_shipment=drone_shipment_queue.front();
             drone_shipment_queue.pop();
             shipmentFiller.set_drone_shipment_name(drone_shipment);
-            reported_shipment_to_drone = shipmentFiller.report_shipment_to_drone();
+            reported_shipment_to_drone = false;
+            while (!reported_shipment_to_drone) { //be persistent!
+               reported_shipment_to_drone = shipmentFiller.report_shipment_to_drone();
+               ros::spinOnce();
+               ros::Duration(0.1).sleep();
+            }
             waiting_on_drone=true;
         }
         //else ROS_INFO("conveyorInterface does not  report seeing a box at depot");
