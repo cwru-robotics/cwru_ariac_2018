@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     int bin_num, partnum;
     int n_precise, n_imprecise, n_missing, n_orphaned;
     geometry_msgs::PoseStamped part_pose;
-    //int ans; //remove after debug
+    int debug; //remove after debug
     bool got_shipment = false;
     bool successfully_filled_order = false;
     bool init_pack_shipment = false;
@@ -419,6 +419,8 @@ int main(int argc, char** argv) {
             for (int i=0;i<n_precise;i++) {
                 
                 int good_part_index = part_indices_precisely_placed[i];
+                ROS_INFO("watching for segfaults. Good part index: %d press 1", good_part_index);
+                cin>>debug;
                 parts_checklist[good_part_index] = true;  //mark these parts as "done"     
                 ROS_INFO("part %d is precise",good_part_index);
             }
@@ -585,7 +587,7 @@ int main(int argc, char** argv) {
                 else if (get_part_index_to_acquire(part_indices_missing,parts_checklist,missing_part_index,desired_part_id) ) 
                 {   //get a viable index for a missing part
                     ROS_INFO("trying to acquire a missing part");
-                    
+                    ros::spinOnce();
                     if(binInventory.update()) {
                     binInventory.get_inventory(current_inventory); //update the inventory
                     } 
@@ -674,6 +676,7 @@ int main(int argc, char** argv) {
                             
                             missing_models_wrt_world.erase(missing_models_wrt_world.begin()+missing_part_index);
                             satisfied_models_wrt_world.push_back(current_model);
+                            part_indices_precisely_placed.push_back(desired_part_id); //Not sure about the index. Doing this to prevent segfaults. 
                             parts_checklist[desired_part_id] = true;
                             //assuming that placement is accurate, removed current model from missing models vector and placed it in satisfied models. Also marked it as 'tried' in the parts checklist 
                             //ROS_DEBUG("Deleted missing model cuz no box inspector update");
