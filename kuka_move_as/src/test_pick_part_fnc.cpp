@@ -45,7 +45,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             //place the start here, at this cruise pose:
             transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_CRUISE_array,q_vec);
             //need to assure elbow clearance
-            get_fresh_joint_states(); // want to update joint states
+            get_fresh_joint_states(); // update joint_state_vec_
             if (desired_approach_jspace_pose_[1]> -1.34) desired_approach_jspace_pose_[1]= -1.34;
             //XXX FIX ME!
             //if (y_part> -0.35) y_part = -0.35; //GENERALIZE THIS TO OTHER BINS
@@ -171,17 +171,19 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
     if (wrist_flip) {  
     //else if (is_deep) {
         ROS_WARN("extracting arm from back row of bin");
-            traj_head = jspace_pose_to_traj(desired_approach_jspace_pose_,0.8);
             //transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_VIA_2,q_vec);
             q_vec = desired_approach_jspace_pose_;
-
+            get_fresh_joint_states(); // update joint_state_vec_
+            q_vec[6] = joint_state_vec_[6]; //leave the tool flange rotation alone
+            traj_head = jspace_pose_to_traj(q_vec,0.8);
+            old_q_vec = q_vec;
             // NOT SO GOOD--elbow hits; need elbow straighter
             //outstretched arm:
             //[0.172, -1.3,        0,  0.3,   -0.043,   -1.4,   2.945,  -1.338
             q_vec[1] = -1.35;
             q_vec[3] = 0.3;
             q_vec[5] = -1.4;
-            move_time_est = estimate_move_time(desired_approach_jspace_pose_,q_vec)+0.5;     
+            move_time_est = estimate_move_time(old_q_vec,q_vec)+0.8;     
 
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
@@ -195,7 +197,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
                q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights
                delta_d8 = R_OUTSTRETCHED*cos(J1_ang)*delta_J1;
                q_vec[7]+= delta_d8;
-               move_time_est = estimate_move_time(old_q_vec,q_vec)+0.1;     
+               move_time_est = estimate_move_time(old_q_vec,q_vec)+0.2;     
                traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
                traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories   
             }
@@ -215,20 +217,31 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories             
             send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);
             ROS_INFO("sent multipoint traj to withdraw arm from deep row of bin");
+            
+            if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT");
+                if(try_recover_from_abort(q_vec)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+            }                    
         }
 
     else {
         ROS_WARN("extracting arm from  middle row of bin");
           //depart:
-          traj_head = jspace_pose_to_traj(desired_approach_jspace_pose_,1.0);
-            //transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_VIA_2,q_vec);
             q_vec = desired_approach_jspace_pose_;
+            get_fresh_joint_states(); // update joint_state_vec_
+            q_vec[6] = joint_state_vec_[6]; //leave the tool flange rotation alone
+            traj_head = jspace_pose_to_traj(q_vec,1.0);
             old_q_vec = q_vec;
 
             q_vec[1] = -1.35;
             q_vec[3] = 0.3;
             q_vec[5] = 1.4;
-            move_time_est = estimate_move_time(old_q_vec,q_vec)+0.5;
+            move_time_est = estimate_move_time(old_q_vec,q_vec)+0.8;
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories  
             J1_ang= q_vec[0];
@@ -241,24 +254,33 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
                q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights               
                delta_d8 = R_OUTSTRETCHED*cos(J1_ang)*delta_J1;
                q_vec[7]+= delta_d8;
-               move_time_est = estimate_move_time(old_q_vec,q_vec)+0.08;
+               move_time_est = estimate_move_time(old_q_vec,q_vec)+0.2;
                traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
                traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories   
             }
             old_q_vec = q_vec;
             transitionTrajectories_.c_array_to_qvec(BIN1_DEEP_CRUISE_array,q_vec);
             q_vec[0]=1.57;
-            q_vec[6] = old_q_vec[6]; //  don't care about flange rotation,  so don't wait for it
-            
+            q_vec[6] = old_q_vec[6]; //  don't care about flange rotation,  so don't wait for it           
             q_vec[7] = old_q_vec[7];
             
-            move_time_est = estimate_move_time(old_q_vec,q_vec)+0.2;
+            move_time_est = estimate_move_time(old_q_vec,q_vec)+0.5;
             traj_tail = jspace_pose_to_traj(q_vec,move_time_est); 
             traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail); //concatenate trajectories             
             send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);
            
-            ROS_INFO("sent multipoint traj to withdraw arm from middle row of bin");        
+            ROS_INFO("sent multipoint traj to withdraw arm from middle row of bin");      
+            if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT");
+                if(try_recover_from_abort(q_vec)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+            }              
     }
+    
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         ROS_WARN("dropped  part!");        
@@ -269,3 +291,5 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin(const kuka_
         if(!is_attached_) errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
         return errorCode_;
 }
+
+

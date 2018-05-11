@@ -90,7 +90,7 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     //ros::spinOnce(); //update joint states
         get_fresh_joint_states(); //update joint_state_vec_
 
-    double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0;     
+    double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+2.0;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
         
     move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+2.0;     
@@ -98,6 +98,15 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail);
     //for all cases, execute trajectory and eval convergence:    
     send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);     
+    if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT after attempt to move to box hover pose");
+                if(try_recover_from_abort(box_cam_grasp_inspection_pose_)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+    }  
 
     //keep checking for convergence:
     /* this did not work... asked  for joints out of range?*/
@@ -125,7 +134,17 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
 
         move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.5;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est);   
-        send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);     
+        send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);   
+        if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT after attempt to move to box hover pose");
+                if(try_recover_from_abort(box_dropoff_cruise_pose_)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+        }          
+        
         errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }    
@@ -144,6 +163,37 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     */
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
+}
+
+//XXX FIX ME!!
+//computes soln desired_grasp_dropoff_pose_ as well as approach_dropoff_jspace_pose_
+unsigned short int  KukaBehaviorActionServer::evaluate_key_pick_and_place_poses(inventory_msgs::Part sourcePart, inventory_msgs::Part destinationPart) {
+
+    //compute pickup_jspace_pose_, desired_approach_jspace_pose_, ...
+    if (sourcePart.location==Part::BIN5||sourcePart.location==Part::BIN4) {
+    errorCode_ = alt_compute_bin_pickup_key_poses(sourcePart);
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        ROS_WARN("could not compute pickup poses for sourcePart");
+        return errorCode_;
+    }
+   }
+   else {
+       //compute_bin_pickup_key_poses(inventory_msgs::Part part)
+       errorCode_ = compute_bin_pickup_key_poses(sourcePart);
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        ROS_WARN("could not compute pickup poses for sourcePart");
+        return errorCode_;
+    }       
+   }
+   //if here, computation of  pickup poses was successful, notably:   pickup_jspace_pose_, desired_approach_jspace_pose_
+   //next, compute dropoff poses:
+    errorCode_ = plan_box_dropoff_key_poses(destinationPart, pickup_jspace_pose_);
+    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+        ROS_WARN("could not compute dropoff poses for destinationPart");
+        return errorCode_;
+    }    
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    return errorCode_;    
 }
 
 
@@ -300,7 +350,16 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
     move_time_est = estimate_move_time(box_dropoff_hover_pose_, box_dropoff_cruise_pose_) + 1;
     traj_tail = jspace_pose_to_traj(box_dropoff_cruise_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
-    send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);                
+    send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);   
+        if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT after attempt to release and retract");
+                if(try_recover_from_abort(box_dropoff_cruise_pose_)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+        }              
     /*
     ROS_INFO("moving to previously computed approach pose: ");
     move_to_jspace_pose(approach_dropoff_jspace_pose_, 3.5); //make a joint-space move  
@@ -345,7 +404,15 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     traj_tail = jspace_pose_to_traj(box_dropoff_cruise_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
     send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);    
-
+        if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT during attempt to discard grasped  part");
+                if(try_recover_from_abort(box_dropoff_cruise_pose_)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+        }   
     ROS_WARN("DO PART RELEASE HERE");
     //wait max of  10 sec
     errorCode_ = gripperInterface_.release_fnc(10.0); //this version includes testing for release and timeout monitoring, same as below

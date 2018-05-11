@@ -89,6 +89,8 @@ const double MAX_JNT_SPEEDS[] = {4.5,4.5,4.5,4.5,4,4,4,0.9}; //{5,5,5,5,5,5,5,1}
 
 const double R_OUTSTRETCHED= 0.823; //radius in x-y plane from base to gripper w/ J_shoulder = -1.3, J_elbow = 0.3
 
+const double ABORT_RECOVER_JSPACE_TOL = 0.1;
+
 //int ans; //poor-man's debug response
 
 
@@ -255,6 +257,8 @@ private:
     bool send_traj_goal(trajectory_msgs::JointTrajectory des_trajectory, int destination_code);
     bool traj_goal_complete_;
     bool is_attached_;
+    
+    bool recovered_from_abort_;
     //    void armDoneCb_(const actionlib::SimpleClientGoalState& state,
     //    const control_msgs::FollowJointTrajectoryResultConstPtr& result);
 
@@ -299,6 +303,9 @@ private:
     unsigned short int adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
     unsigned short int  re_evaluate_approach_and_place_poses(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired);
+    unsigned short int  evaluate_key_pick_and_place_poses(inventory_msgs::Part sourcePart, inventory_msgs::Part destinationPart);
+
+
     void adjust_box_place_limits(Eigen::Vector3d &O_dropoff_wrt_base_link);
 
     bool move_to_jspace_pose(const int pose_code, double arrival_time);
@@ -388,6 +395,8 @@ private:
 
     unsigned short int compute_box_dropoff_key_poses(inventory_msgs::Part part);
     unsigned short int alt_compute_box_dropoff_key_poses(inventory_msgs::Part part);
+    unsigned short int plan_box_dropoff_key_poses(inventory_msgs::Part part, Eigen::VectorXd pickup_jspace_pose);
+    
 //compute box_cam_grasp_inspection_pose_: pose to hold part in view of camera to get grasp transform
 //also compute: box_dropoff_hover_pose_ (synonym) and box_dropoff_cruise_pose_
 //requires at least an estimate of the box pose as an argument
@@ -426,6 +435,7 @@ private:
 
     double estimate_move_time(Eigen::VectorXd q_vec_start,Eigen::VectorXd q_vec_end);
     void goto_cruise_pose(Eigen::VectorXd desired_cruise_pose);
+    bool try_recover_from_abort(Eigen::VectorXd q_vec, double tolerance=ABORT_RECOVER_JSPACE_TOL);
 
 
     //inventory_msgs::Part part_of_interest_;    

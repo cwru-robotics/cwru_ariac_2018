@@ -21,7 +21,7 @@ d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
 //how to choose d8?
 // for "far" parts, line up d8 with part_y
 // for "near" parts, may need to approach at an angle...
-// but want to appproach part head-on as close as possible, to avoid interference with shelf upright
+// but want to approach part head-on as close as possible, to avoid interference with shelf upright
 // want to keep J2< -1.35 to avoid hitting top crossbar;
 //
 // fnc compute_bin_hover_from_xy() computes a nominal approach, from which d8 follows;
@@ -400,6 +400,125 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
     
 
 
+    
+    //use info to compute desired gripper pose w/rt base link
+    copy_array_to_qvec(Q1_HOVER_array,box_dropoff_hover_pose_);
+    copy_array_to_qvec(Q1_CRUISE_array,box_dropoff_cruise_pose_);
+    box_dropoff_hover_pose_[0] = J1_approach;
+    box_dropoff_hover_pose_[7] = d8;
+    box_dropoff_cruise_pose_[0] = J1_cruise;
+    box_dropoff_cruise_pose_[7] = d8;
+    ROS_INFO_STREAM("box_dropoff_hover_pose_: " << box_dropoff_hover_pose_.transpose());
+    box_cam_grasp_inspection_pose_.resize(8);
+    box_cam_grasp_inspection_pose_=box_dropoff_hover_pose_;
+        
+    //check which box: compute an inspection pose that places robot's gripper in view of box cam
+    if (part.location == Part::QUALITY_SENSOR_1)  {
+        ROS_INFO("destination is box at station Q1");
+        double d8_grasp_inspection = BOX_CAM_1_Y+delta_d8 - Y_BASE_WRT_WORLD_AT_D8_HOME;
+        box_cam_grasp_inspection_pose_[7] = d8_grasp_inspection;
+
+    }
+    else if (part.location == Part::QUALITY_SENSOR_2) {
+        ROS_INFO("destination is box at station Q2");    
+        double d8_grasp_inspection = BOX_CAM_2_Y+delta_d8 - Y_BASE_WRT_WORLD_AT_D8_HOME;
+        box_cam_grasp_inspection_pose_[7] = d8_grasp_inspection;
+    }
+    else {
+        ROS_WARN("alt_compute_box_dropoff_key_poses()");
+        ROS_WARN("destination code is not Q1 nor Q2!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        return errorCode_;
+    }    
+    ROS_INFO_STREAM("box_cam_grasp_inspection_pose_: " << box_cam_grasp_inspection_pose_.transpose());
+
+    //computed_jspace_approach_ contains pose estimate for  IKs
+    //compute the IK for the desired pickup pose: pickup_jspace_pose_
+    //first, get the equivalent desired affine of the vacuum gripper w/rt base_link;
+    //need to provide the Part info and the rail displacement
+    //Eigen::Affine3d RobotMoveActionServer::affine_vacuum_pickup_pose_wrt_base_link(Part part, double q_rail)
+    affine_vacuum_pickup_pose_wrt_base_link_ = affine_vacuum_pickup_pose_wrt_base_link(part,d8);
+    
+    //add a dropoff clearance tolerance to z value:
+    Eigen::Vector3d O_dropoff_wrt_base_link = affine_vacuum_pickup_pose_wrt_base_link_.translation();
+    adjust_box_place_limits(O_dropoff_wrt_base_link);
+    affine_vacuum_pickup_pose_wrt_base_link_.translation() = O_dropoff_wrt_base_link;
+            
+
+    //provide desired gripper pose w/rt base_link, and choose soln closest to some reference jspace pose, e.g. hover pose
+    //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
+    if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, box_dropoff_hover_pose_, desired_grasp_dropoff_pose_)) {
+        ROS_WARN("could not compute IK soln for dropoff pose!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    ROS_INFO_STREAM("desired_grasp_dropoff_pose_: " << desired_grasp_dropoff_pose_.transpose());
+
+    //compute approach_pickup_jspace_pose_:  for approximate Cartesian descent and depart
+    //compute_approach_IK(Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link,Eigen::VectorXd computed_jspace_approach_,double approach_dist,Eigen::VectorXd &q_vec_soln);
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, approach_dist_,
+            approach_dropoff_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
+        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        return errorCode_;
+    }
+    //use deep grasp pose for pick-part from box:
+    if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, deep_grasp_dist_,
+            pickup_deeper_jspace_pose_)) {
+        ROS_WARN("could not compute IK soln for deep pickup approach pose");
+        ROS_WARN("re-using grasp pose; not returning an error");
+        pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
+        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //return errorCode_;
+    }    
+    //desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
+    ROS_INFO_STREAM("approach_dropoff_jspace_pose_: " << approach_dropoff_jspace_pose_.transpose());
+    ROS_INFO("done computing key poses  for box dropoff");
+    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    return errorCode_;
+        
+}
+
+//Identical to  above, except provide computed pickup_pose (from bin-pick) instead of current arm pose
+// 
+//compute these values: box_dropoff_cruise_pose_, box_dropoff_hover_pose_, box_cam_grasp_inspection_pose_
+// approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_,
+//  pickup_jspace_pose is used to establish righty/lefty
+unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventory_msgs::Part part, Eigen::VectorXd pickup_jspace_pose) {
+    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+//  new...set these:
+    
+    geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
+    Eigen::Affine3d affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
+    Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
+    ROS_INFO_STREAM("desired part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);
+    double destination_x_wrt_world = O_part_wrt_world[0];
+    double destination_y_wrt_world = O_part_wrt_world[1];
+    double J1_approach, J1_cruise;
+
+    if (pickup_jspace_pose[0] >0) { 
+        J1_approach= 2.8;
+        J1_cruise = 1.57;
+    }
+    else { 
+        J1_approach = -2.8; 
+        J1_cruise = -1.57;
+    };    
+    //logic:
+    //  *given desired dropoff  pose in world coords, and given J1, compute:
+    // delta_d8 = -delta_x*tan(pi-|J1|)
+    //*given desired gripper y w/rt world, compute sled displacement d8:
+    //  d8 = y_gripper_wrt_world + delta_d8 + D8_..._HOME
+
+    double delta_x = destination_x_wrt_world-X_BASE_WRT_WORLD;
+    double delta_d8 = fabs(delta_x*tan(M_PI-fabs(J1_approach)));
+    if (J1_approach<0) delta_d8 = -delta_d8; //correct the sign, depending on approach dir
+    
+    double d8 = destination_y_wrt_world+delta_d8 - Y_BASE_WRT_WORLD_AT_D8_HOME;
+    
+    if (d8>D8_MAX) d8=D8_MAX;
+    if (d8<D8_MIN) d8=D8_MIN;
+    ROS_INFO("using J1 = %f, delta_d8 = %f and d8 =  %f",J1_approach,delta_d8,d8);
     
     //use info to compute desired gripper pose w/rt base link
     copy_array_to_qvec(Q1_HOVER_array,box_dropoff_hover_pose_);
@@ -1246,9 +1365,12 @@ bool KukaBehaviorActionServer::compute_grasp_transform(Eigen::Affine3d grasped_p
 
 }
 
-//computes key jspace poses: desired_approach_jspace_pose_, and arg q_vec_soln
+//computes key jspace poses: 
+// desired_depart_jspace_pose_ = desired_approach_jspace_pose_
+// desired_grasp_dropoff_pose_ = q_vec_soln, 
 bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasped_part_pose_wrt_world,
           Eigen::Affine3d desired_part_pose_wrt_world, Eigen::VectorXd q_vec_joint_angles_8dof,Eigen::VectorXd &q_vec_soln) {
+    int ans;
     Eigen::Affine3d affine_vacuum_gripper_pose_wrt_base_link, affine_vacuum_gripper_pose_wrt_world;
     Eigen::Affine3d affine_base_link_wrt_world, desired_affine_part_wrt_base_link;
     Eigen::Affine3d desired_affine_vacuum_gripper_pose_wrt_base_link,affine_part_wrt_gripper;
@@ -1258,21 +1380,33 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
         qvec_7dof[i]=q_vec_joint_angles_8dof[i];
     }
     double q_rail = q_vec_joint_angles_8dof[7];
+    ROS_INFO("current q_rail = %f",q_rail);
     affine_base_link_wrt_world = affine_base_link(q_rail);
     //compute affine_vacuum_gripper_pose_wrt_base_link from q_vec_joint_angles
     affine_vacuum_gripper_pose_wrt_base_link = fwd_solver_.fwd_kin_solve(qvec_7dof); //fwd_kin_solve
+  
+    //compute vacuum gripper  pose w/rt world: A_gripper/world = A_baselink_wrt_world *A_gripper_wrt_base_link
+    affine_vacuum_gripper_pose_wrt_world = affine_base_link_wrt_world*affine_vacuum_gripper_pose_wrt_base_link;
+        //A_part/gripper = inverse(A_gripper/world)*A_part/world
 
-    //A_part/gripper = inverse(A_gripper/world)*A_part/world
-    affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_base_link.inverse() * grasped_part_pose_wrt_world;
-    ROS_INFO("observed grasp transform, affine_part_wrt_gripper:");
-    xformUtils_.printAffine(affine_part_wrt_gripper);
     ROS_INFO("observed grasped_part_pose_wrt_world:");
     xformUtils_.printAffine(grasped_part_pose_wrt_world);    
     
-    //compute vacuum gripper  pose w/rt world: A_gripper/world = A_baselink_wrt_world *A_gripper_wrt_base_link
-    affine_vacuum_gripper_pose_wrt_world = affine_base_link_wrt_world*affine_vacuum_gripper_pose_wrt_base_link;
     //now we have the observed grasp transform:
     affine_part_wrt_gripper = affine_vacuum_gripper_pose_wrt_world.inverse() * grasped_part_pose_wrt_world;
+    ROS_INFO("observed grasp transform, affine_part_wrt_gripper:");
+    xformUtils_.printAffine(affine_part_wrt_gripper);
+    Eigen::Vector3d O_part_wrt_gripper = affine_part_wrt_gripper.translation();
+    double part_origin_dist = O_part_wrt_gripper.norm();
+    ROS_INFO("part origin is %f m from gripper origin",part_origin_dist);
+    cout<<"enter 1: ";
+    cin>>ans;
+    //problem here: need to  consider what WILL  be the FK when reposition d8;
+    //ASSUME  have access to box_dropoff_hover_pose_ with intended d8:
+    q_vec_joint_angles_8dof[7] =  box_dropoff_hover_pose_[7];
+    q_rail =  q_vec_joint_angles_8dof[7];
+    ROS_INFO("intended dropoff q_rail = %f",q_rail);
+    affine_base_link_wrt_world = affine_base_link(q_rail);
 
     desired_affine_part_wrt_base_link = affine_base_link_wrt_world.inverse() * desired_part_pose_wrt_world;
 
@@ -1286,8 +1420,12 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
     desired_affine_vacuum_gripper_pose_wrt_base_link.translation() = O_dropoff_wrt_base_link;
     bool ret_val=  compute_pickup_dropoff_IK(desired_affine_vacuum_gripper_pose_wrt_base_link,q_vec_joint_angles_8dof,q_vec_soln);
     //ROS_INFO_STREAM("recomputed dropoff IK soln: "<<q_vec_soln<<endl);
-
-    //careful--this call affects member vars approach_dropoff_jspace_pose_ and desired_approach_depart_pose_
+    desired_grasp_dropoff_pose_ = q_vec_soln; //also, assign this to member var
+    
+    //careful--this call affects member vars:
+    //desired_approach_jspace_pose_= desired_depart_jspace_pose_, 
+    //approach_dropoff_jspace_pose_, desired_approach_depart_pose_,  desired_grasp_dropoff_pose_
+    //too many synonyms!
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, q_vec_soln, approach_dist_,
             desired_approach_jspace_pose_)) {
         //ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
@@ -1315,6 +1453,10 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d actua
        for (int i=0;i<8;i++) {
            q_vec_joint_angles_8dof[i] = joint_state_.position[i];
        }
+       //adjust d8 for computed dropoff position:
+       //ASSUMES box_dropoff_hover_pose_ was previously computed!
+       //better would be  to force  this as an arg
+       //q_vec_joint_angles_8dof[7] = box_dropoff_hover_pose_[7];
        ROS_INFO_STREAM("got current joint angles: "<<endl<<q_vec_joint_angles_8dof.transpose()<<endl);
        bool ret_val =  recompute_pickup_dropoff_IK(actual_grasped_part_pose_wrt_world,
           desired_part_pose_wrt_world, q_vec_joint_angles_8dof,q_vec_soln);
@@ -1449,6 +1591,7 @@ bool KukaBehaviorActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum
 }
 
 //use this version for bins 4 and 5: J1_cruise = -1.57
+//compute: current_bin_hover_pose_, computed_jspace_approach_, pickup_jspace_pose_, desired_approach_jspace_pose_, pickup_deeper_jspace_pose_
 unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(inventory_msgs::Part part) {
     errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
 
