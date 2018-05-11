@@ -28,6 +28,7 @@ extern int alert_level;
 #define LEVEL_GREEN	0
 #define LEVEL_YELLOW	1
 #define LEVEL_RED	2
+#define LEVEL_COMPLETE	3
 
 #define NULL_SHIPMENT "empty_shipment"
 
