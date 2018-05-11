@@ -411,12 +411,16 @@ int main(int argc, char** argv) {
             n_imprecise = misplaced_models_actual_coords_wrt_world.size();
             n_missing = missing_models_wrt_world.size();
             n_orphaned = orphan_models_wrt_world.size();
-            ROS_INFO("after inspection: n_precise =  %d; n_imprecise = %d; n_missing = %d; n_orphaned = %d", n_precise,
+            ROS_WARN("after box inspection: ");
+            ROS_INFO("n_precise =  %d; n_imprecise = %d; n_missing = %d; n_orphaned = %d", n_precise,
                     n_imprecise, n_missing, n_orphaned);
 
+            ROS_INFO("precisely-placed parts checklist: ");
             for (int i=0;i<n_precise;i++) {
+                
                 int good_part_index = part_indices_precisely_placed[i];
-                parts_checklist[i] = true;  //mark these parts as "done"               
+                parts_checklist[good_part_index] = true;  //mark these parts as "done"     
+                ROS_INFO("part %d is precise",good_part_index);
             }
             //populate a service message for optimizer:    
             shipmentFiller.modelvec_to_shipment(Q1_shipment_name, satisfied_models_wrt_world, box_pose_wrt_world, shipment_loaded);
@@ -431,8 +435,13 @@ int main(int argc, char** argv) {
 
             //check if shipment-filler is giving up, or advising "done"
             //keep this next line: know when to say when--including "success" with all parts correctly placed
+            ROS_INFO("inspecting checklist: ");
             if (done_with_this_shipment(parts_checklist)) {
+                ROS_INFO("checklist complete!  recommend moving along/giving up");
                 optimizer_msg.request.giving_up = optimizer_func::optimizer_msgsRequest::GIVING_UP;
+            }
+            else {
+                ROS_INFO("checklist not complete");
             }
         }
         //update call to optimizer from  Q1, assuming don't have an active Q2 shipment
@@ -646,6 +655,7 @@ int main(int argc, char** argv) {
                         if (go_on) {
                             ROS_INFO("using best estimate approach and place poses to place part in box, no release");
                             go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
+                            //remove this part from missing-parts vector manually--in case operating blind
                         }
 
                         //check if this part passes quality inspection:

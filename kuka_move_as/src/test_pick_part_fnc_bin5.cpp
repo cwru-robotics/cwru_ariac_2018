@@ -225,9 +225,9 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories  
         J1_ang = q_vec[0];
         //extraction with negative increments of J1 and negative increments of d8
-        delta_J1 = (-M_PI / 2.0 - J1_ang) / 10.0; //-0.1;
+        delta_J1 = (-M_PI / 2.0 - J1_ang) / 15.0; //-0.1;
         old_q_vec = q_vec;
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 15; i++) {
             old_q_vec = q_vec;
             J1_ang += delta_J1;
             q_vec[0] = J1_ang;
@@ -283,16 +283,16 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         traj_tail = jspace_pose_to_traj(q_vec, move_time_est);
         traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories  
         J1_ang = q_vec[0];
-        delta_J1 = (-M_PI / 2.0 - J1_ang) / 10.0; //-0.1; //negative increments of J1 and  negative increments of d8            
+        delta_J1 = (-M_PI / 2.0 - J1_ang) / 15.0; //-0.1; //negative increments of J1 and  negative increments of d8            
         //delta_J1 = 0.1;
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 15; i++) {
             old_q_vec = q_vec;
             J1_ang += delta_J1;
             q_vec[0] = J1_ang;
             q_vec[6] = q_vec[6]+delta_J1; //counter-rotate flange to avoid part hitting uprights            
             delta_d8 = R_OUTSTRETCHED * cos(J1_ang) * delta_J1;
             q_vec[7] += delta_d8;
-            move_time_est = estimate_move_time(old_q_vec, q_vec) + 0.08;
+            move_time_est = estimate_move_time(old_q_vec, q_vec) + 0.1;
             traj_tail = jspace_pose_to_traj(q_vec, move_time_est);
             traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories   
         }

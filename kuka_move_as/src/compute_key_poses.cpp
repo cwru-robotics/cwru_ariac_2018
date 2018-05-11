@@ -1402,8 +1402,8 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
     Eigen::Vector3d O_part_wrt_gripper = affine_part_wrt_gripper.translation();
     double part_origin_dist = O_part_wrt_gripper.norm();
     ROS_INFO("part origin is %f m from gripper origin",part_origin_dist);
-    cout<<"enter 1: ";
-    cin>>ans;
+    //cout<<"enter 1: ";
+    //cin>>ans;
     if (part_origin_dist> GRIPPER_OFFSET_CREDIBILITY_TOLERANCE) {
         return false;
     }

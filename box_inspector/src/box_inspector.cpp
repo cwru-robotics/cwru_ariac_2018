@@ -475,7 +475,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
         }
      */
 
-    ROS_INFO_STREAM("filtered box camera image" << filtered_box_camera_image);
+    //ROS_INFO_STREAM("filtered box camera image" << filtered_box_camera_image);
     int num_parts_seen = filtered_box_camera_image.models.size();
     int num_parts_desired = desired_models_wrt_world.size();
     orphan_models_wrt_world.clear(); //this will be empty, unless something very odd happens
@@ -564,7 +564,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
                         }
                     }
                     if (!found) {
-                        ROS_INFO("found missing");
+                        //ROS_INFO("found missing");
                         missing_models_wrt_world.push_back(desired_models_wrt_world[j]);
                     }
                 }
@@ -697,7 +697,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
     part_indices_missing.clear();
     part_indices_precisely_placed.clear();
 
-    ROS_INFO_STREAM("filtered box camera image" << filtered_box_camera_image);
+    //ROS_INFO_STREAM("filtered box camera image" << filtered_box_camera_image);
     int num_parts_seen = filtered_box_camera_image.models.size();
     int num_parts_desired = desired_models_wrt_world.size();
     vector<bool> classified_observed_part, classified_desired_part;
@@ -758,7 +758,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
     //presumably, when reach here, if any bad parts have been seen, the first one is classified as orphaned
 
     //next, look for precise matches:
-    ROS_INFO("seeking precise matches");
+    //ROS_INFO("seeking precise matches");
     for (int ipart_seen = 0; ipart_seen < num_parts_seen; ipart_seen++) {
         //only consider observed parts not already classified
         if (!classified_observed_part[ipart_seen]) {
@@ -773,13 +773,13 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
                 string desired_model_name(desired_model.type);
                 if (desired_model_name != test_model_name) {
                     //this  can't be it--names  don't match
-                    ROS_INFO("names don't match for i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
+                    //ROS_INFO("names don't match for i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
                     i_des_part++;
                 } else {
                     //OK--names match; how about coordinates?
                     if (compare_pose(model_pose_from_image_wrt_world.pose, desired_model.pose)) {
                         //found a match!
-                        ROS_INFO("found match! i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
+                        //ROS_INFO("found match! i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
                         found = true; //done considering precise match for this observed part; move along to next observed  part
                         classified_observed_part[ipart_seen] = true;
                         classified_desired_part[i_des_part] = true;
@@ -787,21 +787,21 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
                         part_indices_precisely_placed.push_back(i_des_part);
                     } else {
                         //nope--not a match; try next desired  part
-                        ROS_INFO("names matched, but not coords for i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
+                        //ROS_INFO("names matched, but not coords for i_des_part = %d, ipart_seen = %d", i_des_part, ipart_seen);
                         i_des_part++;
                     }
                 }
             }
         }
     }
-    ROS_INFO("found %d precise matches", (int) satisfied_models_wrt_world.size());
+    //ROS_INFO("found %d precise matches", (int) satisfied_models_wrt_world.size());
 
     //remaining parts  seen are either misaligned or orphaned
-    ROS_INFO("seeking approximate matches");
+    //ROS_INFO("seeking approximate matches");
     for (int ipart_seen = 0; ipart_seen < num_parts_seen; ipart_seen++) {
         //only consider observed parts not already classified
         if (!classified_observed_part[ipart_seen]) {
-            ROS_INFO("evaluating ipart_seen = %d", ipart_seen);
+            //ROS_INFO("evaluating ipart_seen = %d", ipart_seen);
             test_model = filtered_box_camera_image.models[ipart_seen];
             string test_model_name(test_model.type);
             model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, test_model.pose);
@@ -818,7 +818,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
                     } else {
                         //OK--names match; how about coordinates?
                         if (compare_pose_approx(model_pose_from_image_wrt_world.pose, desired_model.pose)) {
-                            ROS_INFO("found approx match for ipart_seen= %d, i_des_part= %d", ipart_seen, i_des_part);
+                            //ROS_INFO("found approx match for ipart_seen= %d, i_des_part= %d", ipart_seen, i_des_part);
                             //found a match!
                             found = true; //done considering precise match for this observed part; move along to next observed  part
                             classified_observed_part[ipart_seen] = true;
@@ -838,10 +838,10 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
         }
         
     }
-    ROS_INFO("found %d approximate matches", (int) misplaced_models_actual_coords_wrt_world.size());
+    //ROS_INFO("found %d approximate matches", (int) misplaced_models_actual_coords_wrt_world.size());
 
     //are there any stragglers?  If so, they are badly placed, or they are orphans
-    ROS_INFO("checking for outliers");
+    //ROS_INFO("checking for outliers");
     for (int ipart_seen = 0; ipart_seen < num_parts_seen; ipart_seen++) {
         //only consider observed parts not already classified
         if (!classified_observed_part[ipart_seen]) {
@@ -904,7 +904,8 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
     int n_orphaned = orphan_models_wrt_world.size();
     int n_satisifed = satisfied_models_wrt_world.size();
     int n_misplaced = misplaced_models_actual_coords_wrt_world.size();
-    ROS_INFO("num_parts_seen= %d; n_satisifed=%d; n_misplaced=%d; n_orphaned = %d", num_parts_seen, n_satisifed, n_misplaced, n_orphaned);
+    //ROS_INFO("box inspection update results: ");
+    //ROS_INFO("num_parts_seen= %d; n_satisifed=%d; n_misplaced=%d; n_orphaned = %d", num_parts_seen, n_satisifed, n_misplaced, n_orphaned);
     return true;
 
 }

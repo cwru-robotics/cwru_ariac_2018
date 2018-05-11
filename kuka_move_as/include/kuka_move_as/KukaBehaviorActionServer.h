@@ -91,7 +91,7 @@ const double R_OUTSTRETCHED= 0.823; //radius in x-y plane from base to gripper w
 
 const double ABORT_RECOVER_JSPACE_TOL = 0.1;
 
-const double GRIPPER_OFFSET_CREDIBILITY_TOLERANCE = 0.05; //part origin should be within e.g. 5cm of gripper origin, else not credible grasp est.
+const double GRIPPER_OFFSET_CREDIBILITY_TOLERANCE = 0.08; //part origin should be within e.g. 5cm of gripper origin, else not credible grasp est.
 
 //int ans; //poor-man's debug response
 

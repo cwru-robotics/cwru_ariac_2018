@@ -90,10 +90,11 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
     //ros::spinOnce(); //update joint states
         get_fresh_joint_states(); //update joint_state_vec_
 
-    double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+2.0;     
+    double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0; //+2.0;  
+    //if (move_time_est>0.5) move_time_est+=1.0; //watch out for long moves
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
         
-    move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+2.0;     
+    move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+1;     
         traj_tail = jspace_pose_to_traj(box_cam_grasp_inspection_pose_,move_time_est); 
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail);
     //for all cases, execute trajectory and eval convergence:    
@@ -132,7 +133,7 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
             //ros::spinOnce(); //update joint states
         get_fresh_joint_states(); //update joint_state_vec_
 
-        move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.5;     
+        move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+ 1;     
         traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est);   
         send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);   
         if (rtn_state_ == bad_state_) {
@@ -225,8 +226,9 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_from_approach_no_
 
     ROS_INFO("sending traj for place_part_in_box_from_approach_no_release");
     //XXX MAYBE START FROM box_dropoff_hover_pose_ ???
-    double move_time_est = estimate_move_time(joint_state_vec_, desired_approach_jspace_pose_)+0.5;
-    traj_head = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
+    //USE THESE: approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_, 
+    double move_time_est = estimate_move_time(joint_state_vec_, approach_dropoff_jspace_pose_)+1.5;
+    traj_head = jspace_pose_to_traj(approach_dropoff_jspace_pose_, move_time_est);
     move_time_est = estimate_move_time(approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_) + 1;
     traj_tail = jspace_pose_to_traj(desired_grasp_dropoff_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
