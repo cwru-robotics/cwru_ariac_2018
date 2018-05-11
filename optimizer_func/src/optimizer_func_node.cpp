@@ -1,4 +1,6 @@
 #include "ros/ros.h"
+#include "rosgraph_msgs/Clock.h"
+
 #include "optimizer_func/optimizer_func.h"
 
 #include <sstream>
@@ -9,6 +11,9 @@ ros::Time current_order_recvd, priority_order_recvd;
 osrf_gear::Shipment testing_shipment;
 
 char *shipment_names[] = {"no_active_shipment", "order_0_shipment_0", "order_0_shipment_1", "order_1_shipment_0", "order_1_shipment_1"};
+
+int alert_level = LEVEL_GREEN;
+
 
 // A quick and dirty simplification for creating test messages
 #define ADD_PRODUCT(prod, type_string, xp, yp, zp, xo, yo, zo, wo)  {  \
@@ -21,6 +26,19 @@ char *shipment_names[] = {"no_active_shipment", "order_0_shipment_0", "order_0_s
     prod.pose.orientation.z = zo;					\
     prod.pose.orientation.w = wo;					\
   }
+
+void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg) {
+  if (msg->clock.sec > 460){
+    if (alert_level != LEVEL_RED)
+      ROS_WARN("Setting alert_level to LEVEL_RED");
+    alert_level = LEVEL_RED;
+  }
+  else if (msg->clock.sec > 420) {
+    if (alert_level != LEVEL_YELLOW)
+      ROS_WARN("Setting alert_level to LEVEL_YELLOW");
+    alert_level = LEVEL_YELLOW;
+  }
+}
 
 // Listening for the Orders from ARIAC
 void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
@@ -100,6 +118,7 @@ int main(int argc, char **argv)
   ROS_INFO("Ready to respond to optimization requests.");
 
   ros::Subscriber sub = n.subscribe("ariac/orders", 5, orderCallback);
+  ros::Subscriber clk = n.subscribe("clock", 1, clockCallback);
 
   
   // Below is testing stuff.
