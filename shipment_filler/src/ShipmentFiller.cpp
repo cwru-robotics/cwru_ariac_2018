@@ -472,7 +472,7 @@ bool ShipmentFiller::get_part_and_prepare_place_in_box(inventory_msgs::Inventory
     while (part_in_inventory&& (num_tries<MAX_TRIES)) {  //persistently retry pick/place until success or until out of inventory     
       bool go_on=true; 
       num_tries++;
-
+      //std::string part_name(place_part.name);
       part_in_inventory = binInventory.find_part(current_inventory, part_name, pick_part, partnum_in_inventory);
       if (!part_in_inventory) {
         ROS_WARN("could not find desired  part in inventory; giving up on process_part()");

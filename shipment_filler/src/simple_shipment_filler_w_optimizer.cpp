@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a GripperInterface");    
     GripperInterface gripperInterface(nh);
     
-    queue <osrf_gear::Shipment> drone_shipment_queue;
+    std::queue <osrf_gear::Shipment> drone_shipment_queue;
     
     
     optimizer_func::optimizer_msgs optimizer_msg;
@@ -234,40 +234,36 @@ int main(int argc, char** argv) {
     boxInspector.compute_shipment_poses_wrt_world(Q1_shipment, boxInspector.NOM_BOX1_POSE_WRT_WORLD, desired_models_wrt_world);
     successfully_filled_order = false; //obsolete
 
-
-
     //acquire first part while waiting on box; move this part to camera inspection above box
     int num_models_in_order = desired_models_wrt_world.size();
     parts_checklist.resize(num_models_in_order);
+    //clear the parts checklist--we have not yet satisfied nor even attempted addressing any of these desired parts
     for (int i = 0; i < num_models_in_order; i++) parts_checklist[i] = false;
     int i_model = 0;
     current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
     //build "part" description for destination
     shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
-    std::string part_name(place_part.name);
-    ROS_INFO_STREAM("attempting to acquire and place part: " << place_part << endl);
-
-    //try (up to three times) to get this part and show it to box1 camera; if NG, try next part
-    while ((i_model < num_models_in_order)&&!shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part)) {
-        ROS_WARN("giving up on model index %d; trying next model", i_model); //very unlikely to happen
-        problem_model_indices.push_back(i_model);
-        i_model++;
-        if (i_model < num_models_in_order) {
-            current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
-            //build "part" description for destination
-            shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
-        }
+    
+    string place_part_name(place_part.name);
+    int partnum_in_inventory;
+    bool part_in_inventory = binInventory.find_part(current_inventory, place_part_name, pick_part, partnum_in_inventory);
+    
+    ROS_INFO_STREAM("initial chosen pick_part: " << endl << pick_part << endl);
+    ROS_INFO_STREAM("initial chosen place_part: " << endl << place_part << endl);
+    
+    //evaluate_key_pick_and_place_poses
+    //    bool evaluate_key_pick_and_place_poses(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    go_on = robotBehaviorInterface.evaluate_key_pick_and_place_poses(pick_part,place_part);
+    if (!go_on) {
+        ROS_WARN("could not compute key pickup and place poses for this part source and destination");
     }
-    if (i_model < num_models_in_order) {
-        ROS_INFO("grasped part index %d and holding under box1 cam", i_model);
-    } else {
-        ROS_WARN("something is horribly wrong; could not grasp acquire ANY parts  from this order!");
-        Q1_shipment = empty_shipment;
+    
+    if (go_on) { 
+        ROS_INFO_STREAM("attempting to acquire and place part"); 
+        go_on = shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part); 
     }
 
-    //once here, part is presumably grasped and under box1 cam; I will  not check if initial grasp attempts were all unsuccessful
-
-    //have to wait for box to show up at Q1:
+    //have to wait for box to show up at Q1 before can attempt placement
     int nprint = 0;
     while (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_ESTIMATED_AT_Q1 &&
             (conveyorInterface.get_box_status() != conveyor_as::conveyorResult::BOX_SEEN_AT_Q1)) {
@@ -275,20 +271,8 @@ int main(int argc, char** argv) {
         ros::Duration(0.1).sleep();
         nprint++;
         if (nprint % 10 == 0) {
-            ROS_INFO("waiting for conveyor to advance a box to Q2...");
             ROS_INFO("waiting for conveyor to advance a box to Q1...");
         }
-    }
-
-    //recompute key poses for placement
-    //place part, release and retract
-    //do box inspection in prep for next call to shipment optimizer    
-    //get grasp transform from camera
-    ROS_WARN("conveyor halted; get pose of grasped  part");
-    //do this only if part is still attached:
-    if(gripperInterface.isGripperAttached()) {
-      boxInspector.get_grasped_part_pose_wrt_world(observed_part);
-      ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
     }
 
     //update box pose,  if possible              
@@ -296,50 +280,75 @@ int main(int argc, char** argv) {
         ROS_INFO_STREAM("box seen at: " << box_pose_wrt_world << endl);
         //update desired part poses w/rt world:
         boxInspector.compute_shipment_poses_wrt_world(shipment, box_pose_wrt_world, desired_models_wrt_world);
-    }
-    else {
-        ROS_WARN("part dropped!");
-    }
+        //improve on place_part, using known box coords:
+        current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
+        //rebuild "part" description for destination
+        shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
+        //re-evaluate pick/place poses given refined destination coords:
+        if (!robotBehaviorInterface.evaluate_key_pick_and_place_poses(pick_part,place_part)) {
+            ROS_WARN("recomputation of dropoff plan using updated box coords was invalid; Odd; Code  err?");
+            go_on = false;
+        }
+    }    
+        
 
-    //update destination for currently held part:
-    current_model = desired_models_wrt_world[i_model]; //try to get the first model of this shipment ready
-    ROS_INFO_STREAM("current model w/ placement coords w/rt world: " << endl << current_model << endl);
-    //build "part" description for destination
-    shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
-    ROS_INFO_STREAM("re-expressed as a Part object: " << endl << place_part << endl);
-    ROS_WARN("calling re_evaluate_approach_and_place_poses");
-    
-    //do this only if part is still attached:
-    go_on = gripperInterface.isGripperAttached();
-    if(go_on) {
-      go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part);
+    if (!gripperInterface.isGripperAttached()) { 
+        ROS_WARN("part not grasped!");
+        go_on=false;
+        ROS_WARN("return to cruise pose--finish me");
     }
-    else {
-        ROS_WARN("part dropped!");
+    
+    //see if part is viewable:
+    bool did_observe_grasped_part=false;
+    if (go_on) {
+        //get grasp transform from camera
+      //recompute key poses for placement
+ 
+      ROS_WARN("conveyor halted; get pose of grasped  part");
+        //bool BoxInspector::get_grasped_part_pose_wrt_world(inventory_msgs::Part &observed_part) {
+      observed_part = place_part; //need the part name for observation
+      did_observe_grasped_part = boxInspector.get_grasped_part_pose_wrt_world(observed_part); //updates observed_part
+      if (did_observe_grasped_part) {
+         ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
+         ROS_WARN("calling re_evaluate_approach_and_place_poses");
+         if (!robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part)) {
+             //go back to original key poses:
+             robotBehaviorInterface.evaluate_key_pick_and_place_poses(pick_part,place_part);
+             ROS_WARN("re-evaluation of dropoff poses was not successful;  using open-loop plan");
+         }         
+      }
+      else { 
+          ROS_WARN("could not observe grasped part; using open-loop dropoff plan");
+          //retain original  key poses
+      }
     }
 
     if (!go_on) {
-        //can't reach corrected poses.  May as well just drop or discard the part
-        ROS_WARN("something failed; discarding grasped part");
-        robotBehaviorInterface.discard_grasped_part(place_part);
-        problem_model_indices.push_back(i_model); //add to list of problem parts
-        go_on = false; //redundant
+        if (gripperInterface.isGripperAttached()) {
+            ROS_WARN("giving up on this part; retract and discard");
+            ROS_WARN("FIX ME");
+            //robotBehaviorInterface.discard_grasped_part(place_part);
+            robotBehaviorInterface.release_and_retract();
+        }
     }
 
     if (go_on) {
-        ROS_INFO("using newly adjusted approach and place poses to place part in box, no release");
+        ROS_INFO("using best estimate approach and place poses to place part in box, no release");
+        ROS_INFO_STREAM("place_part: "<<place_part<<endl);
         go_on = robotBehaviorInterface.place_part_in_box_from_approach_no_release(place_part);
     }
-
-    //check if this part passes quality inspection:
-    if (shipmentFiller.get_bad_part_Q1(bad_part)) {
-        ROS_WARN("saw bad part; discard it");
-        //do discard here
-        robotBehaviorInterface.discard_grasped_part(bad_part);
-    } else {
+      
+    if (go_on) {
+         //check if this part passes quality inspection:
+         if (shipmentFiller.get_bad_part_Q1(bad_part)) {
+            ROS_WARN("saw bad part; discard it");
+            //do discard here
+            robotBehaviorInterface.discard_grasped_part(bad_part);
+      } else {
         //release part and retract arm
         ROS_INFO("quality sensor did not declare part as bad; leave it");
         robotBehaviorInterface.release_and_retract();
+      }
     }
 
 
@@ -548,13 +557,19 @@ int main(int argc, char** argv) {
                     ROS_INFO_STREAM("working on this model: " << current_model << endl);
                     shipmentFiller.model_to_part(current_model, place_part, inventory_msgs::Part::QUALITY_SENSOR_1);
                     ROS_INFO_STREAM("corresponding place_part: " << place_part << endl);
+                    
                     go_on = shipmentFiller.get_part_and_prepare_place_in_box(current_inventory, place_part);
+                    
                     if (go_on) {
                         ros::Duration(2.0).sleep(); //wait for settling before observing pose
+                        observed_part=place_part; //fills in part name;the rest is wrong
                         if(gripperInterface.isGripperAttached()) {
-                          boxInspector.get_grasped_part_pose_wrt_world(observed_part);
-                          ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
-                          go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part);
+                          //observed_part is a reference var--will get repopulated
+                          //use grasp pose to recompute key dropoff poses, if possible
+                          if (boxInspector.get_grasped_part_pose_wrt_world(observed_part)) {
+                              ROS_INFO_STREAM("observed grasped part: " << endl << observed_part << endl);
+                              go_on = robotBehaviorInterface.re_evaluate_approach_and_place_poses(observed_part, place_part);
+                          }
                         }
                         else {
                             ROS_WARN("dropped part");

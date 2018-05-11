@@ -316,6 +316,7 @@ bool BoxInspector::get_new_snapshot_from_box_cam() {
     }
 }
 
+//averages multiple snapshots; returns a LogicalCameraImage with coordinates wrt camera frame
 bool BoxInspector::get_filtered_snapshots_from_box_cam(osrf_gear::LogicalCameraImage &filtered_box_camera_image) {
     int n_snapshots = 3; //choose to average this many snapshots
     vector<geometry_msgs::Pose> sum_poses, averaged_poses;
@@ -917,37 +918,41 @@ bool BoxInspector::get_grasped_part_pose_wrt_world(inventory_msgs::Part &observe
     //get a new (filtered) snapshot of the box-inspection camera:
     osrf_gear::LogicalCameraImage filtered_box_camera_image;
     geometry_msgs::PoseStamped grasped_part_pose_wrt_world;
+    string grasped_part_name(observed_part.name); 
+    ROS_INFO_STREAM("looking for grasped part name "<<grasped_part_name<<endl);    
     if (!get_filtered_snapshots_from_box_cam(filtered_box_camera_image)) {
+        ROS_WARN("could not observe grasp--could not get image");
         return false;
     }
+    
     //convert each part to world coords, and find the part with max z value;
     int num_models = filtered_box_camera_image.models.size();
     //int highest_model = 0;    
-    if (num_models < 2) return false; // must see box and at least one more model!
-
-    osrf_gear::Model model;
-    geometry_msgs::PoseStamped test_pose;
-    geometry_msgs::Pose cam_pose = filtered_box_camera_image.pose;
-
-    observed_part.location = inventory_msgs::Part::QUALITY_SENSOR_1;
-    model = filtered_box_camera_image.models[0];
-    observed_part.name = model.type;
-    grasped_part_pose_wrt_world = compute_stPose(cam_pose, model.pose);
-    observed_part.pose = grasped_part_pose_wrt_world;
-
-    double z_max = model.pose.position.z;
-    double test_z;
-
-    for (int imodel = 1; imodel < num_models; imodel++) {
-        model = filtered_box_camera_image.models[imodel];
-        grasped_part_pose_wrt_world = compute_stPose(cam_pose, model.pose);
-        test_z = grasped_part_pose_wrt_world.pose.position.z;
-        if (test_z > z_max) {
-            z_max = test_z;
-            observed_part.name = model.type;
-            observed_part.pose = grasped_part_pose_wrt_world;
+    if (num_models < 2) {
+        ROS_WARN("grasped_part_pose sensing: only 1 model seen; giving up");
+        return false; // must see box and at least one more model!
+    }
+    //next, make sure at least one of the models seen matches the intended part name:
+    double max_ht = 0.0; //BOX_SURFACE_HT_WRT_WORLD;
+    
+    bool found_a_candidate=false;        
+    for (int i = 0; i < box_inspector_image_.models.size(); i++) {
+        string model_name(box_inspector_image_.models[i].type);
+        if (model_name==grasped_part_name) {
+            found_a_candidate=true;
+            grasped_part_pose_wrt_world = compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+            if (grasped_part_pose_wrt_world.pose.position.z > max_ht) {
+                max_ht = grasped_part_pose_wrt_world.pose.position.z;
+                //winner = i; //don't care which model wins; just copy over the pose
+                observed_part.pose = grasped_part_pose_wrt_world;
+            }
         }
     }
+    if (!found_a_candidate) {
+        ROS_WARN("grasped_part_pose sensing: could not match name of part to any observed parts; giving up");
+        return false; // certainly did not see intended grasped part
+    }
+    ROS_INFO_STREAM("presumed grasped_part_pose_wrt_world = "<<endl<<grasped_part_pose_wrt_world<<endl);
     return true;
 }
 

@@ -169,6 +169,26 @@ bool KukaBehaviorActionServer::send_traj_goal(trajectory_msgs::JointTrajectory d
     return true; //should test this
 }
 
+bool KukaBehaviorActionServer::try_recover_from_abort(Eigen::VectorXd q_vec, double tolerance) {
+   ROS_WARN("trying to recover from ABORT");
+   int max_retries = 3;
+   int n_retries = 0;
+   get_fresh_joint_states(); // update joint_state_vec_
+   double jspace_err_norm = (joint_state_vec_-q_vec).norm();
+   double move_time;
+   
+   while ((n_retries<max_retries)&&(jspace_err_norm>tolerance)) {
+       n_retries++;
+       move_time = estimate_move_time(joint_state_vec_,q_vec)+2.0*n_retries; //go slower each iteration
+       move_to_jspace_pose(q_vec, move_time);
+       ros::Duration(1.0).sleep();
+       get_fresh_joint_states(); // update joint_state_vec_
+       jspace_err_norm = (joint_state_vec_-q_vec).norm();
+   }
+   if (jspace_err_norm>tolerance) return false;
+   return true; 
+}
+
 //helper fnc for  joint-space moves; puts a single jspace  pose into a trajectory msg
 /*
 trajectory_msgs::JointTrajectory RobotMoveActionServer::jspace_pose_to_traj(Eigen::VectorXd joints, double dtime) {
@@ -309,6 +329,15 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             timeout_arg = goal->timeout;
             errorCode_ = pick_part_from_box(part,timeout);
             break;            
+            
+        case kuka_move_as::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES:
+            ROS_INFO("EVALUATE_KEY_PICK_AND_PLACE_POSES ");
+            place_part= goal->destinationPart;
+            source_part = goal->sourcePart;
+            timeout_arg = goal->timeout;
+            errorCode_ = evaluate_key_pick_and_place_poses(source_part, place_part);
+            break;         
+            
         case kuka_move_as::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES:
             ROS_INFO("RE_EVALUATE_APPROACH_AND_PLACE_POSES ");
             place_part= goal->destinationPart;
