@@ -596,6 +596,9 @@ int main(int argc, char** argv) {
                             //release part and retract arm
                             ROS_INFO("quality sensor did not declare part as bad; leave it");
                             robotBehaviorInterface.release_and_retract();
+                            //Could delete element 0 of missing parts here. Since once box inspector is back, there is an update. This is assuming that everything is accurate.
+                            missing_models_wrt_world.erase(missing_models_wrt_world.begin());
+                            ROS_DEBUG("Deleted missing model cuz no box inspector update");
                         }
                     }
                 }
