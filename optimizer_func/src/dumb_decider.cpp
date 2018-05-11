@@ -6,10 +6,12 @@
 
 int deciderQ1(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res) {
+  ROS_INFO("Dumb optimizer for Q1.");
   return 0;
 }
 
 int deciderQ2(optimizer_func::optimizer_msgs::Request  &req,
 			optimizer_func::optimizer_msgs::Response &res) {
+  ROS_INFO("Dumb optimizer for Q2.");
   return 0;
 }
