@@ -668,8 +668,11 @@ int main(int argc, char** argv) {
                             ROS_INFO("quality sensor did not declare part as bad; leave it");
                             robotBehaviorInterface.release_and_retract();
                             //Could delete element 0 of missing parts here. Since once box inspector is back, there is an update. This is assuming that everything is accurate.
-                            missing_models_wrt_world.erase(missing_models_wrt_world.begin());
-                            ROS_DEBUG("Deleted missing model cuz no box inspector update");
+                            missing_models_wrt_world.erase(missing_models_wrt_world.begin()+missing_part_index);
+                            satisfied_models_wrt_world.push_back(current_model);
+                            parts_checklist[desired_part_id] = true;
+                            //assuming that placement is accurate, removed current model from missing models vector and placed it in satisfied models. Also marked it as 'tried' in the parts checklist 
+                            //ROS_DEBUG("Deleted missing model cuz no box inspector update");
                         }
                     }
                 }
