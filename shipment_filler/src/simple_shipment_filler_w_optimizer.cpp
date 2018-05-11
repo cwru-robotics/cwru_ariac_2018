@@ -585,7 +585,11 @@ int main(int argc, char** argv) {
                 else if (get_part_index_to_acquire(part_indices_missing,parts_checklist,missing_part_index,desired_part_id) ) 
                 {   //get a viable index for a missing part
                     ROS_INFO("trying to acquire a missing part");
+                    
+                    if(binInventory.update()) {
                     binInventory.get_inventory(current_inventory); //update the inventory
+                    } 
+                    //have to use the old values in current_inventory otherwise. During sensor blackout, get_inventory returns values seen before the blackout, causing robot to try parts that dont exist
                     //do the sequence to pick and place:
 
                     //don't bother to recompute desired part poses w/rt world--assume box has not moved since last time
