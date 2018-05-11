@@ -139,6 +139,12 @@ bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeo
     return( sendGoal(goal_type,part,timeout));    
 }
 
+bool RobotBehaviorInterface::evaluate_key_pick_and_place_poses(Part sourcePart, Part destinationPart, double timeout) {
+    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES; 
+    return(sendGoal(goal_type, sourcePart, destinationPart,  timeout));
+}
+
+
 bool RobotBehaviorInterface::re_evaluate_approach_and_place_poses(Part sourcePart, Part destinationPart, double timeout) {
     short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES;   
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout));

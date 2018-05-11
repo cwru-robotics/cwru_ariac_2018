@@ -258,6 +258,15 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories             
         send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);
         ROS_INFO("sent multipoint traj to withdraw arm from deep row of bin");
+            if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT");
+                if(try_recover_from_abort(q_vec)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+            }          
     }
     else {
         ROS_WARN("extracting arm from  middle row of bin");
@@ -298,6 +307,15 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
         send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);
 
         ROS_INFO("sent multipoint traj to withdraw arm from middle row of bin");
+            if (rtn_state_ == bad_state_) {
+                ROS_WARN("trying to recover from ABORT");
+                if(try_recover_from_abort(q_vec)) {
+                    ROS_INFO("recovery successful");
+                }
+                else {
+                    ROS_WARN("recovery not successful within tolerance");
+                }
+            }          
     }
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {

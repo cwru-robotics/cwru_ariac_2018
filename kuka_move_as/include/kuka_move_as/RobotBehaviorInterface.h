@@ -63,6 +63,7 @@ public:
     bool pick_part_from_box(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool move_part_to_approach_pose(inventory_msgs::Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME); 
     bool re_evaluate_approach_and_place_poses(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
+    bool evaluate_key_pick_and_place_poses(Part sourcePart, Part destinationPart, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
     bool place_part_in_box_from_approach_no_release(Part part, double timeout = MAX_ACTION_SERVER_WAIT_TIME);
 
     /*
