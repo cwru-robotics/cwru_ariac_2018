@@ -585,7 +585,11 @@ int main(int argc, char** argv) {
                 else if (get_part_index_to_acquire(part_indices_missing,parts_checklist,missing_part_index,desired_part_id) ) 
                 {   //get a viable index for a missing part
                     ROS_INFO("trying to acquire a missing part");
+                    
+                    if(binInventory.update()) {
                     binInventory.get_inventory(current_inventory); //update the inventory
+                    } 
+                    //have to use the old values in current_inventory otherwise. During sensor blackout, get_inventory returns values seen before the blackout, causing robot to try parts that dont exist
                     //do the sequence to pick and place:
 
                     //don't bother to recompute desired part poses w/rt world--assume box has not moved since last time
@@ -667,6 +671,12 @@ int main(int argc, char** argv) {
                             //release part and retract arm
                             ROS_INFO("quality sensor did not declare part as bad; leave it");
                             robotBehaviorInterface.release_and_retract();
+                            
+                            missing_models_wrt_world.erase(missing_models_wrt_world.begin()+missing_part_index);
+                            satisfied_models_wrt_world.push_back(current_model);
+                            parts_checklist[desired_part_id] = true;
+                            //assuming that placement is accurate, removed current model from missing models vector and placed it in satisfied models. Also marked it as 'tried' in the parts checklist 
+                            //ROS_DEBUG("Deleted missing model cuz no box inspector update");
                         }
                     }
                 }
