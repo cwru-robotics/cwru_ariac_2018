@@ -420,7 +420,7 @@ int main(int argc, char** argv) {
                 
                 int good_part_index = part_indices_precisely_placed[i];
                 ROS_INFO("watching for segfaults. Good part index: %d press 1", good_part_index);
-                cin>>debug;
+                //cin>>debug;
                 parts_checklist[good_part_index] = true;  //mark these parts as "done"     
                 ROS_INFO("part %d is precise",good_part_index);
             }
