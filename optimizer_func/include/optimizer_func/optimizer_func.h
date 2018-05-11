@@ -23,6 +23,8 @@ extern ros::Time current_order_recvd, priority_order_recvd;
 extern osrf_gear::Order shipment_queue;
 extern int shipment_queue_indx;
 
+extern osrf_gear::Shipment shipping_now;
+
 extern int alert_level;
 
 #define LEVEL_GREEN	0

@@ -118,6 +118,7 @@ int main(int argc, char **argv)
   // initialize the shipment_queue with a null shipment
   shipment_queue.shipments.resize(1);
   shipment_queue.shipments[0].shipment_type.append(NULL_SHIPMENT);
+  shipping_now = shipment_queue.shipments[0];
   
   ros::ServiceServer service = n.advertiseService("optimizer", optimize_shipments);
   ROS_INFO("Ready to respond to optimization requests.");
