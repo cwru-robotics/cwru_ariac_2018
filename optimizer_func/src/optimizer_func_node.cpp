@@ -28,6 +28,11 @@ int alert_level = LEVEL_GREEN;
   }
 
 void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg) {
+  if (msg->clock.sec > 500) {
+    if (alert_level != LEVEL_COMPLETE)
+      ROS_WARN("Setting alert_level to LEVEL_COMPLETE");
+    alert_level = LEVEL_COMPLETE;
+  }
   if (msg->clock.sec > 460){
     if (alert_level != LEVEL_RED)
       ROS_WARN("Setting alert_level to LEVEL_RED");
@@ -49,7 +54,7 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
   // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
   // if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
   if (!msg->order_id.size() > 8) {
-    ROS_INFO("Identified order: %s as an order_0 update", msg->order_id.c_str());
+    ROS_INFO("Identified order: %s as an order_0 update.  Currently based on string size.", msg->order_id.c_str());
 
     // TODO:: Better way to do this!!
     // Assuming that updates are not part of the shipment_type.

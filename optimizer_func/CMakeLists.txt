@@ -31,8 +31,8 @@ catkin_simple()
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-cs_add_executable(dumb_optimizer src/optimizer_func_node.cpp src/dumb_optimizer_func.cpp src/helper_funcs.cpp)
-cs_add_executable(decision_optimizer src/optimizer_func_node.cpp src/optimizer_func.cpp src/helper_funcs.cpp)
+cs_add_executable(dumb_optimizer src/optimizer_func_node.cpp src/dumb_decider.cpp src/optimizer_func.cpp src/helper_funcs.cpp)
+cs_add_executable(decision_optimizer src/optimizer_func_node.cpp src/dumb_decider.cpp src/optimizer_func.cpp src/helper_funcs.cpp)
 
  #add_executable(${PROJECT_NAME}_dumb_node src/dumb_optimizer_node.cpp src/optimizer_func.cpp)
 
