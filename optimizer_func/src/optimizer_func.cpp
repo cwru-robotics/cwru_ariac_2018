@@ -34,10 +34,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
       res.decision = optimizer_func::optimizer_msgsResponse::ADVANCE_THIS_BOX_TO_Q2;
       
       // Make sure that the shipment query is for the expected shipment.  Also accepting a NULL_SHIPMENT string
-      if (shipment_queue.shipments[0].shipment_type == std::string(req.loaded.shipment_type)) {
-	if (req.loaded.shipment_type.compare(NULL_SHIPMENT)) {
-	  ROS_WARN("The optimizer expected %s, but received %s instead", shipment_queue.shipments[0].shipment_type.c_str(), req.loaded.shipment_type.c_str());
-	}
+      if (shipment_queue.shipments[0].shipment_type == req.loaded.shipment_type) {
 	// The last entry is a empty shipment queue placeholder, so don't pop it.
 	if(shipment_queue.shipments.size() > 1) 
 	  shipment_queue.shipments.erase(shipment_queue.shipments.begin());

@@ -28,19 +28,14 @@ int alert_level = LEVEL_GREEN;
   }
 
 void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg) {
-  if (msg->clock.sec > 500) {
-    if (alert_level != LEVEL_COMPLETE)
-      ROS_WARN("Setting alert_level to LEVEL_COMPLETE");
+  if ((msg->clock.sec > 500) && (alert_level < LEVEL_COMPLETE)) {
+    ROS_WARN("Setting alert_level to LEVEL_COMPLETE");
     alert_level = LEVEL_COMPLETE;
-  }
-  if (msg->clock.sec > 460){
-    if (alert_level != LEVEL_RED)
-      ROS_WARN("Setting alert_level to LEVEL_RED");
+  } else if ((msg->clock.sec > 460) && (alert_level < LEVEL_RED)) {
+    ROS_WARN("Setting alert_level to LEVEL_RED");
     alert_level = LEVEL_RED;
-  }
-  else if (msg->clock.sec > 420) {
-    if (alert_level != LEVEL_YELLOW)
-      ROS_WARN("Setting alert_level to LEVEL_YELLOW");
+  } else if ((msg->clock.sec > 420) && (alert_level < LEVEL_YELLOW)) {
+    ROS_WARN("Setting alert_level to LEVEL_YELLOW");
     alert_level = LEVEL_YELLOW;
   }
 }
@@ -48,29 +43,11 @@ void clockCallback(const rosgraph_msgs::Clock::ConstPtr& msg) {
 // Listening for the Orders from ARIAC
 void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
 
+  osrf_gear::Order msg2 = *msg;
+  
   ROS_INFO("Received order %s with %i shipment%s", msg->order_id.c_str(), (int) msg->shipments.size(), msg->shipments.size() == 1 ? "": "s");
   ROS_DEBUG("shipment_queue is so long: %i", (int)shipment_queue.shipments.size());
-  // TODO: Make sure this works with update orders.
-  // If this is order_0 or order_1, save it and take the time it was received.  If it is an update, save it, but the order time is not altered.
-  // if (!msg->order_id.compare(8, 8, "order_n_update_", 8, 8)) {
-  if (!msg->order_id.size() > 8) {
-    ROS_INFO("Identified order: %s as an order_0 update.  Currently based on string size.", msg->order_id.c_str());
-
-    // TODO:: Better way to do this!!
-    // Assuming that updates are not part of the shipment_type.
-    for (int indy = shipment_queue.shipments.size(); indy > 0; --indy) {
-      // Strip out the previous order_0s
-      if (msg->shipments[indy].shipment_type.compare(0, 7, shipment_queue.shipments[indy].shipment_type)) {
-	shipment_queue.shipments.erase(shipment_queue.shipments.begin() + indy);
-      }
-    }
-
-    // TODO: Add order shipments into queue at advantageous spot.
-    // Add new shipments.
-    for (int indx = 0; indx < msg->shipments.size(); indx++) {
-      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
-    }
-  } else if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
+  if (!msg->order_id.compare(0, 6, "order_", 0, 6)) {
     ROS_DEBUG("Identified order: %s as an original order", msg->order_id.c_str());
     // TODO: This could be better.
     if (!msg->order_id.compare("order_0")) {
@@ -78,9 +55,32 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
     } else if (!msg->order_id.compare("order_1")) {
       priority_order_recvd= ros::Time::now();
     }
-    for (int indx = 0; indx < msg->shipments.size(); indx++) {
-      shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg->shipments[indx]);
+
+    // Strip out any exising shipments that this updates.
+    for (int indy = shipment_queue.shipments.size()-1; indy >= 0; --indy) {
+      for (int indx = msg2.shipments.size()-1; indx >= 0; --indx) {
+	// Strip out any previous order_ns
+	if (!msg2.shipments[indx].shipment_type.compare(shipment_queue.shipments[indy].shipment_type)) {
+	  ROS_INFO("Updating %s", shipment_queue.shipments[indy].shipment_type.c_str());
+	  shipment_queue.shipments[indy] = msg2.shipments[indx];
+	  msg2.shipments.pop_back();
+	  break;
+	}
+      }
     }
+    // Add the (remaining) shipments to the shipment_queue.
+    if (!msg2.order_id.compare(0, 7, "order_0", 0, 7)) {
+      for (int indx = 0; indx < msg2.shipments.size(); indx++) {
+	ROS_INFO("Adding %s to the end of the shipment_queue.", msg2.shipments[indx].shipment_type.c_str());
+	shipment_queue.shipments.insert(shipment_queue.shipments.end()-1, msg2.shipments[indx]);
+      }
+    } else {
+      for (int indx = 0; indx < msg2.shipments.size(); indx++) {
+	ROS_INFO("Adding %s to the begining of the shipment_queue.", msg2.shipments[indx].shipment_type.c_str());
+	shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg2.shipments[indx]);
+      }
+    }
+
   } else {
     ROS_ERROR("Order was not identified!!!");
   }
