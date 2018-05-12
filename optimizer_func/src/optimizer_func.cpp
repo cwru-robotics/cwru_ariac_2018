@@ -10,7 +10,7 @@ int middle_term_memory_Q1 = 0;
 int short_term_memory_Q2 = 0;
 int middle_term_memory_Q2 = 0;
 
-osrf_gear::Shipment shipping_now;
+std::vector <osrf_gear::Shipment> shipping_now;
 
 // Could make this a time based decision instead of being based on count
 #define NUM_REP_REQS	8
@@ -26,7 +26,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   case optimizer_func::optimizer_msgsRequest::Q1_STATION:
     
     // Giving up or there were a lot of repeats without indication of moving forward
-    if ((req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) || (middle_term_memory_Q1 >= NUM_REP_REQS)) {
+    if ((req.giving_up == optimizer_func::optimizer_msgsRequest::GIVING_UP) || (middle_term_memory_Q1 >= NUM_REP_REQS) || (alert_level == LEVEL_RED) || ((alert_level == LEVEL_YELLOW) && (shipping_now.size() > 0))) {
       
       ROS_INFO("Giving up set, so advance the box (next shipment returned).");
       
@@ -70,7 +70,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 	  // The last entry is a empty shipment queue placeholder, so don't pop it.
 	  if(shipment_queue.shipments.size() > 1) {
 	    // Save what is now being shipped.
-	    shipping_now = shipment_queue.shipments[0];
+	    shipping_now.push_back(shipment_queue.shipments[0]);
 	    shipment_queue.shipments.erase(shipment_queue.shipments.begin());
 	  } else {
 	    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
@@ -89,7 +89,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
   case optimizer_func::optimizer_msgsRequest::Q2_STATION:
     
     // Giving up
-    if ((req.giving_up ==  optimizer_func::optimizer_msgsRequest::GIVING_UP) || (middle_term_memory_Q2 >= NUM_REP_REQS)) {
+    if ((req.giving_up ==  optimizer_func::optimizer_msgsRequest::GIVING_UP) || (middle_term_memory_Q2 >= NUM_REP_REQS) || (alert_level == LEVEL_RED) || ((alert_level == LEVEL_YELLOW) && (shipping_now.size() > 0))) {
       ROS_INFO("Giving up.  Responding PRIORIYT_LOAD_NEXT and work on shipment %s", shipment_queue.shipments[0].shipment_type.c_str());
       res.decision = optimizer_func::optimizer_msgsResponse::PRIORITY_LOAD_NEXT;
       middle_term_memory_Q2 = 0;
@@ -97,7 +97,7 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
       ROS_ERROR("Not giving_up at Q2.");
       
       // Make sure that the shipment query is for the expected shipment.  Also accepting a NULL_SHIPMENT string
-      if (shipping_now.shipment_type == std::string(req.loaded.shipment_type)) {
+      if (shipping_now[0].shipment_type == std::string(req.loaded.shipment_type)) {
 	// TODO:
 	// The only thing being checked here is whether the overall score will be substanially
 	// dropped by not removing a faulty part.
@@ -122,12 +122,20 @@ bool optimize_shipments(optimizer_func::optimizer_msgs::Request  &req,
 	} else {
 	  
 	  // Make a decision about whether to replace a faulty part.
+
+	  // If the shipment was updated, drop the old one.
+	  if (shipping_now.size() > 1)
+	    shipping_now.erase(shipping_now.begin());
 	  
 	  // Default decision is to send it on its way for now, but here is where the decision can be made.
 	  if (deciderQ2(req, res)) {
 	    res.decision = optimizer_func::optimizer_msgsResponse::USE_CURRENT_BOX;
 	    // Need to send the correct shipment_type back
-	    res.shipment = req.loaded;
+
+	    if (shipping_now.size() > 0)
+	      res.shipment = shipping_now[0];
+	    else
+	      res.shipment = req.loaded;
 	    
 	    //Must return here so that shipment is correct.
 	    return true;

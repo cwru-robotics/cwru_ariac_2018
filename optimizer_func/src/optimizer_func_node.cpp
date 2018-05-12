@@ -60,6 +60,14 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
     for (int indy = shipment_queue.shipments.size()-1; indy >= 0; --indy) {
       for (int indx = msg2.shipments.size()-1; indx >= 0; --indx) {
 	// Strip out any previous order_ns
+	if (shipping_now.size() > 0) {
+	  if (!msg2.shipments[indx].shipment_type.compare(shipping_now[0].shipment_type)) {
+	    ROS_INFO("Updating %s in the currently being shipped.", shipment_queue.shipments[indy].shipment_type.c_str());
+	    shipping_now.push_back(msg2.shipments[indx]);
+	    msg2.shipments.pop_back();
+	    break;
+	  }
+	}
 	if (!msg2.shipments[indx].shipment_type.compare(shipment_queue.shipments[indy].shipment_type)) {
 	  ROS_INFO("Updating %s", shipment_queue.shipments[indy].shipment_type.c_str());
 	  shipment_queue.shipments[indy] = msg2.shipments[indx];
@@ -77,7 +85,7 @@ void orderCallback(const osrf_gear::Order::ConstPtr& msg) {
     } else {
       for (int indx = 0; indx < msg2.shipments.size(); indx++) {
 	ROS_INFO("Adding %s to the begining of the shipment_queue.", msg2.shipments[indx].shipment_type.c_str());
-	shipment_queue.shipments.insert(shipment_queue.shipments.begin(), msg2.shipments[indx]);
+	shipment_queue.shipments.insert(shipment_queue.shipments.begin() + ((shipment_queue.shipments.size()) > 1 ? 1 : 0), msg2.shipments[indx]);
       }
     }
 
@@ -118,7 +126,6 @@ int main(int argc, char **argv)
   // initialize the shipment_queue with a null shipment
   shipment_queue.shipments.resize(1);
   shipment_queue.shipments[0].shipment_type.append(NULL_SHIPMENT);
-  shipping_now = shipment_queue.shipments[0];
   
   ros::ServiceServer service = n.advertiseService("optimizer", optimize_shipments);
   ROS_INFO("Ready to respond to optimization requests.");
