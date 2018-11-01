@@ -1,0 +1,173 @@
+# goal definition
+int8 type								# type of action
+int8 predefinedPoseCode
+int32 planID	# plan id for searching exist plan from oracle, 
+                #to avoid duplicate planning work, not implemented
+inventory_msgs/Part sourcePart				# part to pick
+inventory_msgs/Part destinationPart				# fake part message to place the part
+float64[] jointsValue					# new joint value to be published
+float64 timeout						 	# time limit for perform any move action, timeout <=0 means no limit
+
+# type list
+int8 NONE						= 0	 	# unused
+int8 TEST_PICK_PART_FROM_BIN					= 9     # specialized for test fnc to tune kinematics
+int8 PICK						= 10	# input: planID, sourcePart (from), timeout; output: success, errorCode, robotState
+int8 PLACE						= 11	# input: planID, targetPart (to), timeout; output: success, errorCode, robotState
+int8 MOVE						= 12	# input: planID, sourcePart (from), targetPart (to), timeout; output: success, errorCode, robotState
+int8 TO_HOME					= 13	# input: timeout; output: success, errorCode, robotState
+#int8 SET_JOINT_VALUE	= 15	# input: jointsValue, timeout; output: success, errorCode, robotState
+#int8 GET_ROBOT_STATE	= 16	# input: (none); output: success, robotState
+int8 GRASP		= 17	# input: timeout; output: success, errorCode
+int8 RELEASE		= 18	# input: timeout; output: success, errorCode
+int8 IS_ATTACHED	= 19	# input: (none); output: success (true means attached)
+int8 TO_PREDEFINED_POSE  = 20    # input: predfinedPoseCode, timeout; output: success, errorCode
+int8 FLIP_PART		= 21     # part-flipper code
+int8 PLACE_PART_IN_BOX_NO_RELEASE = 22
+int8 DISCARD_GRASPED_PART_Q1 = 23
+int8 DISCARD_GRASPED_PART_Q2 = 24
+int8 RELEASE_PLACED_PART = 25
+int8 TO_CRUISE_POSE = 26
+int8 TEST_IS_PICKABLE = 27
+int8 TEST_IS_PLACEABLE = 28
+int8 PICK_PART_FROM_BIN = 29
+int8 ADJUST_PART_LOCATION = 30
+int8 PICK_PART_FROM_BOX = 31
+int8 PLACE_PART_IN_BOX_WITH_RELEASE = 32
+int8 ADJUST_PART_LOCATION_WITH_RELEASE = 33
+int8 RELEASE_AND_RETRACT = 34
+int8 MOVE_GRASPED_PART_TO_APPROACH_POSE = 35
+int8 EVALUATE_KEY_PICK_AND_PLACE_POSES = 36
+int8 RE_EVALUATE_APPROACH_AND_PLACE_POSES = 37
+int8 PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE = 38
+
+
+#the following location codes correspond to relative locations in box, as viewed from robot's base
+int8 PART_FAR_RIGHT = 30
+int8 PART_FAR_LEFT = 31
+int8 PART_NEAR_RIGHT = 32
+int8 PART_NEAR_LEFT = 33
+
+# predefined move codes
+int8 INIT_POSE                        =3
+int8 BIN8_HOVER_POSE                   =4
+int8 BIN8_RETRACT_POSE                   =5
+int8 BIN8_CRUISE_POSE                   =6
+int8 BIN7_HOVER_POSE                   =7
+int8 BIN7_RETRACT_POSE                   =8
+int8 BIN7_CRUISE_POSE                   =9
+int8 BIN6_HOVER_POSE                   =10
+int8 BIN6_RETRACT_POSE                   =11
+int8 BIN6_CRUISE_POSE                   =12
+int8 BIN5_HOVER_POSE                   =13
+int8 BIN5_RETRACT_POSE                   =14
+int8 BIN5_CRUISE_POSE                   =15
+int8 BIN4_HOVER_POSE                   =16
+int8 BIN4_RETRACT_POSE                   =17
+int8 BIN4_CRUISE_POSE                   =18
+int8 BIN3_HOVER_POSE                   =19
+int8 BIN3_RETRACT_POSE                   =20
+int8 BIN3_CRUISE_POSE                   =21
+int8 BIN2_HOVER_POSE                   =22
+int8 BIN2_RETRACT_POSE                   =23
+int8 BIN2_CRUISE_POSE                   =24
+int8 BIN1_HOVER_POSE                   =25
+int8 BIN1_RETRACT_POSE                   =26
+int8 BIN1_CRUISE_POSE                   =27
+
+#a bunch of key pose codes for box at quality-sensor 1:
+#for UR10, these are "forward" poses:
+#right/left refers to location in box, viewed from robot base
+int8 Q1_HOVER_POSE_LEFT_FAR             =30
+int8 Q1_HOVER_POSE_LEFT_NEAR         =31
+int8 Q1_LEFT_DISCARD_POSE            =32
+int8 Q1_LEFT_CRUISE_POSE             =33
+
+
+int8 Q1_HOVER_POSE_RIGHT_FAR              =34
+int8 Q1_HOVER_POSE_RIGHT_NEAR               =35
+int8 Q1_RIGHT_DISCARD_POSE          =36
+int8 Q1_RIGHT_CRUISE_POSE            =37
+
+#     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
+int8 Q1_ARM_VERTICAL_POSE              =38
+
+#//some key poses near candidate box dropoff locations at Qsensor 1
+#    //------FORWARD POSES------
+#    //covers cases for  left-side of box dropoff (from robot's perspective); 
+#    //the following are safe transitions:
+#    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
+int8 Q1_NOM_DROPOFF_POSE_NEAR_LEFT         =40
+int8 Q1_NOM_DROPOFF_POSE_FAR_LEFT          =41
+
+#         //----LEFTY  POSES----
+#     //covers cases for right-side dropoff; the following are safe transitions:
+#     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
+int8 Q1_NOM_DROPOFF_POSE_NEAR_RIGHT         =42
+int8 Q1_NOM_DROPOFF_POSE_FAR_RIGHT          =43
+int8 Q1_NOM_DROPOFF_POSE_UNKNOWN            =44
+ 
+#repeat for Q2 sensor location:
+#a bunch of key pose codes for box at quality-sensor 1:
+int8 Q2_HOVER_POSE_LEFT_FAR             =50
+int8 Q2_HOVER_POSE_LEFT_NEAR         =51
+int8 Q2_LEFT_DISCARD_POSE            =52
+int8 Q2_LEFT_CRUISE_POSE             =53
+
+
+int8 Q2_HOVER_POSE_RIGHT_FAR              =54
+int8 Q2_HOVER_POSE_RIGHT_NEAR               =55
+int8 Q2_RIGHT_DISCARD_POSE          =56
+int8 Q2_RIGHT_CRUISE_POSE            =57
+
+#     //safe move sequence, lefty/righty: Q1_RIGHTY_CRUISE<-->Q1_ARM_VERTICAL<-->v<-->Q1_LEFTY_CRUISE
+int8 Q2_ARM_VERTICAL_POSE              =58
+
+#//some key poses near candidate box dropoff locations at Qsensor 1
+#    //------FOR  UR10, these placements require FORWARD POSES------
+#    //covers cases for  left-side of box dropoff (from robot's perspective); 
+#    //the following are safe transitions:
+#    //Q1_DROPOFF_FAR_LEFT<->Q1_RIGHTY_HOVER<->Q1_RIGHTY_HOVER_FLIP<->Q1_DROPOFF_NEAR_LEFT
+int8 Q2_NOM_DROPOFF_POSE_NEAR_LEFT         =60
+int8 Q2_NOM_DROPOFF_POSE_FAR_LEFT          =61
+
+#         //----REVERSE  POSES----
+#     //covers cases for right-side dropoff; the following are safe transitions:
+#     //Q1_DROPOFF_FAR_RIGHT<->Q1_LEFTY_HOVER_FLIP<->Q1_LEFTY_HOVER<->Q1_DROPOFF_NEAR_RIGHT   
+int8 Q2_NOM_DROPOFF_POSE_NEAR_RIGHT         =62
+int8 Q2_NOM_DROPOFF_POSE_FAR_RIGHT          =63
+int8 Q2_DROPOFF_UNKNOWN            =64
+
+#a bunch of key pose codes for bins on middle row (need to associate w/ sled coord)
+#for UR10, these are "forward" poses:
+#right/left refers to location in bin, viewed from robot base
+int8 BIN_MID_HOVER_POSE_LEFT_FAR             =30
+int8 BIN_MID_HOVER_POSE_LEFT_NEAR         =31
+int8 BIN_MID_LEFT_DISCARD_POSE            =32
+int8 BIN_MID_LEFT_CRUISE_POSE             =33
+
+
+int8 BIN_MID_HOVER_POSE_RIGHT_FAR              =34
+int8 BIN_MID_HOVER_POSE_RIGHT_NEAR               =35
+int8 BIN_MID_RIGHT_DISCARD_POSE          =36
+int8 BIN_MID_RIGHT_CRUISE_POSE            =37
+
+
+---
+# result definition
+bool success			# success or bool result, if success, errorCode will be ignored
+int8 errorCode							# reason of fault, specified below
+#robot_move_as/RobotState robotState        # robot state after finish execute current command
+
+# ERROR CODE
+int8 NO_ERROR			= 0	# default
+int8 CANCELLED		    = 100	# goal canceled
+int8 WRONG_PARAMETER	= 101		# type not in list or Part message have error
+int8 TIMEOUT			= 102	# out of time limit
+int8 UNREACHABLE		= 103   # pose unreachable
+int8 GRIPPER_FAULT		= 104	# when gripper failed to attach or detach object
+int8 COLLISION			= 105	# when robot hits anything
+int8 PART_DROPPED		= 106	# part dropped in the middle, return immediately with RobotState, a replanning will be performed
+int8 PRECOMPUTED_TRAJ_ERR       = 107   # trajectory map does not contain the desired move trajectory
+---
+# feedback
+#robot_move_as/RobotState robotState        # current robot state when performing any action

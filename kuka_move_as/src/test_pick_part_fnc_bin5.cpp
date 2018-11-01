@@ -12,7 +12,7 @@
 // BIN4, BIN5: rotation J1 is positive to go from cruise to bin-reach pose
 // this requires an overhead flip of J2 and J4 and J6
 
-unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
+unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal) {
     int ans;
     inventory_msgs::Part part = goal->sourcePart;
     ROS_INFO("The part is %s; it should be fetched from location code %s ", part.name.c_str(),
@@ -30,7 +30,7 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
 
     //COMPUTE KEY POSES FOR MANIPULATION HERE:
     errorCode_ = alt_compute_bin_pickup_key_poses(part);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
 
@@ -320,11 +320,11 @@ unsigned short int KukaBehaviorActionServer::test_pick_part_from_bin5(const kuka
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         ROS_WARN("dropped  part!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }   
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
-    if (!is_attached_) errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
+    if (!is_attached_) errorCode_ = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT;
     return errorCode_;
 }
 

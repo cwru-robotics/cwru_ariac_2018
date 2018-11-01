@@ -30,7 +30,7 @@ d8 = y_part_wrt_world - fabs(dy_part_wrt_link0)
 
 
 unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(inventory_msgs::Part part) {
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;    
 
     
     transitionTrajectories_.get_hover_pose(part.location,current_hover_pose_,current_bin_hover_pose_code_);
@@ -59,7 +59,7 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
 
     if(!compute_bin_hover_from_xy(part_x,part_y, computed_jspace_approach_)) {
         ROS_WARN("could not compute valid approach to bin--something wrong");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
         ROS_INFO_STREAM("computed jspace approach: "<<computed_jspace_approach_.transpose()<<endl);
@@ -77,7 +77,7 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, computed_jspace_approach_, pickup_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
 
@@ -88,13 +88,13 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, approach_dist_,
             desired_approach_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup approach pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, depart_dist_,
             desired_depart_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for depart pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }    
     
@@ -112,12 +112,12 @@ unsigned short int KukaBehaviorActionServer::compute_bin_pickup_key_poses(invent
         ROS_WARN("could not compute IK soln for deep pickup approach pose");
         ROS_WARN("re-using grasp pose; not returning an error");
         pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
-        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         //return errorCode_;
     }
     ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
     
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;   
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;   
     
     //APPLY SYMMETRY FOR BIN5 CASE:
     //DO THIS IN BIN_PICK CODE INSTEAD...
@@ -182,14 +182,14 @@ void KukaBehaviorActionServer::fwd_qvec_from_rvrs_qvec(double part_y, Eigen::Vec
 //desired_grasp_dropoff_pose_
 //
 unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inventory_msgs::Part part) {
-    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    //unsigned short int errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;    
 //  new...set these:
      //   Eigen::VectorXd  box_dropoff_hover_pose_, box_dropoff_cruise_pose_;
     //XXX COERCE THIS TO BOX Q1---FIX ME!!!
     part.location = Part::QUALITY_SENSOR_1;
     if (!hover_jspace_pose(part.location, current_hover_pose_)) {
         ROS_WARN("hover pose not recognized!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }
     
@@ -262,7 +262,7 @@ unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inven
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, current_hover_pose_, desired_grasp_dropoff_pose_)) {
         ROS_WARN("could not compute IK soln for dropoff pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     ROS_INFO_STREAM("desired_grasp_dropoff_pose_: " << desired_grasp_dropoff_pose_.transpose());
@@ -272,7 +272,7 @@ unsigned short int KukaBehaviorActionServer::compute_box_dropoff_key_poses(inven
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, approach_dist_,
             approach_dropoff_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     //desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
@@ -350,11 +350,11 @@ unsigned short int KukaBehaviorActionServer::box_cam_grasp_inspection_pose(inven
     else {
         ROS_WARN("alt_compute_box_dropoff_key_poses()");
         ROS_WARN("destination code is not Q1 nor Q2!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }    
     ROS_INFO_STREAM("box_cam_grasp_inspection_pose_: " << box_cam_grasp_inspection_pose_.transpose());
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     return errorCode_;
     
 }
@@ -364,12 +364,13 @@ unsigned short int KukaBehaviorActionServer::box_cam_grasp_inspection_pose(inven
 //box_dropoff_cruise_pose_, box_dropoff_hover_pose_=box_cam_grasp_inspection_pose_, desired_grasp_dropoff_pose_, approach_dropoff_jspace_pose_, 
 //also, pickup_deeper_jspace_pose_, useful for pick-part-from-box
 unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(inventory_msgs::Part part) {
-    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    //unsigned short int errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;    
 //  new...set these:
     
     geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
     Eigen::Affine3d affine_part_wrt_world = xformUtils_.transformPoseToEigenAffine3d(part_pose_wrt_world);
     Eigen::Vector3d O_part_wrt_world = affine_part_wrt_world.translation();
+    ROS_INFO_STREAM("alt_compute_box_dropoff_key_poses: part is:"<<endl<<part<<endl);
     ROS_INFO_STREAM("desired part origin w/rt world: "<<O_part_wrt_world.transpose()<<endl);
     double destination_x_wrt_world = O_part_wrt_world[0];
     double destination_y_wrt_world = O_part_wrt_world[1];
@@ -430,7 +431,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
     else {
         ROS_WARN("alt_compute_box_dropoff_key_poses()");
         ROS_WARN("destination code is not Q1 nor Q2!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }    
     ROS_INFO_STREAM("box_cam_grasp_inspection_pose_: " << box_cam_grasp_inspection_pose_.transpose());
@@ -452,7 +453,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, box_dropoff_hover_pose_, desired_grasp_dropoff_pose_)) {
         ROS_WARN("could not compute IK soln for dropoff pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     ROS_INFO_STREAM("desired_grasp_dropoff_pose_: " << desired_grasp_dropoff_pose_.transpose());
@@ -462,7 +463,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, approach_dist_,
             approach_dropoff_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     //use deep grasp pose for pick-part from box:
@@ -471,13 +472,13 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
         ROS_WARN("could not compute IK soln for deep pickup approach pose");
         ROS_WARN("re-using grasp pose; not returning an error");
         pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
-        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         //return errorCode_;
     }    
     //desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
     ROS_INFO_STREAM("approach_dropoff_jspace_pose_: " << approach_dropoff_jspace_pose_.transpose());
     ROS_INFO("done computing key poses  for box dropoff");
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     return errorCode_;
         
 }
@@ -488,7 +489,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_box_dropoff_key_poses(i
 // approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_,
 //  pickup_jspace_pose is used to establish righty/lefty
 unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventory_msgs::Part part, Eigen::VectorXd pickup_jspace_pose) {
-    //unsigned short int errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    //unsigned short int errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;    
 //  new...set these:
     
     geometry_msgs::PoseStamped part_pose_wrt_world = part.pose;
@@ -549,7 +550,7 @@ unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventor
     else {
         ROS_WARN("alt_compute_box_dropoff_key_poses()");
         ROS_WARN("destination code is not Q1 nor Q2!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
         return errorCode_;
     }    
     ROS_INFO_STREAM("box_cam_grasp_inspection_pose_: " << box_cam_grasp_inspection_pose_.transpose());
@@ -571,7 +572,7 @@ unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventor
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, box_dropoff_hover_pose_, desired_grasp_dropoff_pose_)) {
         ROS_WARN("could not compute IK soln for dropoff pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     ROS_INFO_STREAM("desired_grasp_dropoff_pose_: " << desired_grasp_dropoff_pose_.transpose());
@@ -581,7 +582,7 @@ unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventor
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, desired_grasp_dropoff_pose_, approach_dist_,
             approach_dropoff_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     //use deep grasp pose for pick-part from box:
@@ -590,13 +591,13 @@ unsigned short int KukaBehaviorActionServer::plan_box_dropoff_key_poses(inventor
         ROS_WARN("could not compute IK soln for deep pickup approach pose");
         ROS_WARN("re-using grasp pose; not returning an error");
         pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
-        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         //return errorCode_;
     }    
     //desired_approach_depart_pose_ = approach_dropoff_jspace_pose_;
     ROS_INFO_STREAM("approach_dropoff_jspace_pose_: " << approach_dropoff_jspace_pose_.transpose());
     ROS_INFO("done computing key poses  for box dropoff");
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     return errorCode_;
         
 }
@@ -831,25 +832,25 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
             copy_array_to_qvec(Q1_HOVER_array,qvec);
 
             /*
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_LEFT) {
-                unsigned short int hover_code = kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR;
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_LEFT) {
+                unsigned short int hover_code = robot_behavior_interface::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR;
                 get_pose_from_code(hover_code, qvec);                 
                 //qvec = q_Q1_righty_hover_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_RIGHT) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_RIGHT) {
                 ROS_INFO("place part far right");
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_RIGHT_FAR, qvec);               
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_HOVER_POSE_RIGHT_FAR, qvec);               
                 //qvec = q_Q1_righty_hover_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_NEAR_LEFT) {
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_NEAR, qvec);
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_NEAR_LEFT) {
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_HOVER_POSE_LEFT_NEAR, qvec);
                 //qvec = q_Q1_righty_hover_; //Q1_RIGHTY_HOVER_FLIP
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_LEFT ) {
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR, qvec);
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_LEFT ) {
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_HOVER_POSE_LEFT_FAR, qvec);
                 //qvec = q_Q1_righty_hover_;//Q1_RIGHTY_HOVER
                 return true;
             }*/
@@ -876,19 +877,19 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
      switch (part.location) {       
         case Part::QUALITY_SENSOR_1: //4 different drop-off hover poses, depending on placement location in box
             ROS_INFO("destination location QUALITY_SENSOR_1");
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_NEAR_RIGHT) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_NEAR_RIGHT) {
                 q_manip_nom_ = q_Q1_dropoff_near_right_;                
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_RIGHT) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_RIGHT) {
                 q_manip_nom_ = q_Q1_dropoff_far_right_;                //qvec = q_Q1_righty_hover_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_NEAR_LEFT) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_NEAR_LEFT) {
                 q_manip_nom_ = q_Q1_dropoff_near_left_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_LEFT ) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_LEFT ) {
                 q_manip_nom_ = q_Q1_dropoff_far_left_;
                 return true;
             }        
@@ -900,7 +901,7 @@ bool KukaBehaviorActionServer::hover_jspace_pose_w_code(int8_t bin, unsigned sho
 }
 
 bool KukaBehaviorActionServer::cruise_jspace_pose(int8_t bin,  Eigen::VectorXd &q_vec) {
-    unsigned short int dropoff_code = kuka_move_as::RobotMoveGoal::Q1_NOM_DROPOFF_POSE_UNKNOWN;
+    unsigned short int dropoff_code = robot_behavior_interface::RobotMoveGoal::Q1_NOM_DROPOFF_POSE_UNKNOWN;
     return cruise_jspace_pose_w_code(bin,dropoff_code,q_vec);
 }; // { }; //default, no box location code
 
@@ -939,24 +940,24 @@ bool KukaBehaviorActionServer::cruise_jspace_pose_w_code(int8_t location,unsigne
             break;              
         case Part::QUALITY_SENSOR_1:
             //FIX ME!
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_NEAR_RIGHT) {
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_RIGHT_CRUISE_POSE, q_vec);                 
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_NEAR_RIGHT) {
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_RIGHT_CRUISE_POSE, q_vec);                 
                 //qvec = q_Q1_righty_hover_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_RIGHT) {
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_RIGHT) {
                 //Q1_LEFTY_HOVER_FLIP
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_RIGHT_CRUISE_POSE, q_vec);               
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_RIGHT_CRUISE_POSE, q_vec);               
                 //qvec = q_Q1_righty_hover_;
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_NEAR_LEFT) {
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_LEFT_CRUISE_POSE, q_vec);
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_NEAR_LEFT) {
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_LEFT_CRUISE_POSE, q_vec);
                 //qvec = q_Q1_righty_hover_; //Q1_RIGHTY_HOVER_FLIP
                 return true;
             }
-            if (box_placement_location_code==kuka_move_as::RobotMoveGoal::PART_FAR_LEFT ) {
-                get_pose_from_code(kuka_move_as::RobotMoveGoal::Q1_LEFT_CRUISE_POSE, q_vec);
+            if (box_placement_location_code==robot_behavior_interface::RobotMoveGoal::PART_FAR_LEFT ) {
+                get_pose_from_code(robot_behavior_interface::RobotMoveGoal::Q1_LEFT_CRUISE_POSE, q_vec);
                 //qvec = q_Q1_righty_hover_;//Q1_RIGHTY_HOVER
                 return true;
             }
@@ -1435,7 +1436,7 @@ bool KukaBehaviorActionServer::recompute_pickup_dropoff_IK(Eigen::Affine3d grasp
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, q_vec_soln, approach_dist_,
             desired_approach_jspace_pose_)) {
         //ROS_WARN("could not compute IK soln for approach_dropoff_jspace_pose_!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         ret_val=false;
     }
     desired_depart_jspace_pose_ = desired_approach_jspace_pose_;
@@ -1600,7 +1601,7 @@ bool KukaBehaviorActionServer::compute_approach_IK(Eigen::Affine3d affine_vacuum
 //use this version for bins 4 and 5: J1_cruise = -1.57
 //compute: current_bin_hover_pose_, computed_jspace_approach_, pickup_jspace_pose_, desired_approach_jspace_pose_, pickup_deeper_jspace_pose_
 unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(inventory_msgs::Part part) {
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;    
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;    
 
     
     transitionTrajectories_.get_hover_pose(part.location,current_hover_pose_,current_bin_hover_pose_code_);
@@ -1629,7 +1630,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(in
 
     if(!alt_compute_bin_hover_from_xy(part_x,part_y, computed_jspace_approach_)) {
         ROS_WARN("could not compute valid approach to bin--something wrong");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
         ROS_INFO_STREAM("computed jspace approach: "<<computed_jspace_approach_.transpose()<<endl);
@@ -1647,7 +1648,7 @@ unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(in
     //if (!get_pickup_IK(cart_grasp_pose_wrt_base_link,computed_jspace_approach_,&q_vec_soln);
     if (!compute_pickup_dropoff_IK(affine_vacuum_pickup_pose_wrt_base_link_, computed_jspace_approach_, pickup_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
 
@@ -1658,13 +1659,13 @@ unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(in
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, approach_dist_,
             desired_approach_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for pickup approach pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }
     if (!compute_approach_IK(affine_vacuum_pickup_pose_wrt_base_link_, pickup_jspace_pose_, depart_dist_,
             desired_depart_jspace_pose_)) {
         ROS_WARN("could not compute IK soln for depart pose!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         return errorCode_;
     }    
     
@@ -1682,12 +1683,12 @@ unsigned short int KukaBehaviorActionServer::alt_compute_bin_pickup_key_poses(in
         ROS_WARN("could not compute IK soln for deep pickup approach pose");
         ROS_WARN("re-using grasp pose; not returning an error");
         pickup_deeper_jspace_pose_ = pickup_jspace_pose_;
-        //errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE;
+        //errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE;
         //return errorCode_;
     }
     ROS_INFO_STREAM("pickup_deeper_jspace_pose_: " << pickup_deeper_jspace_pose_.transpose());  
     
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;   
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;   
 
     ROS_INFO("SUCCESSFUL COMPUTATION OF KEY POSES FOR BIN PICKUP");
     return errorCode_;

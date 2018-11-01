@@ -2,21 +2,20 @@
 //  wsn 3/2018
 //
 
-#include <kuka_move_as/RobotBehaviorInterface.h>
+#include <robot_behavior_interface/RobotBehaviorInterface.h>
 RobotBehaviorInterface::RobotBehaviorInterface(ros::NodeHandle* nodehandle) : nh_(*nodehandle),ac("robot_behavior_server", true) {
     ROS_INFO("constructor of RobotBehaviorInterface");
 
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::NO_ERROR, "NO_ERROR"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::CANCELLED, "CANCELLED"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER, "WRONG_PARAMETER"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::TIMEOUT, "TIMEOUT"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::UNREACHABLE, "UNREACHABLE"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT, "GRIPPER_FAULT"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::COLLISION, "COLLISION"));
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::PART_DROPPED, "PART_DROPPED"));  
-    errorCodeFinder.insert(pair<int8_t, string>(kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"));  
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::NO_ERROR, "NO_ERROR"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::CANCELLED, "CANCELLED"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER, "WRONG_PARAMETER"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::TIMEOUT, "TIMEOUT"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::UNREACHABLE, "UNREACHABLE"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT, "GRIPPER_FAULT"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::COLLISION, "COLLISION"));
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::PART_DROPPED, "PART_DROPPED"));  
+    errorCodeFinder.insert(pair<int8_t, string>(robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"));  
 
-    //    {kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"},
 
     ROS_INFO("waiting for robot_behavior_server: ");
     bool server_exists = ac.waitForServer(ros::Duration(1.0));
@@ -83,7 +82,7 @@ bool RobotBehaviorInterface::sendGoal(unsigned short int goal_type, Part sourceP
     return(wrap_up());    
 }
 
-void RobotBehaviorInterface::doneCb(const actionlib::SimpleClientGoalState &state, const kuka_move_as::RobotBehaviorResultConstPtr &result) {
+void RobotBehaviorInterface::doneCb(const actionlib::SimpleClientGoalState &state, const robot_behavior_interface::RobotBehaviorResultConstPtr &result) {
     action_server_returned_ = true;
     goal_success_ = result->success;
     errorCode_ = result->errorCode;
@@ -98,7 +97,7 @@ void RobotBehaviorInterface::doneCb(const actionlib::SimpleClientGoalState &stat
 //    showJointState(currentRobotState.jointNames, currentRobotState.jointStates);
 }
 
-void RobotBehaviorInterface::feedbackCb(const kuka_move_as::RobotBehaviorFeedbackConstPtr &feedback) {
+void RobotBehaviorInterface::feedbackCb(const robot_behavior_interface::RobotBehaviorFeedbackConstPtr &feedback) {
     //do nothing
     //currentRobotState = feedback->robotState;
 }
@@ -113,7 +112,7 @@ void RobotBehaviorInterface::activeCb() {
 
 bool RobotBehaviorInterface::test_pick_part_from_bin(Part part, double timeout) {
     ROS_INFO("test pick fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN;
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN;
     return( sendGoal(goal_type,part,timeout));    
 }
 
@@ -121,7 +120,7 @@ bool RobotBehaviorInterface::test_pick_part_from_bin(Part part, double timeout) 
 //blocking function!!
 bool RobotBehaviorInterface::pick_part_from_bin(Part part, double timeout) { 
     ROS_INFO("pick fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN;
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::PICK_PART_FROM_BIN;
     return( sendGoal(goal_type,part,timeout));
 }
 //    bool discard_grasped_part(double timeout=0);
@@ -129,72 +128,72 @@ bool RobotBehaviorInterface::pick_part_from_bin(Part part, double timeout) {
 //    bool discard_grasped_part(Part part,double timeout = MAX_ACTION_SERVER_WAIT_TIME);
 bool RobotBehaviorInterface::discard_grasped_part(inventory_msgs::Part part, double timeout) {
     ROS_INFO("discard fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1;   
     return( sendGoal(goal_type,part,timeout));
 }
 
 bool RobotBehaviorInterface::place_part_in_box_no_release(Part part,double timeout) {
     ROS_INFO("place_part_in_box_no_release fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE;   
     return( sendGoal(goal_type,part,timeout));    
 }
 
 bool RobotBehaviorInterface::evaluate_key_pick_and_place_poses(Part sourcePart, Part destinationPart, double timeout) {
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES; 
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES; 
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout));
 }
 
 
 bool RobotBehaviorInterface::re_evaluate_approach_and_place_poses(Part sourcePart, Part destinationPart, double timeout) {
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES;   
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout));
 }
 bool RobotBehaviorInterface::place_part_in_box_from_approach_no_release(Part part, double timeout) {
     ROS_INFO("place_part_in_box_from_approach_no_release  fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE;   
     return( sendGoal(goal_type,part,timeout));      
 }
 
 bool RobotBehaviorInterface::move_part_to_approach_pose(inventory_msgs::Part part,double timeout) {
     ROS_INFO("move grasped part to approach pose");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE;   
     return( sendGoal(goal_type,part,timeout));       
 } 
 
 
 bool RobotBehaviorInterface::place_part_in_box_with_release(Part part,double timeout) {
     ROS_INFO("place_part_in_box_with_release fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE;   
     return( sendGoal(goal_type,part,timeout));    
 }
     
 
 bool RobotBehaviorInterface::adjust_part_location_no_release(Part sourcePart, Part destinationPart, double timeout) {
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::ADJUST_PART_LOCATION;   
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout)); 
 }
 
 bool RobotBehaviorInterface::adjust_part_location_with_release(Part sourcePart, Part destinationPart, double timeout) {
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE;   
     return(sendGoal(goal_type, sourcePart, destinationPart,  timeout)); 
 }
 
 bool RobotBehaviorInterface::release(double timeout)  {
      ROS_INFO("release fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RELEASE;
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::RELEASE;
     return( sendGoal(goal_type,timeout));    
 }
 
 bool RobotBehaviorInterface::release_and_retract(double timeout) {
      ROS_INFO("release_and_retract called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::RELEASE_AND_RETRACT;
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::RELEASE_AND_RETRACT;
     return( sendGoal(goal_type,timeout));      
 }
 
 
 bool RobotBehaviorInterface::pick_part_from_box(Part part, double timeout) {
     ROS_INFO("pick_part_from_box fnc called");
-    short unsigned  int goal_type = kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BOX;   
+    short unsigned  int goal_type = robot_behavior_interface::RobotBehaviorGoal::PICK_PART_FROM_BOX;   
     return( sendGoal(goal_type,part,timeout));    
 }
 
@@ -252,7 +251,7 @@ bool RobotBehaviorInterface::wrap_up() {
         ros::Duration(dt).sleep();
         ros::spinOnce();
     }
-    if (errorCode_==kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_==robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
       return true;
     }
     return false;

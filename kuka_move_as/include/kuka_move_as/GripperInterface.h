@@ -7,7 +7,7 @@
 #include <ros/ros.h>
 #include <osrf_gear/VacuumGripperControl.h>
 #include <osrf_gear/VacuumGripperState.h>
-#include <kuka_move_as/RobotBehaviorAction.h>
+#include <robot_behavior_interface/RobotBehaviorAction.h>
 
 using namespace std;
 

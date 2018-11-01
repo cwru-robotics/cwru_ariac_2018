@@ -15,8 +15,9 @@
 #include <osrf_gear/DroneControl.h>
 //#include <robot_move_as/RobotMove.h>
 //#include <robot_move_as/RobotMoveActionServer.h> //old
-#include <kuka_move_as/RobotBehaviorInterface.h>
-#include <kuka_move_as/KukaBehaviorActionServer.h>
+#include <robot_behavior_interface/RobotBehaviorInterface.h>
+#include <robot_behavior_interface/system_magic_numbers.h>
+//#include <kuka_move_as/KukaBehaviorActionServer.h>
 #include<bin_inventory/bin_inventory.h>
 #include<box_inspector/box_inspector.h>
 
@@ -24,6 +25,8 @@
 const int BOX_INSPECTION1_LOCATION_CODE = 2;
 const int BOX_INSPECTION2_LOCATION_CODE = 3;
 const int DRONE_DOCK_LOCATION_CODE = 4;
+
+
 
 using namespace std;
 

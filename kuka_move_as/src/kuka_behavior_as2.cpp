@@ -235,7 +235,7 @@ void KukaBehaviorActionServer::jointstateCB(const sensor_msgs::JointState& messa
 
 //EXECUTE_CB: does function  switching
 
-void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalConstPtr &goal) {
+void KukaBehaviorActionServer::executeCB(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal) {
     ROS_INFO("Received goal type: %d", goal->type);
     double start_time = ros::Time::now().toSec();
     double dt;
@@ -250,17 +250,17 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
     inventory_msgs::Part part, source_part,place_part;
 
     switch (goal->type) {
-        case kuka_move_as::RobotBehaviorGoal::NONE:
+        case robot_behavior_interface::RobotBehaviorGoal::NONE:
             ROS_INFO("NONE");
-            errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+            errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
             //report_success_or_abort(); //populate result message and inform client of status
             break;
-        case kuka_move_as::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN:
+        case robot_behavior_interface::RobotBehaviorGoal::TEST_PICK_PART_FROM_BIN:
             ROS_WARN("kinematic test fnc");
             errorCode_ = test_pick_part_from_bin(goal);
         break;
 
-        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BIN:  //re-wrote 5/2/2018; needs more testing
+        case robot_behavior_interface::RobotBehaviorGoal::PICK_PART_FROM_BIN:  //re-wrote 5/2/2018; needs more testing
             ROS_INFO("PICK_PART_FROM_BIN");
             // use "goal", but only need to populate the "sourcePart" component
             part = goal->sourcePart;
@@ -273,64 +273,64 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             }
             break;
             
-        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE:
+        case robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE:
             ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
             part = goal->destinationPart;
             errorCode_ = place_part_in_box_no_release(part);
             break;
-        case kuka_move_as::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE:
+        case robot_behavior_interface::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE:
             ROS_INFO("MOVE_GRASPED_PART_TO_APPROACH_POSE (and view before place part in box)");
             part = goal->destinationPart;
             errorCode_ = move_grasped_part_to_approach_pose(part);
             break;            
             //
-        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE:
+        case robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_WITH_RELEASE:
             ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
             part = goal->destinationPart;
             timeout_arg = goal->timeout;
             errorCode_ = place_part_in_box_with_release(part,timeout_arg);
             break;
             
-        case kuka_move_as::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
+        case robot_behavior_interface::RobotBehaviorGoal::DISCARD_GRASPED_PART_Q1:
             part = goal->destinationPart;
             ROS_INFO("DISCARD_GRASPED_PART_Q1");
             errorCode_ = discard_grasped_part(part);
             break;
 
 
-        case kuka_move_as::RobotBehaviorGoal::RELEASE:
+        case robot_behavior_interface::RobotBehaviorGoal::RELEASE:
             ROS_INFO("RELEASE");
             timeout_arg = goal->timeout;
             errorCode_ = gripperInterface_.release_fnc(timeout_arg); //this version includes testing for release and timeout monitoring, same as below
             break;            
-        case kuka_move_as::RobotBehaviorGoal::RELEASE_AND_RETRACT:
+        case robot_behavior_interface::RobotBehaviorGoal::RELEASE_AND_RETRACT:
             ROS_INFO("RELEASE_AND_RETRACT");
             timeout_arg = goal->timeout;
             errorCode_ = release_and_retract(timeout_arg);
             //errorCode_ = gripperInterface_.release_fnc(timeout_arg); //this version includes testing for release and timeout monitoring, same as below
             break;              
 
-        case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION:
+        case robot_behavior_interface::RobotBehaviorGoal::ADJUST_PART_LOCATION:
             ROS_INFO("ADJUST_PART_LOCATION");
             place_part= goal->destinationPart;
             source_part = goal->sourcePart;
             errorCode_ = adjust_part_location_no_release(source_part, place_part);
             break;
-        case kuka_move_as::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE:
+        case robot_behavior_interface::RobotBehaviorGoal::ADJUST_PART_LOCATION_WITH_RELEASE:
             ROS_INFO("ADJUST_PART_LOCATION_WITH_RELEASE");
             place_part= goal->destinationPart;
             source_part = goal->sourcePart;
             errorCode_ = adjust_part_location_with_release(source_part, place_part);
             break;
             
-        case kuka_move_as::RobotBehaviorGoal::PICK_PART_FROM_BOX:
+        case robot_behavior_interface::RobotBehaviorGoal::PICK_PART_FROM_BOX:
             ROS_INFO("PICK_PART_FROM_BOX ");
             part = goal->destinationPart;
             timeout_arg = goal->timeout;
             errorCode_ = pick_part_from_box(part,timeout);
             break;            
             
-        case kuka_move_as::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES:
+        case robot_behavior_interface::RobotBehaviorGoal::EVALUATE_KEY_PICK_AND_PLACE_POSES:
             ROS_INFO("EVALUATE_KEY_PICK_AND_PLACE_POSES ");
             place_part= goal->destinationPart;
             source_part = goal->sourcePart;
@@ -338,14 +338,14 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
             errorCode_ = evaluate_key_pick_and_place_poses(source_part, place_part);
             break;         
             
-        case kuka_move_as::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES:
+        case robot_behavior_interface::RobotBehaviorGoal::RE_EVALUATE_APPROACH_AND_PLACE_POSES:
             ROS_INFO("RE_EVALUATE_APPROACH_AND_PLACE_POSES ");
             place_part= goal->destinationPart;
             source_part = goal->sourcePart;
             timeout_arg = goal->timeout;
             errorCode_ = re_evaluate_approach_and_place_poses(source_part, place_part);
             break;      
-        case kuka_move_as::RobotBehaviorGoal::PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE:
+        case robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE:
             ROS_INFO("PLACE_PART_IN_BOX_FROM_APPROACH_NO_RELEASE ");
             part = goal->destinationPart;
             timeout_arg = goal->timeout;
@@ -610,7 +610,7 @@ void KukaBehaviorActionServer::executeCB(const kuka_move_as::RobotBehaviorGoalCo
         default:
             ROS_INFO("Wrong parameter received for goal");
             //result_.success = false;
-            errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+            errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
             //result_.errorCode = errorCode_;
             //robot_behavior_as.setAborted(result_);
     }
@@ -649,7 +649,7 @@ trajectory_msgs::JointTrajectory KukaBehaviorActionServer::jspace_pose_to_traj(E
 bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double arrival_time) {
     trajectory_msgs::JointTrajectory transition_traj;
 
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     switch (pose_code) {
         case APPROACH_DEPART_CODE:
             ROS_INFO("move_to_jspace_pose(APPROACH_DEPART_CODE)");
@@ -668,7 +668,7 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
             break;
         default:
             ROS_WARN("move_to_jspace_pose(): pose code not recognized");
-            errorCode_ = kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER;
+            errorCode_ = robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER;
             return false;
             break;
     }
@@ -688,7 +688,7 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(const int pose_code, double a
         ros::Duration(0.1).sleep();
     }
     current_pose_code_ = pose_code;    
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return false;
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) return false;
     return true;
 }
 
@@ -713,11 +713,11 @@ bool KukaBehaviorActionServer::move_to_jspace_pose(Eigen::VectorXd desired_jspac
         timer+=dt;
     }
     if (timer>=MAX_BEHAVIOR_SERVER_WAIT_TIME)  {
-        errorCode_ = kuka_move_as::RobotBehaviorResult::TIMEOUT;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::TIMEOUT;
         return false;
     }
     current_pose_code_ = CUSTOM_JSPACE_POSE;  //  this code will not be in the transition matrix
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     return true;
 }
 
@@ -734,7 +734,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
 
     trajectory_msgs::JointTrajectory transition_traj;
     //default: assume success, unless detect something went wrong
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     //placeFinder_[part.location].c_str()
     ROS_INFO("attempting move from %s  to %s ", map_pose_code_to_name[posecode_start].c_str(),
              map_pose_code_to_name[posecode_goal].c_str());
@@ -742,7 +742,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
     int npts = transitionTrajectories_.get_trajectory(posecode_start, posecode_goal, transition_traj);
     if (npts < 1) {
         ROS_WARN("precomputed traj does not exist!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR;
         return false;
     }
     //if here, then traj is valid:
@@ -761,7 +761,7 @@ bool KukaBehaviorActionServer::move_posecode1_to_posecode2(int posecode_start, i
         ros::Duration(0.1).sleep();
     }
     current_pose_code_ = posecode_goal;    
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return false;
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) return false;
     return true;
 }
 
@@ -780,7 +780,7 @@ double KukaBehaviorActionServer::estimate_move_time(Eigen::VectorXd q_vec_start,
 }
 
 bool KukaBehaviorActionServer::report_success_or_abort() {
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         ROS_WARN("behavior returned error code: %d", (int) errorCode_);
         result_.success = false;
         result_.errorCode = errorCode_;
@@ -791,7 +791,7 @@ bool KukaBehaviorActionServer::report_success_or_abort() {
     //if here, all is well:
     ROS_INFO("Completed behavior successfully");
     result_.success = true;
-    result_.errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    result_.errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     //result_.robotState = robotState;
     robot_behavior_as.setSucceeded(result_);
     return true;

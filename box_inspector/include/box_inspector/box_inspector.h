@@ -19,12 +19,14 @@
 #include <osrf_gear/ConveyorBeltControl.h>
 #include <sensor_msgs/LaserScan.h>
 #include <osrf_gear/DroneControl.h>
-#include <kuka_move_as/RobotBehaviorInterface.h>
-#include <kuka_move_as/KukaBehaviorActionServer.h>
+#include <robot_behavior_interface/RobotBehaviorInterface.h>
+//#include <kuka_move_as/KukaBehaviorActionServer.h>
 #include<bin_inventory/bin_inventory.h>
 #include<box_inspector/box_inspector.h>
 using namespace std;
 
+
+const double QUALITY_INSPECTION_MAX_WAIT_TIME = 2.0;
 /*const int NUM_PART_TYPES=5;
 //means to map part names to numerical codes, and vice-versa
 //edit the following to add more parts;

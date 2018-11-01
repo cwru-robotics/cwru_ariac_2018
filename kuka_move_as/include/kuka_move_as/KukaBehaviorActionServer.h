@@ -18,7 +18,8 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 
-#include <kuka_move_as/RobotBehaviorAction.h>
+#include <robot_behavior_interface/RobotBehaviorAction.h>
+#include <robot_behavior_interface/system_magic_numbers.h>
 #include <kuka_move_as/part_dimensions.h>
 #include <kuka_move_as/TransitionTrajectories.h>
 #include <kuka_move_as/GripperInterface.h>
@@ -53,9 +54,7 @@ const bool UP = true;
 const bool DOWN = false;
 
 const double MAX_BEHAVIOR_SERVER_WAIT_TIME = 30.0; //to prevent deadlocks
-const double QUALITY_INSPECTION_MAX_WAIT_TIME = 2.0;
 
-const double BOX_SURFACE_HT_WRT_WORLD = 0.585; // from Gazebo
 
 const double APPROACH_OFFSET_DIST = 0.075;
 const double DEPART_OFFSET_DIST = 0.075;
@@ -79,8 +78,8 @@ const double X_BASE_WRT_WORLD = -0.050;
 const double D8_MIN = -1.8;
 const double D8_MAX = 1.8;
 
-const double BOX_CAM_1_Y = 0.615;
-const double BOX_CAM_2_Y = -0.70;
+//const double BOX_CAM_1_Y = 0.615;
+//const double BOX_CAM_2_Y = -0.70;
 
 
 const double MOVE_INTO_GRASP_TIME = 7.0;//spend this long retrying grasp
@@ -201,13 +200,13 @@ std::map<int, string> map_pose_code_to_name = {
 };
 
 std::map<short unsigned int, string> error_code_name_map = {
-    {kuka_move_as::RobotBehaviorResult::NO_ERROR, "NO_ERROR"},
-    {kuka_move_as::RobotBehaviorResult::WRONG_PARAMETER, "WRONG_PARAMETER"},
-    {kuka_move_as::RobotBehaviorResult::TIMEOUT, "TIMEOUT"},
-    {kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT, "GRIPPER_FAULT"},
-    {kuka_move_as::RobotBehaviorResult::PART_DROPPED, "PART_DROPPED"},
-    {kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"},
-    {kuka_move_as::RobotBehaviorResult::CANCELLED, "CANCELLED"}    
+    {robot_behavior_interface::RobotBehaviorResult::NO_ERROR, "NO_ERROR"},
+    {robot_behavior_interface::RobotBehaviorResult::WRONG_PARAMETER, "WRONG_PARAMETER"},
+    {robot_behavior_interface::RobotBehaviorResult::TIMEOUT, "TIMEOUT"},
+    {robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT, "GRIPPER_FAULT"},
+    {robot_behavior_interface::RobotBehaviorResult::PART_DROPPED, "PART_DROPPED"},
+    {robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR, "PRECOMPUTED_TRAJ_ERR"},
+    {robot_behavior_interface::RobotBehaviorResult::CANCELLED, "CANCELLED"}    
 };
 /*
  int8 QUALITY_SENSOR_1=51
@@ -234,10 +233,10 @@ class KukaBehaviorActionServer {
 private:
     ros::NodeHandle nh;
     //RobotBehaviorInterface robotBehaviorInterface;
-    actionlib::SimpleActionServer<kuka_move_as::RobotBehaviorAction> robot_behavior_as;
-    kuka_move_as::RobotBehaviorGoal goal_;
-    kuka_move_as::RobotBehaviorFeedback feedback_;
-    kuka_move_as::RobotBehaviorResult result_;
+    actionlib::SimpleActionServer<robot_behavior_interface::RobotBehaviorAction> robot_behavior_as;
+    robot_behavior_interface::RobotBehaviorGoal goal_;
+    robot_behavior_interface::RobotBehaviorFeedback feedback_;
+    robot_behavior_interface::RobotBehaviorResult result_;
     std::string rtn_state_,bad_state_;
     bool isPreempt_;
     //bool goalComplete_;
@@ -284,11 +283,11 @@ private:
 
     bool report_success_or_abort(); //typical wrap-up for a behavior
     //here are the action functions: robot moves
-    //unsigned short int pick_part_fnc(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
-    unsigned short int pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    //unsigned short int pick_part_fnc(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int pick_part_from_bin(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal);
     unsigned short int pick_part_from_box(Part part, double timeout);
-    unsigned short int test_pick_part_from_bin(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
-    unsigned short int test_pick_part_from_bin5(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int test_pick_part_from_bin(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal);
+    unsigned short int test_pick_part_from_bin5(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal);
 
     
     //unsigned short int discard_grasped_part();
@@ -525,7 +524,7 @@ private:
      * */
 public:
     KukaBehaviorActionServer(ros::NodeHandle nodeHandle, string topic);
-    void executeCB(const kuka_move_as::RobotBehaviorGoalConstPtr &goal);
+    void executeCB(const robot_behavior_interface::RobotBehaviorGoalConstPtr &goal);
     void preemptCB();
     //bool get_pose_from_code(unsigned short int POSE_CODE, Eigen::VectorXd &q_vec);
 

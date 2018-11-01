@@ -4,7 +4,7 @@
 //
 
 unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(inventory_msgs::Part part) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     //trajectory_msgs::JointTrajectory transition_traj;
     //inventory_msgs::Part part = goal->destinationPart;
     ROS_INFO("The part is %s; it should be placed in  %s ", part.name.c_str(),
@@ -12,7 +12,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     errorCode_ = compute_box_dropoff_key_poses(part);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
     //extract box location codes from Part:
@@ -22,12 +22,12 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
     if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
 
         ROS_WARN("error with move between pose codes");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
     }
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }
 
@@ -63,27 +63,27 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         ROS_WARN("dropped part!");
-        errorCode = kuka_move_as::RobotBehaviorResult::PART_DROPPED; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED; //debug--return error
         return errorCode;
     }
     ROS_INFO("place-part complete--still grasping part");
     //cout<<"enter 1: ";
     //cin>>ans;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
 
 //stop at approach pose above box, so can do grasp-transform check before dropoff
 // first move to box_dropoff_cruise_pose_, then move to box_dropoff_hover_pose_
 unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(inventory_msgs::Part part, double timeout) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory traj_head,traj_tail; 
     ROS_INFO("The part is %s; it should be placed in  %s ", part.name.c_str(),
             placeFinder_[part.location].c_str());
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     errorCode_ = alt_compute_box_dropoff_key_poses(part);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
  
@@ -146,7 +146,7 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
                 }
         }          
         
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }    
 
@@ -162,7 +162,7 @@ unsigned short int KukaBehaviorActionServer::move_grasped_part_to_approach_pose(
      send_traj_goal(traj_head,CUSTOM_JSPACE_POSE);     
     //REMOVE CODE  ABOVE 
     */
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
 
@@ -173,7 +173,7 @@ unsigned short int  KukaBehaviorActionServer::evaluate_key_pick_and_place_poses(
     //compute pickup_jspace_pose_, desired_approach_jspace_pose_, ...
     if (sourcePart.location==Part::BIN5||sourcePart.location==Part::BIN4) {
     errorCode_ = alt_compute_bin_pickup_key_poses(sourcePart);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         ROS_WARN("could not compute pickup poses for sourcePart");
         return errorCode_;
     }
@@ -181,7 +181,7 @@ unsigned short int  KukaBehaviorActionServer::evaluate_key_pick_and_place_poses(
    else {
        //compute_bin_pickup_key_poses(inventory_msgs::Part part)
        errorCode_ = compute_bin_pickup_key_poses(sourcePart);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         ROS_WARN("could not compute pickup poses for sourcePart");
         return errorCode_;
     }       
@@ -189,11 +189,11 @@ unsigned short int  KukaBehaviorActionServer::evaluate_key_pick_and_place_poses(
    //if here, computation of  pickup poses was successful, notably:   pickup_jspace_pose_, desired_approach_jspace_pose_
    //next, compute dropoff poses:
     errorCode_ = plan_box_dropoff_key_poses(destinationPart, pickup_jspace_pose_);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         ROS_WARN("could not compute dropoff poses for destinationPart");
         return errorCode_;
     }    
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;    
 }
 
@@ -209,10 +209,10 @@ unsigned short int  KukaBehaviorActionServer::re_evaluate_approach_and_place_pos
     //REVISED: also recomputes dropoff_jspace_pose_ and desired_approach_depart_pose_
     if (!recompute_pickup_dropoff_IK(affine_part_current_wrt_world, affine_part_desired_wrt_world, desired_grasp_dropoff_pose_)) {
         ROS_WARN("recompute_pickup_dropoff_IK() error");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::UNREACHABLE; //debug--return error
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE; //debug--return error
         return errorCode_;
     }
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;    
 }
 
@@ -247,19 +247,19 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_from_approach_no_
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         ROS_WARN("dropped part!");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED; //debug--return error
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED; //debug--return error
         return errorCode_;
     }
     ROS_INFO("place-part complete--still grasping part");
     //cout<<"enter 1: ";
     //cin>>ans;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;   
 }
 
 
 unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inventory_msgs::Part part, double timeout) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     //trajectory_msgs::JointTrajectory transition_traj;
     //inventory_msgs::Part part = goal->destinationPart;
     ROS_INFO("The part is %s; it should be placed in  %s ", part.name.c_str(),
@@ -267,7 +267,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inve
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
     errorCode_ = compute_box_dropoff_key_poses(part);
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) {
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
     //extract box location codes from Part:
@@ -278,17 +278,17 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inve
     if (!move_posecode1_to_posecode2(current_pose_code_, current_cruise_code)) {
 
         ROS_WARN("error with move between pose codes");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
     }
         if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
         ROS_WARN("error with move between pose codes");
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
     }
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
-        errorCode_ = kuka_move_as::RobotBehaviorResult::PART_DROPPED;
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED;
         return errorCode_;
     }
 
@@ -315,7 +315,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inve
     //is_attached_ = gripperInterface_.isGripperAttached();
     //if (!is_attached_) {
     //    ROS_WARN("dropped part!");
-    //    errorCode = kuka_move_as::RobotBehaviorResult::PART_DROPPED; //debug--return error
+    //    errorCode = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED; //debug--return error
     //   return errorCode;
     //}
     ros::Duration(1.0).sleep(); //let robot stabilize
@@ -325,7 +325,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_with_release(inve
     errorCode_ = gripperInterface_.release_fnc(3.0);
     ROS_INFO("done w/ place_part_in_box_with_release; robot still  at approach pose; enter 1 to continue: ");
     //cin>>ans;
-    //errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    //errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
 
@@ -334,7 +334,7 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
     //int current_hover_code = location_to_pose_code_map[part.location];
     //int current_cruise_code = location_to_cruise_code_map[part.location];  
     errorCode_ = gripperInterface_.release_fnc(10.0); //this version includes testing for release and timeout monitoring, same as below
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return errorCode_;
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) return errorCode_;
     
     trajectory_msgs::JointTrajectory traj_head, traj_tail;
 
@@ -380,7 +380,7 @@ unsigned short int KukaBehaviorActionServer::release_and_retract(double timeout_
     //current_pose_code_=current_hover_code; //set establish code for recognized, key pose
     */
     ROS_INFO("release and retract is complete");
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
 
@@ -418,7 +418,7 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     ROS_WARN("DO PART RELEASE HERE");
     //wait max of  10 sec
     errorCode_ = gripperInterface_.release_fnc(10.0); //this version includes testing for release and timeout monitoring, same as below
-    if (errorCode_ != kuka_move_as::RobotBehaviorResult::NO_ERROR) return errorCode_;
+    if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) return errorCode_;
 
     /*
     gripperInterface_.release();
@@ -432,7 +432,7 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
        is_attached_ = gripperInterface_.isGripperAttached();     
     }
      if (timer>=MAX_BEHAVIOR_SERVER_WAIT_TIME) {
-        errorCode_ = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
+        errorCode_ = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
         return errorCode_;
 
 
@@ -444,14 +444,14 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     }   
      */
 
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
 
 unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory transition_traj;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
 
     geometry_msgs::PoseStamped part_current_pose_wrt_world = part_actual.pose;
     geometry_msgs::PoseStamped part_desired_pose_wrt_world = part_desired.pose;
@@ -463,7 +463,7 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
     //REVISED: also recomputes dropoff_jspace_pose_ and desired_approach_depart_pose_
     if (!recompute_pickup_dropoff_IK(affine_part_current_wrt_world, affine_part_desired_wrt_world, desired_grasp_dropoff_pose_)) {
         ROS_WARN("recompute_pickup_dropoff_IK() error");
-        errorCode = kuka_move_as::RobotBehaviorResult::UNREACHABLE; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE; //debug--return error
         return errorCode;
     }
 
@@ -479,13 +479,13 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         ROS_WARN("dropped part!");
-        errorCode = kuka_move_as::RobotBehaviorResult::PART_DROPPED; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED; //debug--return error
         return errorCode;
     }
     ROS_INFO("place-part complete--still grasping part");
     //cout<<"enter 1: ";
     //cin>>ans;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
 
     return errorCode_;
 }
@@ -493,11 +493,11 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inv
 //as above, but DO "drop" the part
 //NEEDS WORK--would need to compute adjusted approach pose...NOT READY
 unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory transition_traj;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     
-    errorCode = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
+    errorCode = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
     return errorCode; //SHORT CIRCUIT: NOT DONE
 
 
@@ -510,7 +510,7 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(i
     //recompute member var: desired_grasp_dropoff_pose_
     if (!recompute_pickup_dropoff_IK(affine_part_current_wrt_world, affine_part_desired_wrt_world, desired_grasp_dropoff_pose_)) {
         ROS_WARN("recompute_pickup_dropoff_IK() error");
-        errorCode = kuka_move_as::RobotBehaviorResult::UNREACHABLE; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE; //debug--return error
         return errorCode;
     }
 
@@ -531,19 +531,19 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(i
     is_attached_ = gripperInterface_.isGripperAttached();
     if (is_attached_) {
         ROS_WARN("still holding part!");
-        errorCode = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
         return errorCode;
     }
     ROS_INFO("place-part complete");
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
 
     return errorCode_;
 }
 /*
 unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
-    unsigned short int errorCode = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
+    unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     trajectory_msgs::JointTrajectory transition_traj;
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR;
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
 
     geometry_msgs::PoseStamped part_current_pose_wrt_world = part_actual.pose;
     geometry_msgs::PoseStamped part_desired_pose_wrt_world = part_desired.pose;
@@ -554,7 +554,7 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(i
     //recompute member var: desired_grasp_dropoff_pose_
     if (!recompute_pickup_dropoff_IK(affine_part_current_wrt_world, affine_part_desired_wrt_world, desired_grasp_dropoff_pose_)) {
         ROS_WARN("recompute_pickup_dropoff_IK() error");
-        errorCode = kuka_move_as::RobotBehaviorResult::UNREACHABLE; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::UNREACHABLE; //debug--return error
         return errorCode;
     }
 
@@ -575,11 +575,11 @@ unsigned short int KukaBehaviorActionServer::adjust_part_location_with_release(i
     is_attached_ = gripperInterface_.isGripperAttached();
     if (is_attached_) {
         ROS_WARN("still holding part!");
-        errorCode = kuka_move_as::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
+        errorCode = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT; //debug--return error
         return errorCode;
     }
     ROS_INFO("place-part complete");
-    errorCode_ = kuka_move_as::RobotBehaviorResult::NO_ERROR; //return success
+    errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
 
     return errorCode_;
 }

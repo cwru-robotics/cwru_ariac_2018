@@ -1,7 +1,6 @@
 //example using RobotBehaviorInterface library
 
-#include <kuka_move_as/RobotBehaviorInterface.h>
-//#include <kuka_move_as/KukaBehaviorActionServer.h>  //do I  need this?
+#include <robot_behavior_interface/RobotBehaviorInterface.h>
 
 
 void set_part_vals(Part &pick_part,Part &place_part) {
