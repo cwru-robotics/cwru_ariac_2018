@@ -47,7 +47,7 @@ cs_add_executable(test_pick_from_box src/test_pick_from_box.cpp)
 #cs_add_executable(simple_shipment_filler_wsn_test src/simple_shipment_filler_wsn_test.cpp)
 cs_add_executable(simple_shipment_filler_w_optimizer src/simple_shipment_filler_w_optimizer.cpp)
 cs_add_executable(shipment_filler_test src/shipment_filler_test.cpp)
-
+cs_add_executable(unload_box src/unload_box.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package

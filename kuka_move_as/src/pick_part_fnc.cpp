@@ -402,6 +402,7 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
+    desired_approach_jspace_pose_=approach_dropoff_jspace_pose_; //synonym...for pickup of part from box, not dropoff 
     //extract box location codes from Part: obsolete
     /*
     int current_hover_code = location_to_pose_code_map[part.location];
@@ -431,22 +432,37 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     ROS_INFO("enabling gripper");
     gripperInterface_.grab(); //do this early, so grasp can occur at first contact
     is_attached_ =  false;
+
+//xxx: this is last print-out seen before Eigen dimension complaint and crash xxxx
     
     //construct a trajectory from cruise->hover->approach->grasp pose
     double move_time_est = estimate_move_time(joint_state_vec_,box_dropoff_cruise_pose_)+1.0;     
     traj_head = jspace_pose_to_traj(box_dropoff_cruise_pose_,move_time_est); 
+    int ans;
+    //cout<<"enter 1: ";
+    //cin>>ans;
         
     move_time_est = estimate_move_time(box_dropoff_cruise_pose_,box_cam_grasp_inspection_pose_)+1.0;     
+    //    cout<<"enter 2: ";
+    //cin>>ans;    
     traj_tail = jspace_pose_to_traj(box_cam_grasp_inspection_pose_,move_time_est); 
+    //    cout<<"enter 3: ";
+    //cin>>ans;    
     traj_head = transitionTrajectories_.concat_trajs(traj_head,traj_tail);
+    //    cout<<"enter 4: ";
+    //cin>>ans;    
     move_time_est = estimate_move_time(box_cam_grasp_inspection_pose_, desired_approach_jspace_pose_)+0.5;
+    //    cout<<"enter 5: ";
+    //cin>>ans;    
     traj_tail = jspace_pose_to_traj(desired_approach_jspace_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories 
     move_time_est = estimate_move_time(approach_dropoff_jspace_pose_, desired_grasp_dropoff_pose_) + 0.5;
     traj_tail = jspace_pose_to_traj(desired_grasp_dropoff_pose_, move_time_est);
     traj_head = transitionTrajectories_.concat_trajs(traj_head, traj_tail); //concatenate trajectories     
+
     send_traj_goal(traj_head, CUSTOM_JSPACE_POSE);      
-    
+    //    cout<<"enter 6: ";
+    //cin>>ans;
     move_into_grasp(desired_grasp_dropoff_pose_, 1.5); //provide target pose
     cout<<"at computed grasp pose; "<<endl;    
     is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit
