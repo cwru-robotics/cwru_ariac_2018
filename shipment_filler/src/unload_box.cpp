@@ -13,8 +13,6 @@
 //conveyor interface communicates with the conveyor action server
 #include<conveyor_as/ConveyorInterface.h>
 
-//a gripper interface object communicates with the vacuum gripper
-#include <kuka_move_as/GripperInterface.h>
 
 const double COMPETITION_TIMEOUT=500.0; // need to  know what this is for the finals;
 // want to ship out partial credit before time runs out!
@@ -41,17 +39,26 @@ int main(int argc, char** argv) {
     ROS_INFO("instantiating a BoxInspector");
     BoxInspector boxInspector(&nh);
 
-    ROS_INFO("instantiating a GripperInterface");    
-    //oddly, I defined the GripperInterface constructor to take a reference to a node handle, instead of a pointer to a node handle,
-    // in contrast to the other 3 objects above.  I should be more consistent
-    GripperInterface gripperInterface(nh);
-
     //instantiate an object of appropriate data type for our move-part commands
     inventory_msgs::Part current_part;
 
     geometry_msgs::PoseStamped box_pose_wrt_world;  //camera sees box, coordinates are converted to world coords
+    
+    bool status;    
+    int nparts;
 
-   
+    //for box inspector, need to define multiple vectors for args, 
+    //box inspector will identify parts and convert their coords to world frame
+    //in the present example, desired_models_wrt_world is left empty, so ALL observed parts will be considered "orphaned"
+        vector<osrf_gear::Model> desired_models_wrt_world;
+        vector<osrf_gear::Model> satisfied_models_wrt_world;
+        vector<osrf_gear::Model> misplaced_models_actual_coords_wrt_world;
+        vector<osrf_gear::Model> misplaced_models_desired_coords_wrt_world;
+        vector<osrf_gear::Model> missing_models_wrt_world;
+        vector<osrf_gear::Model> orphan_models_wrt_world;
+        vector<int> part_indices_missing;
+        vector<int> part_indices_misplaced;
+        vector<int> part_indices_precisely_placed;
 
     
     //use conveyor action  server for multi-tasking
@@ -75,38 +82,45 @@ int main(int argc, char** argv) {
         ROS_WARN("no box seen.  something is wrong! I quit!!");
         exit(1);
     }
-    // box is at Q1 inspection station; 
     
-    bool status;
-    if (boxInspector.get_bad_part_Q1(current_part)) {
-        ROS_INFO("found bad part: ");
-        ROS_INFO_STREAM(current_part<<endl);
-        cout<<"enter 1 to attempt to remove bad part: ";
-        cin>>ans;        
-        //should attempt to remove the part here...
-    }    
-
-    //inspect box; identify parts, convert coords to world frame 
-    //define these vectors for args, although only expect orphan_models_wrt_world to
-    // be non-empty
-        vector<osrf_gear::Model> desired_models_wrt_world;
-        vector<osrf_gear::Model> satisfied_models_wrt_world;
-        vector<osrf_gear::Model> misplaced_models_actual_coords_wrt_world;
-        vector<osrf_gear::Model> misplaced_models_desired_coords_wrt_world;
-        vector<osrf_gear::Model> missing_models_wrt_world;
-        vector<osrf_gear::Model> orphan_models_wrt_world;
-        vector<int> part_indices_missing;
-        vector<int> part_indices_misplaced;
-        vector<int> part_indices_precisely_placed;
-
-
+    // if survive to here, then box is at Q1 inspection station; 
+    
+    //inspect the box and classify all observed parts
     boxInspector.update_inspection(desired_models_wrt_world,
         satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,
         misplaced_models_desired_coords_wrt_world,missing_models_wrt_world,
         orphan_models_wrt_world,part_indices_missing,part_indices_misplaced,
         part_indices_precisely_placed);
     ROS_INFO("orphaned parts in box: ");
-    int nparts = orphan_models_wrt_world.size();
+    nparts = orphan_models_wrt_world.size();
+    ROS_INFO("num parts seen in box = %d",nparts);
+    for (int i=0;i<nparts;i++) {
+       ROS_INFO_STREAM("orphaned  parts: "<<orphan_models_wrt_world[i]<<endl);
+    }
+    
+    
+
+    if (boxInspector.get_bad_part_Q1(current_part)) {
+        ROS_INFO("found bad part: ");
+        ROS_INFO_STREAM(current_part<<endl);
+        
+        cout<<"enter 1 to attempt to remove bad part: "; //poor-man's breakpoint
+        cin>>ans;        
+        //XXX YOU should attempt to remove the defective part here...
+        // see example, line 139, robotBehaviorInterface.pick_part_from_box();
+
+    //use the robot action server to acquire and dispose of the specified part in the box:
+    status = robotBehaviorInterface.pick_part_from_box(current_part);
+    }    
+
+    //after removing the bad part, re-inspect the box:
+    boxInspector.update_inspection(desired_models_wrt_world,
+        satisfied_models_wrt_world,misplaced_models_actual_coords_wrt_world,
+        misplaced_models_desired_coords_wrt_world,missing_models_wrt_world,
+        orphan_models_wrt_world,part_indices_missing,part_indices_misplaced,
+        part_indices_precisely_placed);
+    ROS_INFO("orphaned parts in box: ");
+    nparts = orphan_models_wrt_world.size();
     ROS_INFO("num parts seen in box = %d",nparts);
     for (int i=0;i<nparts;i++) {
        ROS_INFO_STREAM("orphaned  parts: "<<orphan_models_wrt_world[i]<<endl);
