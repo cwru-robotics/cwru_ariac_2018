@@ -110,7 +110,6 @@ int main(int argc, char** argv) {
         // see example, line 139, robotBehaviorInterface.pick_part_from_box();
 
     //use the robot action server to acquire and dispose of the specified part in the box:
-    status = robotBehaviorInterface.pick_part_from_box(current_part);
     }    
 
     //after removing the bad part, re-inspect the box:
