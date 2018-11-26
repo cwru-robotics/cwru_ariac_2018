@@ -648,6 +648,13 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
         }
 
     }
+    
+    //issue here: a bad part can show up as both an "orphan" and a desired part
+    //also, from quality sensor, do not get part name; need to find part name to
+    // compute offset for part removal
+    // further, there may be more than 1 faulty part, but only the first found faulty part
+    // is listed
+    //probably should create a separate vector for faulty parts vs "orphan"  parts
     ros::spinOnce();
     if (qual_sensor_1_sees_faulty_part_) {
         osrf_gear::Model bad_model;
@@ -668,6 +675,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
 //this function really only works for boxcam 1;
 //at Q2, expect to ONLY look for bad parts per inspection cam 2
 
+//as above, but with more args for org by part indices
 bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
         vector<osrf_gear::Model> &satisfied_models_wrt_world,
         vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
@@ -727,11 +735,11 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
         //start search through seen images:
         while ((!found)&&(ipart_seen < num_parts_seen)) {
             test_model = filtered_box_camera_image.models[ipart_seen];
-            string test_model_name(test_model.type);
-            if (test_model_name != bad_part_name) {
+            //string test_model_name(test_model.type);
+            //if (test_model_name != bad_part_name) {
                 //no match here; try next model seen
-                ipart_seen++;
-            } else { //name matches; do coordinates match, image to bad_part?
+            //    ipart_seen++;
+            //} else { //name matches; do coordinates match, image to bad_part?
                 //convert observed part pose to world coords:
                 model_pose_from_image_wrt_world = compute_stPose(filtered_box_camera_image.pose, test_model.pose);
                 //bad_part pose is already in world coords
@@ -745,7 +753,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
                 } else {
                     ipart_seen++; //not a good location match; try next candidate
                 }
-            }
+           // }
         }
 
         if (!found) {

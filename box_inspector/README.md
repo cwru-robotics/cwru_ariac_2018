@@ -19,6 +19,22 @@ Publish an order to be filled, by running:
 Publish fake camera images with:
 `rosrun box_inspector fake_logical_camera`
 
+Or, start with ariac test version with partially loaded box:
+`roslaunch cwru_ariac_launch sample_environment.launch fill_demo_shipment:=true`
+manually start the competition:
+`rosservice call /ariac/start_competition`
+start up servers (in separate  windows):
+`rosrun kuka_move_as kuka_behavior_as2`
+`rosrun conveyor_as conveyor_as`
+start a simple demo node to advance box to Q1 station:
+`rosrun shipment_filler unload_box`
+
+Run a box-inspector demo:
+`rosrun box_inspector box_inspector_example_main`
+this will show one defective part (piston rod) and two desired  parts (gears), but slightly dislocated
+
+
+
 
 ## Running tests/demos
     

@@ -41,9 +41,9 @@ int main(int argc, char ** argv) {
     while (!g_order_received) {
       ros::spinOnce();
       ros::Duration(1.0).sleep();
-      ROS_INFO("waiting to receive an order");
+      if (!g_order_received) ROS_INFO("waiting to receive an order");
     }
-    ROS_INFO_STREAM("received  order; desired shipment is: "<< g_shipment_wrt_box<<endl);
+    //ROS_INFO_STREAM("received  order; desired shipment is: "<< g_shipment_wrt_box<<endl);
 
 
     //find the pose of the shipment box:
@@ -71,9 +71,17 @@ int main(int argc, char ** argv) {
     //fill in vectors of correctly placed parts, misplaced parts, desired coords of misplaced parts,
     //missing parts, and extraneous parts
     //INPUT desired_models_wrt_world; fill  in the rest of the vectors using this function call
+    vector<int> part_indices_missing;
+    vector<int> part_indices_misplaced;
+    vector<int> part_indices_precisely_placed;
     boxInspector.update_inspection(desired_models_wrt_world, satisfied_models_wrt_world,
        misplaced_models_actual_coords_wrt_world, misplaced_models_desired_coords_wrt_world,
-       missing_models_wrt_world, orphan_models_wrt_world);
+       missing_models_wrt_world, orphan_models_wrt_world,
+            part_indices_missing,part_indices_misplaced,part_indices_precisely_placed);
+    
+    //        vector<int> &part_indices_missing,
+    //    vector<int> &part_indices_misplaced,
+    //    vector<int> &part_indices_precisely_placed
     ROS_INFO("debug");
     //print out the results:
     int nmodels = satisfied_models_wrt_world.size();
@@ -85,20 +93,20 @@ int main(int argc, char ** argv) {
     nmodels = misplaced_models_actual_coords_wrt_world.size();
     ROS_INFO("there are %d models in  incorrect poses; actual vs desired coords are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       //ROS_INFO_STREAM(misplaced_models_actual_coords_wrt_world[i]<<endl);
-       //ROS_INFO_STREAM(misplaced_models_desired_coords_wrt_world[i]<<endl<<endl);
+       ROS_INFO_STREAM("actual: "<<misplaced_models_actual_coords_wrt_world[i]<<endl);
+       ROS_INFO_STREAM("desired: "<<misplaced_models_desired_coords_wrt_world[i]<<endl<<endl);
     }
 
     nmodels = missing_models_wrt_world.size();
     ROS_INFO("there are %d models missing; they are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       //ROS_INFO_STREAM(missing_models_wrt_world[i]<<endl);
+       ROS_INFO_STREAM(missing_models_wrt_world[i]<<endl);
     }
 
     nmodels = orphan_models_wrt_world.size();
     ROS_INFO("there are %d orphan models (in box, but don't belong); they are:",nmodels);
     for (int i=0;i<nmodels;i++) {
-       //ROS_INFO_STREAM(orphan_models_wrt_world[i]<<endl);
+       ROS_INFO_STREAM(orphan_models_wrt_world[i]<<endl);
     }
     
   
