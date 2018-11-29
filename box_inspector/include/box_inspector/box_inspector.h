@@ -76,6 +76,17 @@ public:
   bool get_grasped_part_pose_wrt_world(geometry_msgs::PoseStamped &grasped_part_pose_wrt_world);
 
 
+  /**
+   * 
+   * @param [in] desired_models_wrt_world a vector of models, specifying desired types and locations for 
+   *    filling a box
+   * @param satisfied_models_wrt_world  a vector of models found to match the packing list and are placed within tolerances
+   * @param misplaced_models_actual_coords_wrt_world  vector of models from packing list that are present, but misplaced
+   * @param misplaced_models_desired_coords_wrt_world vector of desired coordinates for the above, in the same order
+   * @param missing_models_wrt_world  vector of models that are on the  packing list but not in the box
+   * @param orphan_models_wrt_world  vector models that are in the box, but not on the packing list
+   * @return 
+   */
   bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
