@@ -56,7 +56,7 @@ void BoxInspector::quality_sensor_2_callback(const osrf_gear::LogicalCameraImage
 
 //note: this function returns only the FIRST faulty part found;
 //but that should be suitable for our use
-
+// returns part coords w/rt world in "bad_part" object
 bool BoxInspector::find_faulty_part_Q1(const osrf_gear::LogicalCameraImage qual_sensor_image,
         inventory_msgs::Part &bad_part) {
     int num_bad_parts = qual_sensor_image.models.size();
@@ -240,7 +240,7 @@ bool BoxInspector::compare_pose(geometry_msgs::Pose pose_A, geometry_msgs::Pose 
     R_diff = R1.inverse() * R2;
     Eigen::AngleAxisd angleAxis(R_diff);
     double rotation_err = angleAxis.angle();
-    if (origin_err < 0.01 && rotation_err < 0.1) {
+    if (origin_err < ORIGIN_ERR_TOL && rotation_err < ORIENTATION_ERR_TOL) { //hard-coded tolerances per ARIAC
         return true;
     } else {
         return false;
@@ -268,7 +268,7 @@ bool BoxInspector::compare_pose_approx(geometry_msgs::Pose pose_A, geometry_msgs
     R_diff = R1.inverse() * R2;
     Eigen::AngleAxisd angleAxis(R_diff);
     double rotation_err = angleAxis.angle();
-    if (origin_err < 0.03 && rotation_err < 0.3) {
+    if (origin_err < 0.03 && rotation_err < 0.3) { //as above, but with larger tolerances
         return true;
     } else {
         return false;
@@ -285,7 +285,7 @@ bool BoxInspector::compare_pose_approx(geometry_msgs::PoseStamped pose_stamped_A
 
 
 //to request a new snapshot, set need_new_snapshot_ = true, and make sure to give a ros::spinOnce()
-
+//!!  MAKE ANOTHER OF THESE FOR BOX CAM AT Q2
 void BoxInspector::box_camera_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg) {
     if (!got_new_snapshot_) {
         box_inspector_image_ = *image_msg; //copy the current message to a member data var, i.e. freeze the snapshot
@@ -675,7 +675,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
 //this function really only works for boxcam 1;
 //at Q2, expect to ONLY look for bad parts per inspection cam 2
 
-//as above, but with more args for org by part indices
+//as above, but with more args for org by part indices; USE THIS ONE
 bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
         vector<osrf_gear::Model> &satisfied_models_wrt_world,
         vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
@@ -766,7 +766,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
     //presumably, when reach here, if any bad parts have been seen, the first one is classified as orphaned
 
     //next, look for precise matches:
-    //ROS_INFO("seeking precise matches");
+    ROS_INFO("seeking precise matches");
     for (int ipart_seen = 0; ipart_seen < num_parts_seen; ipart_seen++) {
         //only consider observed parts not already classified
         if (!classified_observed_part[ipart_seen]) {
@@ -802,10 +802,10 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
             }
         }
     }
-    //ROS_INFO("found %d precise matches", (int) satisfied_models_wrt_world.size());
+    ROS_INFO("found %d precise matches", (int) satisfied_models_wrt_world.size());
 
     //remaining parts  seen are either misaligned or orphaned
-    //ROS_INFO("seeking approximate matches");
+    ROS_INFO("seeking approximate matches");
     for (int ipart_seen = 0; ipart_seen < num_parts_seen; ipart_seen++) {
         //only consider observed parts not already classified
         if (!classified_observed_part[ipart_seen]) {
@@ -846,7 +846,7 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
         }
         
     }
-    //ROS_INFO("found %d approximate matches", (int) misplaced_models_actual_coords_wrt_world.size());
+    ROS_INFO("found %d approximate matches", (int) misplaced_models_actual_coords_wrt_world.size());
 
     //are there any stragglers?  If so, they are badly placed, or they are orphans
     //ROS_INFO("checking for outliers");
@@ -922,6 +922,9 @@ bool BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt
 // the part with respect to world coords; this is used to identify the actual grasp transform
 // return false if camera not working or not credible interpretation
 //   observed_part.pose = grasped_pose_wrt_wrld;
+
+//could/should improve this:  can compare observed part poses to estimated pose of grasped  part.
+// just checking for max z-height of name-matched parts potential  problem??
 
 bool BoxInspector::get_grasped_part_pose_wrt_world(inventory_msgs::Part &observed_part) {
     //get a new (filtered) snapshot of the box-inspection camera:

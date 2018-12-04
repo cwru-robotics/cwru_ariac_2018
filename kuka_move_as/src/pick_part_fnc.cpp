@@ -307,7 +307,7 @@ bool KukaBehaviorActionServer::move_into_grasp(double arrival_time) {
     transition_traj = jspace_pose_to_traj(pickup_deeper_jspace_pose_,arrival_time);
     errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR;
     //ROS_INFO_STREAM("transition traj = "<<endl<<transition_traj<<endl);
-    is_attached_ = false;
+    is_attached_ = gripperInterface_.isGripperAttached();
     send_traj_goal(transition_traj);  //start the motion
     while (!traj_goal_complete_ && !is_attached_) { //write a fnc for this: wait_for_goal_w_timeout
         //put timeout here...   possibly return falses
@@ -466,8 +466,9 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
     move_into_grasp(desired_grasp_dropoff_pose_, 1.5); //provide target pose
     cout<<"at computed grasp pose; "<<endl;    
     is_attached_ = gripperInterface_.waitForGripperAttach(2.0); //wait for grasp for a bit
-    //descend further while testing for part attachment:
-    if (!move_into_grasp(MOVE_INTO_GRASP_TIME)) {
+    if (!is_attached_) {
+      //descend further while testing for part attachment:
+      if (!move_into_grasp(MOVE_INTO_GRASP_TIME)) {
             ROS_WARN("could not grasp part; giving up; moving to approach pose...");
             move_to_jspace_pose(approach_dropoff_jspace_pose_, 1.0); //
             if (bad_state_ ==rtn_state_) {
@@ -486,11 +487,12 @@ unsigned short int  KukaBehaviorActionServer::pick_part_from_box(Part part, doub
             //current_pose_code_=current_hover_code; //establish code for recognized, key pose
             errorCode_ = robot_behavior_interface::RobotBehaviorResult::GRIPPER_FAULT;
             return errorCode_;
-
+      }
     }
     //if here, part is attached to  gripper;
-    ROS_INFO("discarding grasped part...");
-    discard_grasped_part(part);
+    //CHANGE ME: requires separate call to DISCARD_GRASPED_PART_Q1 to discard part
+    //ROS_INFO("discarding grasped part...");
+    //discard_grasped_part(part);
     /*
     
     ROS_INFO("grasped part; moving to depart pose: "); 

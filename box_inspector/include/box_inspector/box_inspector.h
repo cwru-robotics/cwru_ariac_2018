@@ -27,6 +27,8 @@ using namespace std;
 
 
 const double QUALITY_INSPECTION_MAX_WAIT_TIME = 2.0;
+const double ORIGIN_ERR_TOL = 0.009; // use competition requirements
+const double ORIENTATION_ERR_TOL = 0.09; //ditto
 /*const int NUM_PART_TYPES=5;
 //means to map part names to numerical codes, and vice-versa
 //edit the following to add more parts;
@@ -94,7 +96,20 @@ public:
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world);
 
-
+/**
+ * 
+   * @param [in] desired_models_wrt_world a vector of models, specifying desired types and locations for 
+   *    filling a box
+   * @param satisfied_models_wrt_world  a vector of models found to match the packing list and are placed within tolerances
+   * @param misplaced_models_actual_coords_wrt_world  vector of models from packing list that are present, but misplaced
+   * @param misplaced_models_desired_coords_wrt_world vector of desired coordinates for the above, in the same order
+   * @param missing_models_wrt_world  vector of models that are on the  packing list but not in the box
+   * @param orphan_models_wrt_world  vector models that are in the box, but not on the packing list
+ * @param [out] part_indices_missing
+ * @param [out] part_indices_misplaced
+ * @param [out] part_indices_precisely_placed
+ * @return 
+ */
   bool update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
@@ -110,8 +125,10 @@ public:
     osrf_gear::Shipment &shipment_status);
   //this version operates on member var box_inspector_image_
   bool model_poses_wrt_box(osrf_gear::Shipment &shipment_status);
+  //test w/ ARIAC tolerances
   bool compare_pose(geometry_msgs::Pose , geometry_msgs::Pose);
   bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
+  //test w/ larger tolerances
   bool compare_pose_approx(geometry_msgs::Pose pose_A, geometry_msgs::Pose pose_B);
   bool compare_pose_approx(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
 
@@ -125,6 +142,7 @@ private:
     int BOX_INSPECTOR_TIMEOUT=2;
     XformUtils xformUtils_;
 
+    //only defined for boxcam 1; extend this
     void box_camera_callback(const osrf_gear::LogicalCameraImage::ConstPtr & image_msg);   
     osrf_gear::LogicalCameraImage qual_sensor_1_image_,qual_sensor_2_image_;
 
@@ -137,7 +155,7 @@ private:
     bool qual_sensor_1_sees_faulty_part_,qual_sensor_2_sees_faulty_part_;
     ros::Subscriber box_camera_subscriber_;
     osrf_gear::LogicalCameraImage box_inspector_image_;
-    bool got_new_snapshot_;
+    bool got_new_snapshot_; //add equiv for boxcam 2
     inventory_msgs::Part bad_part_Qsensor1_,bad_part_Qsensor2_;
     bool got_new_Q1_image_;
     bool got_new_Q2_image_;
