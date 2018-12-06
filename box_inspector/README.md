@@ -34,7 +34,7 @@ Run a box-inspector demo:
 this will show one defective part (piston rod) and two desired  parts (gears), but slightly dislocated
 
 
-
+new 12/16/2018: created boxInspector2: extends inspection to station Q2
 
 ## Running tests/demos
     

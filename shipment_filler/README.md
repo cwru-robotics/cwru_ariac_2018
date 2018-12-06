@@ -20,4 +20,16 @@ Start up the shipment filler (top level program):
 `rosrun shipment_filler simple_shipment_filler`
 
 ## Running tests/demos
+test w/ partially-filled box:
+`roslaunch cwru_ariac_launch sample_environment.launch fill_demo_shipment:=true`
+
+`rosrun kuka_move_as kuka_behavior_as2`
+
+`rosrun conveyor_as conveyor_as`
+
+`rosservice call /ariac/start_competition`
+
+`rosrun shipment_filler demo_order_filler`
+
+look for checkpoints in demo_order_filler; can get max score (9) for sample order
     
