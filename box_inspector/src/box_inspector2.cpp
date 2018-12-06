@@ -349,9 +349,7 @@ bool BoxInspector2::get_new_snapshot_from_box_cam(int cam_num) {
             break;
         case CAM2:
             while ((!got_new_snapshot2_) && (timer < BOX_INSPECTOR_TIMEOUT)) {
-                ros::spinOnce();
-                ros::Duration(dt).sleep();
-                timer += dt;
+                ROS_WARN("FIX ME!!!");
             }
             if (timer >= BOX_INSPECTOR_TIMEOUT) {
                 ROS_WARN("could not update box2 inspection image!");
@@ -364,6 +362,7 @@ bool BoxInspector2::get_new_snapshot_from_box_cam(int cam_num) {
             break;
          default:
             ROS_WARN("get_new_snapshot_from_box_cam: cam_num = %d not recognized",cam_num);
+            return false;
     }               
 }
 
@@ -472,7 +471,7 @@ bool BoxInspector2::get_filtered_snapshots_from_box_cam2(osrf_gear::LogicalCamer
             box_inspector_image=box_inspector_image_;
             break;
         case CAM2:
-            box_inspector_image=box_inspector_image2_;
+            ROS_WARN("really should do something here...FIX ME!");
             break;     
         default:
             ROS_WARN("box-inspector: cam_num = %d not recognized",cam_num);
