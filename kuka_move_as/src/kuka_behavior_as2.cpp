@@ -276,6 +276,7 @@ void KukaBehaviorActionServer::executeCB(const robot_behavior_interface::RobotBe
         case robot_behavior_interface::RobotBehaviorGoal::PLACE_PART_IN_BOX_NO_RELEASE:
             ROS_INFO("PLACE_PART_NO_RELEASE (place part in box)");
             part = goal->destinationPart;
+            //ROS_INFO_STREAM("destination part: "<<endl<<part<<endl);
             errorCode_ = place_part_in_box_no_release(part);
             break;
         case robot_behavior_interface::RobotBehaviorGoal::MOVE_GRASPED_PART_TO_APPROACH_POSE:

@@ -3,6 +3,7 @@
 //  NO_ERROR, or:  UNREACHABLE, PART_DROPPED, WRONG_PARAMETER, or GRIPPER_FAULT
 //
 
+//DEBUG:  ASSUMES gripper is already at cam inspection pose
 unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(inventory_msgs::Part part) {
     unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful
     //trajectory_msgs::JointTrajectory transition_traj;
@@ -11,20 +12,26 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
             placeFinder_[part.location].c_str());
     ROS_INFO("part info: ");
     ROS_INFO_STREAM(part);
-    errorCode_ = compute_box_dropoff_key_poses(part);
+    //errorCode_ = compute_box_dropoff_key_poses(part);
+
+    errorCode_ = alt_compute_box_dropoff_key_poses(part);
     if (errorCode_ != robot_behavior_interface::RobotBehaviorResult::NO_ERROR) {
         return errorCode_;
     }
+    desired_approach_jspace_pose_=approach_dropoff_jspace_pose_; //synonym...for pickup of part from box, not dropoff 
+
     //extract box location codes from Part:
     int current_hover_code = location_to_pose_code_map[part.location];
     int current_cruise_code = location_to_cruise_code_map[part.location];
 
+    /*
     if (!move_posecode1_to_posecode2(current_pose_code_, current_hover_code)) {
 
         ROS_WARN("error with move between pose codes");
         errorCode_ = robot_behavior_interface::RobotBehaviorResult::PRECOMPUTED_TRAJ_ERR; //inform our client of error code
         return errorCode_;
     }
+     * */
     is_attached_ = gripperInterface_.isGripperAttached();
     if (!is_attached_) {
         errorCode_ = robot_behavior_interface::RobotBehaviorResult::PART_DROPPED;
@@ -33,6 +40,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
 
     ROS_WARN(" DO DROPOFF STEPS HERE...");
     //get the wrist pose ready:
+    /*
     ROS_INFO("position wrist at hover pose");
     if (hover_jspace_pose_from_pose_code(current_hover_code, q_temp_pose_)) {
         for (int i = 4; i < 6; i++) {
@@ -40,7 +48,7 @@ unsigned short int KukaBehaviorActionServer::place_part_in_box_no_release(invent
         }
         move_to_jspace_pose(q_temp_pose_, 1.5);
     }
-
+    */
 
 
     //now move to approach_dropoff_jspace_pose_:
@@ -447,6 +455,8 @@ unsigned short int KukaBehaviorActionServer::discard_grasped_part(inventory_msgs
     errorCode_ = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return success
     return errorCode_;
 }
+
+//looks like this requires FIRST grasping the part;
 
 unsigned short int KukaBehaviorActionServer::adjust_part_location_no_release(inventory_msgs::Part part_actual, inventory_msgs::Part part_desired) {
     unsigned short int errorCode = robot_behavior_interface::RobotBehaviorResult::NO_ERROR; //return this if ultimately successful

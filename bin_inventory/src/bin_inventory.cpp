@@ -305,8 +305,14 @@ bool BinInventory::find_part(inventory_msgs::Inventory current_inventory,std::st
 
   //select a part at random, to avoid re-trying the same part repeatedly
   partnum = 0;
-  if (num_parts_avail>1) partnum = rand() % (num_parts_avail-1);
-  ROS_INFO("debug: random viable partnum: %d", partnum);
+  if (num_parts_avail>4) {
+        ROS_WARN("DEBUG:  choose part #4 among inventory options");  
+      partnum = 4;
+  }
+  else if (num_parts_avail>1) { 
+      partnum = rand() % (num_parts_avail-1);
+  }
+  
   int bin_num =   current_inventory.inventory[part_id].bins[partnum];
   ROS_INFO("DEBUG: bin_num: %d", bin_num);
   geometry_msgs::PoseStamped part_pose = current_inventory.inventory[part_id].part_stamped_poses[partnum];

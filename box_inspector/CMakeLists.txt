@@ -28,18 +28,19 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 # Libraries: uncomment the following and edit arguments to create a new library
 cs_add_library(box_inspector src/box_inspector.cpp)   
+cs_add_library(box_inspector2 src/box_inspector2.cpp)  
 
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
 cs_add_executable(fake_logical_camera src/fake_logical_camera.cpp)
-cs_add_executable(box_inspector_example_main src/box_inspector_example_main.cpp)
+#cs_add_executable(box_inspector_example_main src/box_inspector_example_main.cpp)
 cs_add_executable(order_sender_ideal src/order_sender_ideal.cpp)
 cs_add_executable(order_sender_4parts src/order_sender_4parts.cpp)
 cs_add_executable(order_sender_6parts src/order_sender_6parts.cpp)
 cs_add_executable(order_sender_errs src/order_sender_errs.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
-target_link_libraries(box_inspector_example_main box_inspector)
+#target_link_libraries(box_inspector_example_main box_inspector)
 
 cs_install()
 cs_export()
