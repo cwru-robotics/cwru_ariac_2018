@@ -36,6 +36,7 @@ Start up the  new shipment filler (top-level node):
 `rosrun shipment_filler simple_shipment_filler_w_optimizer`
 
 
-
+##tests:
+see README in shipment_filler for example demo_order_filler
 
 
